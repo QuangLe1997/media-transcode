@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: media-transcode-app
+    container_name: media-transcode-web
+    command: web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - transcode_tmp:/tmp/transcode-jobs
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=change-this-in-production
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - S3_BUCKET=your-bucket-name
+      - AWS_ACCESS_KEY_ID=your-key
+      - AWS_SECRET_ACCESS_KEY=your-secret
+      - DATABASE_URL=sqlite:////app/instance/media_transcode.db
+      - GPU_ENABLED=true
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: media-transcode-app
+    container_name: media-transcode-worker
+    command: worker
+    volumes:
+      - ./uploads:/app/uploads
+      - transcode_tmp:/tmp/transcode-jobs
+    environment:
+      - FLASK_ENV=production
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - S3_BUCKET=your-bucket-name
+      - AWS_ACCESS_KEY_ID=your-key
+      - AWS_SECRET_ACCESS_KEY=your-secret
+      - DATABASE_URL=sqlite:////app/instance/media_transcode.db
+      - GPU_ENABLED=true
+      - GPU_TYPE=nvidia
+    depends_on:
+      - redis
+      - web
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: media-transcode-app
+    container_name: media-transcode-flower
+    command: flower
+    ports:
+      - "5555:5555"
+    environment:
+      - FLASK_ENV=production
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: media-transcode-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  transcode_tmp:

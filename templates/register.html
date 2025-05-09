@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Media Transcode Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 col-lg-5 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Register</h4>
+            </div>
+            <div class="card-body">
+                <div id="register-alerts"></div>
+
+                <form id="register-form">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email (optional)</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm-password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm-password" name="confirm-password" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+
+                <div class="mt-3 text-center">
+                    <p>Already have an account? <a href="/login">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Redirect if already logged in
+        if (localStorage.getItem('token')) {
+            window.location.href = '/';
+        }
+
+        // Handle register form submission
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Clear previous alerts
+            document.getElementById('register-alerts').innerHTML = '';
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                const errorAlert = createAlert('Passwords do not match', 'danger');
+                document.getElementById('register-alerts').appendChild(errorAlert);
+                return;
+            }
+
+            // Show loading
+            const loadingAlert = createAlert('Loading...', 'info');
+            document.getElementById('register-alerts').appendChild(loadingAlert);
+
+            // Log request body for debugging
+            console.log('Request payload:', { username, email, password });
+
+            // Make API request
+            fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,  // Đảm bảo gửi username
+                    email: email,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                if (data.message === 'User registered successfully') {
+                    // Registration successful
+                    const successAlert = createAlert('Registration successful! Please login.', 'success');
+                    document.getElementById('register-alerts').appendChild(successAlert);
+
+                    // Redirect to login page
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    // Registration failed
+                    const errorAlert = createAlert(data.message || 'Registration failed', 'danger');
+                    document.getElementById('register-alerts').appendChild(errorAlert);
+                }
+            })
+            .catch(error => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                // Show error message
+                const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
+                document.getElementById('register-alerts').appendChild(errorAlert);
+
+                console.error('Error:', error);
+            });
+        });
+
+        // Helper function to create alerts
+        function createAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            return alert;
+        }
+    });
+</script>
+{% endblock %}

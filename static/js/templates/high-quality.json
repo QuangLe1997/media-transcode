@@ -1,0 +1,190 @@
+{
+  "config_name": "High-Quality Configuration",
+  "description": "Cấu hình chất lượng cao cho xử lý video và hình ảnh",
+  "created_at": "2025-05-08T10:00:00Z",
+  "video_settings": {
+    "transcode_profiles": [
+      {
+        "name": "720p",
+        "width": 1280,
+        "height": 720,
+        "codec": "libx264",
+        "preset": "slow",
+        "crf": 18,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+        "use_gpu": true,
+        "gpu_options": {
+          "hardware_encoder": "h264_nvenc",
+          "preset": "p2",
+          "rc": "vbr"
+        }
+      },
+      {
+        "name": "1080p",
+        "width": 1920,
+        "height": 1080,
+        "codec": "libx264",
+        "preset": "slow",
+        "crf": 17,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "256k",
+        "use_gpu": true,
+        "gpu_options": {
+          "hardware_encoder": "h264_nvenc",
+          "preset": "p1",
+          "rc": "vbr"
+        }
+      },
+      {
+        "name": "1440p",
+        "width": 2560,
+        "height": 1440,
+        "codec": "libx264",
+        "preset": "slow",
+        "crf": 16,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "320k",
+        "use_gpu": true,
+        "gpu_options": {
+          "hardware_encoder": "h264_nvenc",
+          "preset": "p1",
+          "rc": "vbr"
+        }
+      },
+      {
+        "name": "2160p",
+        "width": 3840,
+        "height": 2160,
+        "codec": "libx264",
+        "preset": "slow",
+        "crf": 15,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "320k",
+        "use_gpu": true,
+        "gpu_options": {
+          "hardware_encoder": "h264_nvenc",
+          "preset": "p1",
+          "rc": "vbr"
+        }
+      },
+      {
+        "name": "webm_1080p",
+        "width": 1920,
+        "height": 1080,
+        "codec": "libvpx-vp9",
+        "crf": 24,
+        "format": "webm",
+        "audio_codec": "libopus",
+        "audio_bitrate": "192k",
+        "use_gpu": false
+      }
+    ],
+    "preview_settings": {
+      "duration_seconds": 60,
+      "use_profiles": ["720p", "1080p"]
+    },
+    "thumbnail_settings": {
+      "timestamps": ["00:00:05", "00:00:15", "00:00:30", "00:01:00", "00:02:00", "00:05:00"],
+      "sizes": [
+        {
+          "name": "small",
+          "width": 320,
+          "height": 180
+        },
+        {
+          "name": "medium",
+          "width": 640,
+          "height": 360
+        },
+        {
+          "name": "large",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "name": "xlarge",
+          "width": 1920,
+          "height": 1080
+        }
+      ],
+      "format": "png",
+      "quality": 100
+    }
+  },
+  "image_settings": {
+    "transcode_profiles": [
+      {
+        "name": "original_webp",
+        "format": "webp",
+        "quality": 95,
+        "resize": false
+      },
+      {
+        "name": "original_png",
+        "format": "png",
+        "compression_level": 1,
+        "resize": false
+      },
+      {
+        "name": "original_jpg",
+        "format": "jpg",
+        "quality": 95,
+        "resize": false
+      },
+      {
+        "name": "original_avif",
+        "format": "avif",
+        "quality": 95,
+        "resize": false
+      }
+    ],
+    "thumbnail_profiles": [
+      {
+        "name": "small",
+        "width": 320,
+        "height": 240,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 95
+      },
+      {
+        "name": "medium",
+        "width": 640,
+        "height": 480,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 95
+      },
+      {
+        "name": "large",
+        "width": 1024,
+        "height": 768,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 95
+      },
+      {
+        "name": "xlarge",
+        "width": 2048,
+        "height": 1536,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 95
+      }
+    ]
+  },
+  "output_settings": {
+    "s3_bucket": "high-quality-media-bucket",
+    "folder_structure": "{user_id}/{job_id}/{type}/{profile_name}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/transcode-jobs/",
+    "delete_local_after_upload": true
+  }
+}

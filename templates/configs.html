@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurations - Media Transcode Service{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Configurations</h1>
+        <div class="btn-group">
+            <a href="/configs/ui/new" class="btn btn-primary me-2">
+                <i class="fas fa-plus me-2"></i>New Config (UI Builder)
+            </a>
+            <a href="/configs/new" class="btn btn-outline-primary">
+                <i class="fas fa-code me-2"></i>New Config (JSON)
+            </a>
+        </div>
+    </div>
+
+    <div id="configs-container">
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config List Template -->
+    <template id="configs-template">
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="mb-0">Configurations</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="config-search" placeholder="Search configs...">
+                            <button class="btn btn-outline-secondary" type="button" id="refresh-configs">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="configs-list">
+                        <!-- Configs will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- No Configs Template -->
+    <template id="no-configs-template">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-cogs fa-4x mb-3 text-secondary"></i>
+                <h3>No Configurations Found</h3>
+                <p class="mb-4">You haven't created any configurations yet.</p>
+                <a href="/configs/new" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Your First Configuration
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <!-- Config Row Template -->
+    <template id="config-row-template">
+        <tr>
+            <td class="config-id"></td>
+            <td class="config-name"></td>
+            <td class="config-description"></td>
+            <td class="config-type"></td>
+            <td class="config-default"></td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="#" class="btn btn-outline-primary view-config">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary edit-config">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <!-- Thêm nút này -->
+                    <a href="#" class="btn btn-outline-info edit-config-ui">
+                        <i class="fas fa-sliders-h"></i>
+                    </a>
+                    <button type="button" class="btn btn-outline-success set-default-config">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger delete-config">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    </template>
+
+    <!-- Config Modal Template -->
+    <template id="config-modal-template">
+        <div class="modal fade" id="config-modal" tabindex="-1" aria-labelledby="config-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="config-modal-label">Configuration Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <h6>Name:</h6>
+                            <p id="modal-config-name"></p>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Description:</h6>
+                            <p id="modal-config-description"></p>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Configuration JSON:</h6>
+                            <pre id="modal-config-json" class="bg-light p-3 rounded"
+                                 style="max-height: 400px; overflow-y: auto;"></pre>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if user is authenticated
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Load configs
+            loadConfigs();
+
+            // Add event listener for refresh button
+            document.addEventListener('click', function (e) {
+                if (e.target.id === 'refresh-configs' || e.target.closest('#refresh-configs')) {
+                    loadConfigs();
+                }
+            });
+
+            // Add event listener for search input
+            document.addEventListener('input', function (e) {
+                if (e.target.id === 'config-search') {
+                    const searchValue = e.target.value.toLowerCase();
+                    const configRows = document.querySelectorAll('#configs-list tr');
+
+                    configRows.forEach(row => {
+                        const configName = row.querySelector('.config-name').textContent.toLowerCase();
+                        const configDesc = row.querySelector('.config-description').textContent.toLowerCase();
+
+                        if (configName.includes(searchValue) || configDesc.includes(searchValue)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                }
+            });
+
+            // Add event listener for buttons
+            document.addEventListener('click', function (e) {
+                const row = e.target.closest('tr');
+                if (!row) return;
+
+                const configId = row.querySelector('.config-id').textContent;
+
+                // View config
+                if (e.target.classList.contains('view-config') || e.target.closest('.view-config')) {
+                    e.preventDefault();
+                    viewConfig(configId);
+                }
+
+                // Edit config
+                if (e.target.classList.contains('edit-config') || e.target.closest('.edit-config')) {
+                    e.preventDefault();
+                    window.location.href = `/configs/edit/${configId}`;
+                }
+
+                // Set as default
+                if (e.target.classList.contains('set-default-config') || e.target.closest('.set-default-config')) {
+                    e.preventDefault();
+                    setDefaultConfig(configId);
+                }
+
+                // Delete config
+                if (e.target.classList.contains('delete-config') || e.target.closest('.delete-config')) {
+                    e.preventDefault();
+                    const configName = row.querySelector('.config-name').textContent;
+
+                    if (confirm(`Are you sure you want to delete the "${configName}" configuration?`)) {
+                        deleteConfig(configId);
+                    }
+                }
+                // Edit config with UI
+                if (e.target.classList.contains('edit-config-ui') || e.target.closest('.edit-config-ui')) {
+                    e.preventDefault();
+                    const row = e.target.closest('tr');
+                    const configId = row.querySelector('.config-id').textContent;
+                    window.location.href = `/configs/ui/edit/${configId}`;
+                }
+            });
+
+            // Inject modal container
+            const modalTemplate = document.getElementById('config-modal-template');
+            const modalContent = modalTemplate.content.cloneNode(true);
+            document.body.appendChild(modalContent);
+        });
+
+        /**
+         * Load configs from API
+         */
+        function loadConfigs() {
+            const configsContainer = document.getElementById('configs-container');
+            configsContainer.innerHTML = `
+            <div class="d-flex justify-content-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+            const token = localStorage.getItem('token');
+
+            fetch('/api/configs', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load configs');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderConfigs(data.configs || []);
+                })
+                .catch(error => {
+                    console.error('Error loading configs:', error);
+                    configsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load configurations. Please try again.
+                </div>
+            `;
+                });
+        }
+
+        /**
+         * Render configs
+         */
+        function renderConfigs(configs) {
+            const configsContainer = document.getElementById('configs-container');
+
+            if (configs.length === 0) {
+                // No configs
+                const template = document.getElementById('no-configs-template');
+                const content = template.content.cloneNode(true);
+                configsContainer.innerHTML = '';
+                configsContainer.appendChild(content);
+                return;
+            }
+
+            // Has configs
+            const template = document.getElementById('configs-template');
+            const content = template.content.cloneNode(true);
+            configsContainer.innerHTML = '';
+            configsContainer.appendChild(content);
+
+            const configsList = document.getElementById('configs-list');
+
+            // Sort configs (default first, then by name)
+            configs.sort((a, b) => {
+                if (a.is_default && !b.is_default) return -1;
+                if (!a.is_default && b.is_default) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            // Add each config
+            configs.forEach(config => {
+                const template = document.getElementById('config-row-template');
+                const row = template.content.cloneNode(true);
+
+                row.querySelector('.config-id').textContent = config.id;
+                row.querySelector('.config-name').textContent = config.name;
+                row.querySelector('.config-description').textContent = config.description || '-';
+
+                // Type
+                const typeCell = row.querySelector('.config-type');
+                if (config.is_public) {
+                    typeCell.innerHTML = '<span class="badge bg-success">System</span>';
+                } else {
+                    typeCell.innerHTML = '<span class="badge bg-primary">User</span>';
+                }
+
+                // Default
+                const defaultCell = row.querySelector('.config-default');
+                if (config.is_default) {
+                    defaultCell.innerHTML = '<i class="fas fa-star text-warning"></i>';
+
+                    // Hide set-default button
+                    const setDefaultBtn = row.querySelector('.set-default-config');
+                    setDefaultBtn.style.display = 'none';
+                } else {
+                    defaultCell.innerHTML = '-';
+                }
+
+                // Public configs can't be edited or deleted
+                if (config.is_public) {
+                    const editBtn = row.querySelector('.edit-config');
+                    const deleteBtn = row.querySelector('.delete-config');
+                    const setDefaultBtn = row.querySelector('.set-default-config');
+
+                    editBtn.classList.add('disabled');
+                    deleteBtn.classList.add('disabled');
+
+                    if (!config.is_default) {
+                        setDefaultBtn.classList.remove('disabled');
+                    }
+                }
+
+                configsList.appendChild(row);
+            });
+        }
+
+        /**
+         * View config details
+         */
+        function viewConfig(configId) {
+            const token = localStorage.getItem('token');
+
+            fetch(`/api/configs/${configId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load config');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update modal content
+                    document.getElementById('modal-config-name').textContent = data.name;
+                    document.getElementById('modal-config-description').textContent = data.description || '-';
+
+                    // Format JSON
+                    const jsonContent = JSON.stringify(data.config_json, null, 2);
+                    document.getElementById('modal-config-json').textContent = jsonContent;
+
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('config-modal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error loading config:', error);
+                    alert('Failed to load configuration details. Please try again.');
+                });
+        }
+
+        /**
+         * Set config as default
+         */
+        function setDefaultConfig(configId) {
+            const token = localStorage.getItem('token');
+
+            fetch(`/api/configs/${configId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    is_default: true
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to update config');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Reload configs
+                    loadConfigs();
+                })
+                .catch(error => {
+                    console.error('Error setting default config:', error);
+                    alert('Failed to set default configuration. Please try again.');
+                });
+        }
+
+        /**
+         * Delete config
+         */
+        function deleteConfig(configId) {
+            const token = localStorage.getItem('token');
+
+            fetch(`/api/configs/${configId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete config');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Reload configs
+                    loadConfigs();
+                })
+                .catch(error => {
+                    console.error('Error deleting config:', error);
+                    alert('Failed to delete configuration. Please try again.');
+                });
+        }
+    </script>
+{% endblock %}

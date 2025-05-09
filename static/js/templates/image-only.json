@@ -1,0 +1,142 @@
+{
+  "config_name": "Image Transcode Profile",
+  "description": "Bộ cấu hình dành riêng cho xử lý hình ảnh với nhiều định dạng và kích thước",
+  "created_at": "2025-05-08T10:00:00Z",
+  "image_settings": {
+    "transcode_profiles": [
+      {
+        "name": "original_webp",
+        "format": "webp",
+        "quality": 90,
+        "resize": false
+      },
+      {
+        "name": "original_jpg",
+        "format": "jpg",
+        "quality": 95,
+        "resize": false
+      },
+      {
+        "name": "original_avif",
+        "format": "avif",
+        "quality": 85,
+        "resize": false
+      },
+      {
+        "name": "original_png",
+        "format": "png",
+        "compression_level": 6,
+        "resize": false
+      },
+      {
+        "name": "webp_optimized",
+        "format": "webp",
+        "quality": 80,
+        "resize": true,
+        "width": 2048,
+        "height": 2048,
+        "maintain_aspect_ratio": true
+      },
+      {
+        "name": "jpg_optimized",
+        "format": "jpg",
+        "quality": 85,
+        "resize": true,
+        "width": 2048,
+        "height": 2048,
+        "maintain_aspect_ratio": true
+      }
+    ],
+    "thumbnail_profiles": [
+      {
+        "name": "tiny",
+        "width": 150,
+        "height": 150,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "small",
+        "width": 320,
+        "height": 320,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "medium",
+        "width": 640,
+        "height": 640,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "large",
+        "width": 1024,
+        "height": 1024,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "xlarge",
+        "width": 2048,
+        "height": 2048,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "small_jpg",
+        "width": 320,
+        "height": 320,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "medium_jpg",
+        "width": 640,
+        "height": 640,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "large_jpg",
+        "width": 1024,
+        "height": 1024,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "square_small",
+        "width": 320,
+        "height": 320,
+        "maintain_aspect_ratio": false,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "square_medium",
+        "width": 640,
+        "height": 640,
+        "maintain_aspect_ratio": false,
+        "format": "webp",
+        "quality": 85
+      }
+    ]
+  },
+  "output_settings": {
+    "s3_bucket": "image-transcode-bucket",
+    "folder_structure": "{user_id}/{job_id}/{type}/{profile_name}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/transcode-jobs/",
+    "delete_local_after_upload": true
+  }
+}

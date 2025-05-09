@@ -1,0 +1,71 @@
+{
+  "config_name": "Minimal Configuration",
+  "description": "Cấu hình tối thiểu cho xử lý video và hình ảnh",
+  "created_at": "2025-05-08T10:00:00Z",
+  "video_settings": {
+    "transcode_profiles": [
+      {
+        "name": "720p",
+        "width": 1280,
+        "height": 720,
+        "codec": "libx264",
+        "preset": "medium",
+        "crf": 23,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "use_gpu": true,
+        "gpu_options": {
+          "hardware_encoder": "h264_nvenc",
+          "preset": "p4",
+          "rc": "vbr"
+        }
+      }
+    ],
+    "preview_settings": {
+      "duration_seconds": 30,
+      "use_profiles": ["720p"]
+    },
+    "thumbnail_settings": {
+      "timestamps": ["00:00:05"],
+      "sizes": [
+        {
+          "name": "small",
+          "width": 320,
+          "height": 180
+        }
+      ],
+      "format": "jpg",
+      "quality": 90
+    }
+  },
+  "image_settings": {
+    "transcode_profiles": [
+      {
+        "name": "original_webp",
+        "format": "webp",
+        "quality": 90,
+        "resize": false
+      }
+    ],
+    "thumbnail_profiles": [
+      {
+        "name": "small",
+        "width": 320,
+        "height": 240,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      }
+    ]
+  },
+  "output_settings": {
+    "s3_bucket": "media-transcode-bucket",
+    "folder_structure": "{user_id}/{job_id}/{type}/{profile_name}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/transcode-jobs/",
+    "delete_local_after_upload": true
+  }
+}

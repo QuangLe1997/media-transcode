@@ -1,0 +1,279 @@
+/**
+ * Custom CSS for Media Transcode Service
+ */
+
+/* Global Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card Styles */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: none;
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Form Styles */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Button Styles */
+.btn {
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Table Styles */
+.table thead th {
+    border-top: none;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table td, .table th {
+    vertical-align: middle;
+}
+
+/* Badge Styles */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+
+/* Alert Styles */
+.alert {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Navbar Styles */
+.navbar {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Media Upload Styles */
+.upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.25rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-container:hover {
+    background-color: #e9ecef;
+}
+
+/* Job Status Styles */
+.job-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-pending {
+    background-color: #6c757d;
+}
+
+.status-processing {
+    background-color: #007bff;
+}
+
+.status-completed {
+    background-color: #28a745;
+}
+
+.status-failed {
+    background-color: #dc3545;
+}
+
+.status-partial {
+    background-color: #ffc107;
+}
+
+/* Config Display */
+pre.config-json {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* File Preview Styles */
+.file-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.file-preview-item {
+    position: relative;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    width: 150px;
+}
+
+.file-preview-icon {
+    font-size: 2rem;
+    display: block;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.file-preview-name {
+    font-size: 0.875rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-preview-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+/* Job Details Styles */
+.media-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.media-item-header {
+    background-color: #f8f9fa;
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 500;
+}
+
+.media-item-body {
+    padding: 1rem;
+}
+
+.media-thumbnail {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 0.25rem;
+}
+
+.task-item {
+    border-left: 3px solid #6c757d;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.task-item.task-completed {
+    border-left-color: #28a745;
+}
+
+.task-item.task-processing {
+    border-left-color: #007bff;
+}
+
+.task-item.task-failed {
+    border-left-color: #dc3545;
+}
+
+.output-item {
+    display: inline-block;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.output-item-thumbnail {
+    width: 150px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
+
+.output-item-info {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Config Styles */
+.config-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.config-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.config-card.selected {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    .card-header h5 {
+        font-size: 1.1rem;
+    }
+}

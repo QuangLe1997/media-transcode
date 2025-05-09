@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% block title %}New Configuration - Media Transcode Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Create New Configuration</h1>
+            <a href="/configs" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Configurations
+            </a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="config-form">
+                    <div class="mb-3">
+                        <label for="config-name" class="form-label">Configuration Name *</label>
+                        <input type="text" class="form-control" id="config-name" required>
+                        <div class="form-text">Give your configuration a descriptive name.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="config-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="config-description" rows="3"></textarea>
+                        <div class="form-text">Optional description for this configuration.</div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="config-default">
+                        <label class="form-check-label" for="config-default">
+                            Set as default configuration
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Configuration JSON</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="load-template">
+                            <i class="fas fa-file-import me-1"></i>Load Template
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="format-json">
+                            <i class="fas fa-align-left me-1"></i>Format JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="config-json" class="form-label">Configuration JSON *</label>
+                    <textarea class="form-control font-monospace" id="config-json" rows="15" required></textarea>
+                    <div class="form-text">Enter the JSON configuration for transcode profiles and settings.</div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>Configuration Structure</h6>
+                    <p>The configuration should include:</p>
+                    <ul>
+                        <li>Video transcode profiles with resolutions and encoding settings</li>
+                        <li>Video preview settings</li>
+                        <li>Video thumbnail settings</li>
+                        <li>Image transcode profiles</li>
+                        <li>Image thumbnail profiles</li>
+                        <li>Output settings like S3 bucket and folder structure</li>
+                    </ul>
+                    <p>Click "Load Template" to see a sample configuration.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+            <button type="button" class="btn btn-primary btn-lg" id="save-config">
+                <i class="fas fa-save me-2"></i>Save Configuration
+            </button>
+        </div>
+
+        <div id="result-container"></div>
+    </div>
+</div>
+
+<!-- Template JSON Modal -->
+<div class="modal fade" id="template-modal" tabindex="-1" aria-labelledby="template-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="template-modal-label">Load Template Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select a template configuration to load:</p>
+
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action" data-template="standard">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Standard Configuration</h5>
+                            <small>Recommended</small>
+                        </div>
+                        <p class="mb-1">Standard configuration for both video and image processing with common profiles.</p>
+                    </button>
+
+                    <button type="button" class="list-group-item list-group-item-action" data-template="video-only">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Video-Only Configuration</h5>
+                        </div>
+                        <p class="mb-1">Configuration optimized for video processing with multiple resolution profiles.</p>
+                    </button>
+
+                    <button type="button" class="list-group-item list-group-item-action" data-template="image-only">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Image-Only Configuration</h5>
+                        </div>
+                        <p class="mb-1">Configuration optimized for image processing with various formats and sizes.</p>
+                    </button>
+
+                    <button type="button" class="list-group-item list-group-item-action" data-template="minimal">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Minimal Configuration</h5>
+                        </div>
+                        <p class="mb-1">Basic configuration with minimal settings for both video and image processing.</p>
+                    </button>
+
+                    <button type="button" class="list-group-item list-group-item-action" data-template="high-quality">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">High-Quality Configuration</h5>
+                        </div>
+                        <p class="mb-1">Configuration with high-quality settings for both video and image processing.</p>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Template -->
+<template id="success-template">
+    <div class="alert alert-success">
+        <h4 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Configuration Created Successfully!</h4>
+        <p>Your configuration has been saved and is now available for use in transcode jobs.</p>
+        <hr>
+        <div class="d-flex justify-content-between">
+            <a href="/configs" class="btn btn-primary">Back to Configurations</a>
+            <a href="/jobs/new" class="btn btn-outline-primary">Create New Job</a>
+        </div>
+    </div>
+</template>
+
+<!-- Error Template -->
+<template id="error-template">
+    <div class="alert alert-danger">
+        <h4 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Error</h4>
+        <p class="error-message"></p>
+    </div>
+</template>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        // Setup event listeners
+        document.getElementById('load-template').addEventListener('click', function() {
+            const templateModal = new bootstrap.Modal(document.getElementById('template-modal'));
+            templateModal.show();
+        });
+
+        document.getElementById('format-json').addEventListener('click', formatJson);
+        document.getElementById('save-config').addEventListener('click', saveConfig);
+
+        // Template selection
+        document.querySelectorAll('[data-template]').forEach(button => {
+            button.addEventListener('click', function() {
+                const templateName = this.dataset.template;
+                loadTemplate(templateName);
+
+                // Close modal
+                const templateModal = bootstrap.Modal.getInstance(document.getElementById('template-modal'));
+                templateModal.hide();
+            });
+        });
+
+        /**
+         * Format JSON
+         */
+        function formatJson() {
+            const jsonInput = document.getElementById('config-json');
+
+            try {
+                const json = JSON.parse(jsonInput.value);
+                jsonInput.value = JSON.stringify(json, null, 2);
+            } catch (error) {
+                alert('Invalid JSON. Please check your syntax.');
+            }
+        }
+
+        /**
+         * Load template
+         */
+        function loadTemplate(templateName) {
+            fetch(`/static/js/templates/${templateName}.json`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load template');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('config-json').value = JSON.stringify(data, null, 2);
+
+                    // Update name and description based on template
+                    switch (templateName) {
+                        case 'standard':
+                            document.getElementById('config-name').value = 'Standard Configuration';
+                            document.getElementById('config-description').value = 'Standard configuration for both video and image processing with common profiles.';
+                            break;
+                        case 'video-only':
+                            document.getElementById('config-name').value = 'Video Processing Configuration';
+                            document.getElementById('config-description').value = 'Configuration optimized for video processing with multiple resolution profiles.';
+                            break;
+                        case 'image-only':
+                            document.getElementById('config-name').value = 'Image Processing Configuration';
+                            document.getElementById('config-description').value = 'Configuration optimized for image processing with various formats and sizes.';
+                            break;
+                        case 'minimal':
+                            document.getElementById('config-name').value = 'Minimal Configuration';
+                            document.getElementById('config-description').value = 'Basic configuration with minimal settings for both video and image processing.';
+                            break;
+                        case 'high-quality':
+                            document.getElementById('config-name').value = 'High-Quality Configuration';
+                            document.getElementById('config-description').value = 'Configuration with high-quality settings for both video and image processing.';
+                            break;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading template:', error);
+
+                    // Load fallback template from hardcoded JSON
+                    const fallbackTemplate = {
+                        "config_name": "Standard Transcode Profile",
+                        "description": "Standard configuration for both video and image processing",
+                        "video_settings": {
+                            "transcode_profiles": [
+                                {
+                                    "name": "720p",
+                                    "width": 1280,
+                                    "height": 720,
+                                    "codec": "libx264",
+                                    "preset": "medium",
+                                    "crf": 23,
+                                    "format": "mp4",
+                                    "audio_codec": "aac",
+                                    "audio_bitrate": "128k",
+                                    "use_gpu": true
+                                }
+                            ],
+                            "preview_settings": {
+                                "duration_seconds": 30,
+                                "use_profiles": ["720p"]
+                            },
+                            "thumbnail_settings": {
+                                "timestamps": ["00:00:05", "00:00:30"],
+                                "sizes": [
+                                    {
+                                        "name": "small",
+                                        "width": 320,
+                                        "height": 180
+                                    }
+                                ],
+                                "format": "jpg",
+                                "quality": 90
+                            }
+                        },
+                        "image_settings": {
+                            "transcode_profiles": [
+                                {
+                                    "name": "original_webp",
+                                    "format": "webp",
+                                    "quality": 90,
+                                    "resize": false
+                                }
+                            ],
+                            "thumbnail_profiles": [
+                                {
+                                    "name": "small",
+                                    "width": 320,
+                                    "height": 240,
+                                    "maintain_aspect_ratio": true,
+                                    "format": "webp",
+                                    "quality": 85
+                                }
+                            ]
+                        },
+                        "output_settings": {
+                            "s3_bucket": "media-transcode-bucket",
+                            "folder_structure": "{user_id}/{job_id}/{type}/{profile_name}/",
+                            "generate_unique_filenames": true,
+                            "preserve_original_filename": true
+                        }
+                    };
+
+                    document.getElementById('config-json').value = JSON.stringify(fallbackTemplate, null, 2);
+
+                    // Set default name and description
+                    document.getElementById('config-name').value = 'Standard Configuration';
+                    document.getElementById('config-description').value = 'Standard configuration for both video and image processing.';
+                });
+        }
+
+        /**
+         * Save configuration
+         */
+        function saveConfig() {
+            // Get values
+            const name = document.getElementById('config-name').value.trim();
+            const description = document.getElementById('config-description').value.trim();
+            const isDefault = document.getElementById('config-default').checked;
+            const configJson = document.getElementById('config-json').value.trim();
+
+            // Validate
+            if (!name) {
+                alert('Please enter a configuration name.');
+                return;
+            }
+
+            if (!configJson) {
+                alert('Please enter the configuration JSON.');
+                return;
+            }
+
+            // Validate JSON
+            try {
+                JSON.parse(configJson);
+            } catch (error) {
+                alert('Invalid JSON. Please check your syntax.');
+                return;
+            }
+
+            // Disable button
+            const saveButton = document.getElementById('save-config');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+            // Save configuration
+            const token = localStorage.getItem('token');
+
+            fetch('/api/configs', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description,
+                    config_json: configJson,
+                    is_default: isDefault
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to save configuration');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showSuccess();
+            })
+            .catch(error => {
+                console.error('Error saving configuration:', error);
+                showError('Failed to save configuration. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable button
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save Configuration';
+            });
+        }
+
+        /**
+         * Show success message
+         */
+        function showSuccess() {
+            const resultContainer = document.getElementById('result-container');
+
+            // Clone template
+            const template = document.getElementById('success-template');
+            const content = template.content.cloneNode(true);
+
+            // Add to container
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(content);
+
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Show error message
+         */
+        function showError(message) {
+            const resultContainer = document.getElementById('result-container');
+
+            // Clone template
+            const template = document.getElementById('error-template');
+            const content = template.content.cloneNode(true);
+
+            // Set message
+            content.querySelector('.error-message').textContent = message;
+
+            // Add to container
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(content);
+
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1290 @@
+{% extends 'base.html' %}
+
+{% block title %}Configuration UI - Media Transcode Service{% endblock %}
+
+{% block css %}
+    <style>
+        .tab-pane {
+            padding: 20px 0;
+        }
+
+        .form-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h5 {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        .profile-item {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .profile-item .remove-profile {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+
+        .add-profile-btn {
+            margin-top: 10px;
+        }
+
+        .json-preview {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .badge-preview {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1>Configuration Builder</h1>
+                    <div>
+                        <a href="/configs" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-arrow-left"></i> Back to Configs
+                        </a>
+                        <button type="button" class="btn btn-success" id="save-config-btn">
+                            <i class="fas fa-save me-1"></i> Save Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form id="config-basics-form">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="config-name" class="form-label">Configuration Name <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="config-name" required
+                                           placeholder="My Transcode Configuration">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="config-description" class="form-label">Description</label>
+                                    <input type="text" class="form-control" id="config-description"
+                                           placeholder="Configuration for video and image processing">
+                                </div>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="config-default">
+                                <label class="form-check-label" for="config-default">
+                                    Set as default configuration
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="config-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="video-tab" data-bs-toggle="tab"
+                                        data-bs-target="#video" type="button" role="tab">Video Settings
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image"
+                                        type="button" role="tab">Image Settings
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#output"
+                                        type="button" role="tab">Output Settings
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview"
+                                        type="button" role="tab">JSON Preview
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="config-tab-content">
+                            <!-- VIDEO SETTINGS TAB -->
+                            <div class="tab-pane fade show active" id="video" role="tabpanel"
+                                 aria-labelledby="video-tab">
+                                <div class="form-section">
+                                    <h5>Video Transcode Profiles</h5>
+                                    <p class="text-muted">Define video transcode settings for different resolutions and
+                                        formats</p>
+
+                                    <div id="video-profiles-container">
+                                        <!-- Video profiles will be added here -->
+                                    </div>
+
+                                    <button type="button" class="btn btn-primary add-profile-btn"
+                                            id="add-video-profile">
+                                        <i class="fas fa-plus me-1"></i> Add Video Profile
+                                    </button>
+                                </div>
+
+                                <div class="form-section">
+                                    <h5>Video Preview Settings</h5>
+                                    <p class="text-muted">Settings for generating video previews</p>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="preview-duration" class="form-label">Preview Duration
+                                                (seconds)</label>
+                                            <input type="number" class="form-control" id="preview-duration" value="30"
+                                                   min="1" max="300">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Use Profiles for Preview</label>
+                                        <div id="preview-profiles-container">
+                                            <p class="text-muted fst-italic">Add video profiles first to enable preview
+                                                generation.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h5>Video Thumbnail Settings</h5>
+                                    <p class="text-muted">Settings for extracting thumbnails from videos</p>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Timestamps (format: HH:MM:SS)</label>
+                                        <div class="row" id="timestamp-container">
+                                            <div class="col-md-3 mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control timestamp-input"
+                                                           value="00:00:05" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}">
+                                                    <button class="btn btn-outline-danger remove-timestamp"
+                                                            type="button">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                                id="add-timestamp">
+                                            <i class="fas fa-plus me-1"></i> Add Timestamp
+                                        </button>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="thumbnail-format" class="form-label">Image Format</label>
+                                                <select class="form-select" id="thumbnail-format">
+                                                    <option value="jpg">JPG</option>
+                                                    <option value="png">PNG</option>
+                                                    <option value="webp">WebP</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="thumbnail-quality" class="form-label">Quality
+                                                    (1-100)</label>
+                                                <input type="number" class="form-control" id="thumbnail-quality"
+                                                       value="90" min="1" max="100">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Thumbnail Sizes</label>
+                                        <div id="thumbnail-sizes-container">
+                                            <!-- Thumbnail size profiles will be added here -->
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                                id="add-thumbnail-size">
+                                            <i class="fas fa-plus me-1"></i> Add Thumbnail Size
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- IMAGE SETTINGS TAB -->
+                            <div class="tab-pane fade" id="image" role="tabpanel" aria-labelledby="image-tab">
+                                <div class="form-section">
+                                    <h5>Image Transcode Profiles</h5>
+                                    <p class="text-muted">Define image transcode settings for different formats</p>
+
+                                    <div id="image-profiles-container">
+                                        <!-- Image profiles will be added here -->
+                                    </div>
+
+                                    <button type="button" class="btn btn-primary add-profile-btn"
+                                            id="add-image-profile">
+                                        <i class="fas fa-plus me-1"></i> Add Image Profile
+                                    </button>
+                                </div>
+
+                                <div class="form-section">
+                                    <h5>Image Thumbnail Profiles</h5>
+                                    <p class="text-muted">Settings for generating image thumbnails</p>
+
+                                    <div id="image-thumbnail-profiles-container">
+                                        <!-- Image thumbnail profiles will be added here -->
+                                    </div>
+
+                                    <button type="button" class="btn btn-primary add-profile-btn"
+                                            id="add-image-thumbnail-profile">
+                                        <i class="fas fa-plus me-1"></i> Add Image Thumbnail Profile
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- OUTPUT SETTINGS TAB -->
+                            <div class="tab-pane fade" id="output" role="tabpanel" aria-labelledby="output-tab">
+                                <div class="form-section">
+                                    <h5>Storage Settings</h5>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="s3-bucket" class="form-label">S3 Bucket Name</label>
+                                            <input type="text" class="form-control" id="s3-bucket"
+                                                   placeholder="my-transcode-bucket">
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-8">
+                                            <label for="folder-structure" class="form-label">Folder Structure</label>
+                                            <input type="text" class="form-control" id="folder-structure"
+                                                   value="{user_id}/{job_id}/{type}/{profile_name}/">
+                                            <div class="form-text">
+                                                Available variables: {user_id}, {job_id}, {type}, {profile_name}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="generate-unique-filenames" checked>
+                                                <label class="form-check-label" for="generate-unique-filenames">
+                                                    Generate unique filenames
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="preserve-original-filename" checked>
+                                                <label class="form-check-label" for="preserve-original-filename">
+                                                    Preserve original filename
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h5>Temporary Storage Settings</h5>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="use-temp-storage"
+                                                       checked>
+                                                <label class="form-check-label" for="use-temp-storage">
+                                                    Use temporary local storage
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="delete-after-upload"
+                                                       checked>
+                                                <label class="form-check-label" for="delete-after-upload">
+                                                    Delete local files after upload
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-8">
+                                            <label for="temp-storage-path" class="form-label">Temporary Storage
+                                                Path</label>
+                                            <input type="text" class="form-control" id="temp-storage-path"
+                                                   value="/tmp/transcode-jobs/">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- JSON PREVIEW TAB -->
+                            <div class="tab-pane fade" id="preview" role="tabpanel" aria-labelledby="preview-tab">
+                                <div class="position-relative mb-3">
+                                    <span class="badge bg-info badge-preview">Auto-generated</span>
+                                    <pre class="json-preview p-3 bg-light"><code id="json-preview"></code></pre>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-outline-secondary" id="copy-json-btn">
+                                        <i class="fas fa-copy me-1"></i> Copy JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEMPLATES -->
+
+    <!-- Video Profile Template -->
+    <template id="video-profile-template">
+        <div class="profile-item video-profile">
+            <i class="fas fa-times remove-profile"></i>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Profile Name</label>
+                    <input type="text" class="form-control profile-name" placeholder="720p">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Width</label>
+                    <input type="number" class="form-control profile-width" placeholder="1280">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Height</label>
+                    <input type="number" class="form-control profile-height" placeholder="720">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Video Codec</label>
+                    <select class="form-select profile-codec">
+                        <option value="libx264">H.264 (libx264)</option>
+                        <option value="libx265">H.265 (libx265)</option>
+                        <option value="libvpx-vp9">VP9 (libvpx-vp9)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Format</label>
+                    <select class="form-select profile-format">
+                        <option value="mp4">MP4</option>
+                        <option value="webm">WebM</option>
+                        <option value="mov">MOV</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Preset</label>
+                    <select class="form-select profile-preset">
+                        <option value="ultrafast">ultrafast</option>
+                        <option value="superfast">superfast</option>
+                        <option value="veryfast">veryfast</option>
+                        <option value="faster">faster</option>
+                        <option value="fast">fast</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="slow">slow</option>
+                        <option value="slower">slower</option>
+                        <option value="veryslow">veryslow</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">CRF (0-51)</label>
+                    <input type="number" class="form-control profile-crf" value="23" min="0" max="51">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Audio Codec</label>
+                    <select class="form-select profile-audio-codec">
+                        <option value="aac">AAC</option>
+                        <option value="libmp3lame">MP3</option>
+                        <option value="libopus">Opus</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Audio Bitrate</label>
+                    <input type="text" class="form-control profile-audio-bitrate" value="128k">
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input profile-use-gpu" type="checkbox" checked>
+                        <label class="form-check-label">
+                            Use GPU acceleration (if available)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Thumbnail Size Template -->
+    <template id="thumbnail-size-template">
+        <div class="row mb-2 thumbnail-size-item">
+            <div class="col-md-3">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control thumbnail-size-name" placeholder="small">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Width</label>
+                <input type="number" class="form-control thumbnail-size-width" placeholder="320">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Height</label>
+                <input type="number" class="form-control thumbnail-size-height" placeholder="180">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger remove-thumbnail-size">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Image Profile Template -->
+    <template id="image-profile-template">
+        <div class="profile-item image-profile">
+            <i class="fas fa-times remove-profile"></i>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Profile Name</label>
+                    <input type="text" class="form-control profile-name" placeholder="original_webp">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Format</label>
+                    <select class="form-select profile-format">
+                        <option value="webp">WebP</option>
+                        <option value="jpg">JPG</option>
+                        <option value="png">PNG</option>
+                        <option value="avif">AVIF</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Quality (1-100)</label>
+                    <input type="number" class="form-control profile-quality" value="90" min="1" max="100">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-check">
+                        <input class="form-check-input profile-resize" type="checkbox">
+                        <label class="form-check-label">
+                            Resize image
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Image Thumbnail Profile Template -->
+    <template id="image-thumbnail-template">
+        <div class="profile-item image-thumbnail-profile">
+            <i class="fas fa-times remove-profile"></i>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Profile Name</label>
+                    <input type="text" class="form-control profile-name" placeholder="small">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Width</label>
+                    <input type="number" class="form-control profile-width" placeholder="320">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Height</label>
+                    <input type="number" class="form-control profile-height" placeholder="240">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Format</label>
+                    <select class="form-select profile-format">
+                        <option value="webp">WebP</option>
+                        <option value="jpg">JPG</option>
+                        <option value="png">PNG</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Quality (1-100)</label>
+                    <input type="number" class="form-control profile-quality" value="85" min="1" max="100">
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input profile-maintain-aspect" type="checkbox" checked>
+                        <label class="form-check-label">
+                            Maintain aspect ratio
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Preview Profile Checkbox Template -->
+    <template id="preview-profile-checkbox-template">
+        <div class="form-check">
+            <input class="form-check-input preview-profile-checkbox" type="checkbox" id="preview-profile-{id}">
+            <label class="form-check-label" for="preview-profile-{id}">
+                {name}
+            </label>
+        </div>
+    </template>
+
+    <!-- Save Modal -->
+    <div class="modal fade" id="save-config-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Save Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="save-config-alerts"></div>
+                    <p>Are you sure you want to save this configuration?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-save-config">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if user is authenticated
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Initialize variables
+            let videoProfiles = [];
+            let imageThumbnailSizes = [];
+            let imageProfiles = [];
+            let imageThumbnailProfiles = [];
+
+            // Add video profile
+            document.getElementById('add-video-profile').addEventListener('click', function () {
+                addVideoProfile();
+                updatePreviewProfiles();
+                updateJsonPreview();
+            });
+
+            // Add thumbnail size
+            document.getElementById('add-thumbnail-size').addEventListener('click', function () {
+                addThumbnailSize();
+                updateJsonPreview();
+            });
+
+            // Add image profile
+            document.getElementById('add-image-profile').addEventListener('click', function () {
+                addImageProfile();
+                updateJsonPreview();
+            });
+
+            // Add image thumbnail profile
+            document.getElementById('add-image-thumbnail-profile').addEventListener('click', function () {
+                addImageThumbnailProfile();
+                updateJsonPreview();
+            });
+
+            // Add timestamp
+            document.getElementById('add-timestamp').addEventListener('click', function () {
+                addTimestamp();
+                updateJsonPreview();
+            });
+
+            // Copy JSON
+            document.getElementById('copy-json-btn').addEventListener('click', function () {
+                const jsonText = document.getElementById('json-preview').textContent;
+                navigator.clipboard.writeText(jsonText)
+                    .then(() => {
+                        alert('JSON copied to clipboard');
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy JSON:', err);
+                        alert('Failed to copy JSON');
+                    });
+            });
+
+            // Save configuration
+            document.getElementById('save-config-btn').addEventListener('click', function () {
+                // Validate form
+                if (!validateForm()) {
+                    return;
+                }
+
+                // Show save confirmation modal
+                const saveModal = new bootstrap.Modal(document.getElementById('save-config-modal'));
+                saveModal.show();
+            });
+
+            // Confirm save configuration
+            document.getElementById('confirm-save-config').addEventListener('click', function () {
+                saveConfiguration();
+            });
+
+            // Event delegation for dynamic elements
+            document.addEventListener('click', function (e) {
+                // Remove video profile
+                if (e.target.classList.contains('remove-profile')) {
+                    const profileItem = e.target.closest('.profile-item');
+                    if (profileItem) {
+                        if (profileItem.classList.contains('video-profile')) {
+                            const container = document.getElementById('video-profiles-container');
+                            container.removeChild(profileItem);
+                            updatePreviewProfiles();
+                        } else if (profileItem.classList.contains('image-profile')) {
+                            const container = document.getElementById('image-profiles-container');
+                            container.removeChild(profileItem);
+                        } else if (profileItem.classList.contains('image-thumbnail-profile')) {
+                            const container = document.getElementById('image-thumbnail-profiles-container');
+                            container.removeChild(profileItem);
+                        }
+                        updateJsonPreview();
+                    }
+                }
+
+                // Remove thumbnail size
+                if (e.target.classList.contains('remove-thumbnail-size') || e.target.closest('.remove-thumbnail-size')) {
+                    const sizeItem = e.target.closest('.thumbnail-size-item');
+                    if (sizeItem) {
+                        const container = document.getElementById('thumbnail-sizes-container');
+                        container.removeChild(sizeItem);
+                        updateJsonPreview();
+                    }
+                }
+
+                // Remove timestamp
+                if (e.target.classList.contains('remove-timestamp') || e.target.closest('.remove-timestamp')) {
+                    const timestampItem = e.target.closest('.col-md-3');
+                    if (timestampItem && document.querySelectorAll('.timestamp-input').length > 1) {
+                        const container = document.getElementById('timestamp-container');
+                        container.removeChild(timestampItem);
+                        updateJsonPreview();
+                    }
+                }
+            });
+
+            // Event listener for input changes
+            document.addEventListener('input', function (e) {
+                // Update JSON preview on any form change
+                updateJsonPreview();
+            });
+
+            // Event listener for checkbox changes
+            document.addEventListener('change', function (e) {
+                // Update JSON preview on any form change
+                updateJsonPreview();
+            });
+
+            // Tab change event to update JSON preview
+            const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabEls.forEach(tabEl => {
+                tabEl.addEventListener('shown.bs.tab', function (event) {
+                    updateJsonPreview();
+                });
+            });
+
+            // Add some default items on load
+            addVideoProfile();
+            addThumbnailSize();
+            addImageProfile();
+            addImageThumbnailProfile();
+            updatePreviewProfiles();
+            updateJsonPreview();
+
+            /**
+             * Add a video profile to the UI
+             */
+            function addVideoProfile() {
+                const container = document.getElementById('video-profiles-container');
+                const template = document.getElementById('video-profile-template');
+                const profileItem = template.content.cloneNode(true);
+                container.appendChild(profileItem);
+            }
+
+            /**
+             * Add a thumbnail size to the UI
+             */
+            function addThumbnailSize() {
+                const container = document.getElementById('thumbnail-sizes-container');
+                const template = document.getElementById('thumbnail-size-template');
+                const sizeItem = template.content.cloneNode(true);
+                container.appendChild(sizeItem);
+            }
+
+            /**
+             * Add an image profile to the UI
+             */
+            function addImageProfile() {
+                const container = document.getElementById('image-profiles-container');
+                const template = document.getElementById('image-profile-template');
+                const profileItem = template.content.cloneNode(true);
+                container.appendChild(profileItem);
+            }
+
+            /**
+             * Add an image thumbnail profile to the UI
+             */
+            function addImageThumbnailProfile() {
+                const container = document.getElementById('image-thumbnail-profiles-container');
+                const template = document.getElementById('image-thumbnail-template');
+                const profileItem = template.content.cloneNode(true);
+                container.appendChild(profileItem);
+            }
+
+            /**
+             * Add a timestamp to the UI
+             */
+            function addTimestamp() {
+                const container = document.getElementById('timestamp-container');
+                const html = `
+                <div class="col-md-3 mb-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control timestamp-input" value="00:00:05" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}">
+                        <button class="btn btn-outline-danger remove-timestamp" type="button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                container.appendChild(tempDiv.firstElementChild);
+            }
+
+            /**
+             * Update preview profiles checkboxes
+             */
+            function updatePreviewProfiles() {
+                const container = document.getElementById('preview-profiles-container');
+                container.innerHTML = '';
+
+                const videoProfiles = document.querySelectorAll('.video-profile');
+                if (videoProfiles.length === 0) {
+                    container.innerHTML = '<p class="text-muted fst-italic">Add video profiles first to enable preview generation.</p>';
+                    return;
+                }
+
+                videoProfiles.forEach((profile, index) => {
+                    const nameInput = profile.querySelector('.profile-name');
+                    const name = nameInput.value || `Profile ${index + 1}`;
+
+                    const template = document.getElementById('preview-profile-checkbox-template');
+                    const checkboxItem = template.content.cloneNode(true);
+
+                    const checkbox = checkboxItem.querySelector('.preview-profile-checkbox');
+                    const label = checkboxItem.querySelector('.form-check-label');
+
+                    checkbox.id = `preview-profile-${index}`;
+                    checkbox.dataset.profileName = name;
+                    checkbox.checked = index < 2; // Check first two by default
+
+                    label.setAttribute('for', `preview-profile-${index}`);
+                    label.textContent = name;
+
+                    container.appendChild(checkboxItem);
+                });
+            }
+
+            /**
+             * Generate and update the JSON preview
+             */
+            function updateJsonPreview() {
+                try {
+                    const config = buildConfigObject();
+                    const jsonString = JSON.stringify(config, null, 2);
+                    document.getElementById('json-preview').textContent = jsonString;
+                } catch (error) {
+                    console.error('Error generating JSON preview:', error);
+                    document.getElementById('json-preview').textContent = '// Error generating JSON preview';
+                }
+            }
+
+            /**
+             * Build the configuration object from form inputs
+             */
+            function buildConfigObject() {
+                const config = {
+                    config_name: document.getElementById('config-name').value || 'New Configuration',
+                    description: document.getElementById('config-description').value || '',
+                    created_at: new Date().toISOString(),
+                    video_settings: {
+                        transcode_profiles: getVideoProfiles(),
+                        preview_settings: getPreviewSettings(),
+                        thumbnail_settings: getThumbnailSettings()
+                    },
+                    image_settings: {
+                        transcode_profiles: getImageProfiles(),
+                        thumbnail_profiles: getImageThumbnailProfiles()
+                    },
+                    output_settings: getOutputSettings()
+                };
+
+                return config;
+            }
+
+            /**
+             * Get video profiles from the form
+             */
+            function getVideoProfiles() {
+                const profiles = [];
+                const profileItems = document.querySelectorAll('.video-profile');
+
+                profileItems.forEach((item, index) => {
+                    const nameInput = item.querySelector('.profile-name');
+                    const widthInput = item.querySelector('.profile-width');
+                    const heightInput = item.querySelector('.profile-height');
+                    const codecSelect = item.querySelector('.profile-codec');
+                    const presetSelect = item.querySelector('.profile-preset');
+                    const crfInput = item.querySelector('.profile-crf');
+                    const formatSelect = item.querySelector('.profile-format');
+                    const audioCodecSelect = item.querySelector('.profile-audio-codec');
+                    const audioBitrateInput = item.querySelector('.profile-audio-bitrate');
+                    const useGpuCheckbox = item.querySelector('.profile-use-gpu');
+
+                    const profile = {
+                        name: nameInput.value || `profile_${index + 1}`,
+                        width: parseInt(widthInput.value) || 1280,
+                        height: parseInt(heightInput.value) || 720,
+                        codec: codecSelect.value,
+                        preset: presetSelect.value,
+                        crf: parseInt(crfInput.value) || 23,
+                        format: formatSelect.value,
+                        audio_codec: audioCodecSelect.value,
+                        audio_bitrate: audioBitrateInput.value,
+                        use_gpu: useGpuCheckbox.checked
+                    };
+
+                    if (useGpuCheckbox.checked) {
+                        profile.gpu_options = {
+                            hardware_encoder: codecSelect.value === 'libx264' ? 'h264_nvenc' :
+                                (codecSelect.value === 'libx265' ? 'hevc_nvenc' : null),
+                            preset: 'p4',
+                            rc: 'vbr'
+                        };
+                    }
+
+                    profiles.push(profile);
+                });
+
+                return profiles;
+            }
+
+            /**
+             * Get preview settings from the form
+             */
+            function getPreviewSettings() {
+                const durationInput = document.getElementById('preview-duration');
+                const profileCheckboxes = document.querySelectorAll('.preview-profile-checkbox:checked');
+
+                const useProfiles = [];
+                profileCheckboxes.forEach(checkbox => {
+                    useProfiles.push(checkbox.dataset.profileName);
+                });
+
+                return {
+                    duration_seconds: parseInt(durationInput.value) || 30,
+                    use_profiles: useProfiles
+                };
+            }
+
+            /**
+             * Get thumbnail settings from the form
+             */
+            function getThumbnailSettings() {
+                const formatSelect = document.getElementById('thumbnail-format');
+                const qualityInput = document.getElementById('thumbnail-quality');
+
+                const timestamps = [];
+                const timestampInputs = document.querySelectorAll('.timestamp-input');
+                timestampInputs.forEach(input => {
+                    timestamps.push(input.value);
+                });
+
+                const sizes = [];
+                const sizeItems = document.querySelectorAll('.thumbnail-size-item');
+                sizeItems.forEach((item, index) => {
+                    const nameInput = item.querySelector('.thumbnail-size-name');
+                    const widthInput = item.querySelector('.thumbnail-size-width');
+                    const heightInput = item.querySelector('.thumbnail-size-height');
+
+                    sizes.push({
+                        name: nameInput.value || `size_${index + 1}`,
+                        width: parseInt(widthInput.value) || 320,
+                        height: parseInt(heightInput.value) || 180
+                    });
+                });
+
+                return {
+                    timestamps: timestamps,
+                    sizes: sizes,
+                    format: formatSelect.value,
+                    quality: parseInt(qualityInput.value) || 90
+                };
+            }
+
+            /**
+             * Get image profiles from the form
+             */
+            function getImageProfiles() {
+                const profiles = [];
+                const profileItems = document.querySelectorAll('.image-profile');
+
+                profileItems.forEach((item, index) => {
+                    const nameInput = item.querySelector('.profile-name');
+                    const formatSelect = item.querySelector('.profile-format');
+                    const qualityInput = item.querySelector('.profile-quality');
+                    const resizeCheckbox = item.querySelector('.profile-resize');
+
+                    profiles.push({
+                        name: nameInput.value || `image_profile_${index + 1}`,
+                        format: formatSelect.value,
+                        quality: parseInt(qualityInput.value) || 90,
+                        resize: resizeCheckbox.checked
+                    });
+                });
+
+                return profiles;
+            }
+
+            /**
+             * Get image thumbnail profiles from the form
+             */
+            function getImageThumbnailProfiles() {
+                const profiles = [];
+                const profileItems = document.querySelectorAll('.image-thumbnail-profile');
+
+                profileItems.forEach((item, index) => {
+                    const nameInput = item.querySelector('.profile-name');
+                    const widthInput = item.querySelector('.profile-width');
+                    const heightInput = item.querySelector('.profile-height');
+                    const formatSelect = item.querySelector('.profile-format');
+                    const qualityInput = item.querySelector('.profile-quality');
+                    const maintainAspectCheckbox = item.querySelector('.profile-maintain-aspect');
+
+                    profiles.push({
+                        name: nameInput.value || `thumb_${index + 1}`,
+                        width: parseInt(widthInput.value) || 320,
+                        height: parseInt(heightInput.value) || 240,
+                        maintain_aspect_ratio: maintainAspectCheckbox.checked,
+                        format: formatSelect.value,
+                        quality: parseInt(qualityInput.value) || 85
+                    });
+                });
+
+                return profiles;
+            }
+
+            /**
+             * Get output settings from the form
+             */
+            function getOutputSettings() {
+                const s3BucketInput = document.getElementById('s3-bucket');
+                const folderStructureInput = document.getElementById('folder-structure');
+                const generateUniqueFilenamesCheckbox = document.getElementById('generate-unique-filenames');
+                const preserveOriginalFilenameCheckbox = document.getElementById('preserve-original-filename');
+                const useTempStorageCheckbox = document.getElementById('use-temp-storage');
+                const tempStoragePathInput = document.getElementById('temp-storage-path');
+                const deleteAfterUploadCheckbox = document.getElementById('delete-after-upload');
+
+                return {
+                    s3_bucket: s3BucketInput.value || 'media-transcode-bucket',
+                    folder_structure: folderStructureInput.value,
+                    generate_unique_filenames: generateUniqueFilenamesCheckbox.checked,
+                    preserve_original_filename: preserveOriginalFilenameCheckbox.checked,
+                    use_temporary_local_storage: useTempStorageCheckbox.checked,
+                    local_storage_path: tempStoragePathInput.value,
+                    delete_local_after_upload: deleteAfterUploadCheckbox.checked
+                };
+            }
+
+            /**
+             * Validate the form
+             */
+            function validateForm() {
+                const configName = document.getElementById('config-name').value;
+                if (!configName) {
+                    alert('Please enter a configuration name');
+                    document.getElementById('config-name').focus();
+                    return false;
+                }
+
+                // Check if at least one video profile exists
+                const videoProfiles = document.querySelectorAll('.video-profile');
+                if (videoProfiles.length === 0) {
+                    alert('Please add at least one video profile');
+                    return false;
+                }
+
+                // Check if at least one image profile exists
+                const imageProfiles = document.querySelectorAll('.image-profile');
+                if (imageProfiles.length === 0) {
+                    alert('Please add at least one image profile');
+                    return false;
+                }
+
+                return true;
+            }
+
+            /**
+             * Save the configuration to the server
+             */
+            function saveConfiguration() {
+                const config = buildConfigObject();
+                const configData = {
+                    name: config.config_name,
+                    description: config.description,
+                    config_json: JSON.stringify(config),
+                    is_default: document.getElementById('config-default').checked
+                };
+
+                const token = localStorage.getItem('token');
+
+                // Clear previous alerts
+                document.getElementById('save-config-alerts').innerHTML = '';
+
+                // Show loading
+                const loadingAlert = createAlert('Saving configuration...', 'info');
+                document.getElementById('save-config-alerts').appendChild(loadingAlert);
+
+                // Save configuration
+                fetch('/api/configs', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Remove loading alert
+                        loadingAlert.remove();
+
+                        if (data.message === 'Config created successfully') {
+                            // Show success alert
+                            const successAlert = createAlert('Configuration saved successfully!', 'success');
+                            document.getElementById('save-config-alerts').appendChild(successAlert);
+
+                            // Redirect after a delay
+                            setTimeout(() => {
+                                window.location.href = '/configs';
+                            }, 1500);
+                        } else {
+                            // Show error alert
+                            const errorAlert = createAlert(data.message || 'Failed to save configuration', 'danger');
+                            document.getElementById('save-config-alerts').appendChild(errorAlert);
+                        }
+                    })
+                    .catch(error => {
+                        // Remove loading alert
+                        loadingAlert.remove();
+
+                        // Show error alert
+                        const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
+                        document.getElementById('save-config-alerts').appendChild(errorAlert);
+
+                        console.error('Error saving configuration:', error);
+                    });
+            }
+
+            /**
+             * Helper function to create alerts
+             */
+            function createAlert(message, type) {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                return alert;
+            }
+        });
+    </script>
+{% endblock %}
+<script src="{{ url_for('static', filename='js/load_config.js') }}"></script>
+<script>
+    // Check if we're in edit mode
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParts = window.location.pathname.split('/');
+        if (urlParts.includes('edit')) {
+            const configId = urlParts[urlParts.length - 1];
+            if (configId) {
+                // We're in edit mode, load the configuration
+                document.querySelector('h1').textContent = 'Edit Configuration';
+                loadConfigForEdit(configId);
+
+                // Update save function to handle edit
+                document.getElementById('confirm-save-config').addEventListener('click', function () {
+                    saveConfigurationEdit(configId);
+                }, {once: true});
+            }
+        }
+    });
+
+    /**
+     * Save the configuration (edit mode)
+     */
+    function saveConfigurationEdit(configId) {
+        const config = buildConfigObject();
+        const configData = {
+            name: config.config_name,
+            description: config.description,
+            config_json: JSON.stringify(config),
+            is_default: document.getElementById('config-default').checked
+        };
+
+        const token = localStorage.getItem('token');
+
+        // Clear previous alerts
+        document.getElementById('save-config-alerts').innerHTML = '';
+
+        // Show loading
+        const loadingAlert = createAlert('Updating configuration...', 'info');
+        document.getElementById('save-config-alerts').appendChild(loadingAlert);
+
+        // Update configuration
+        fetch(`/api/configs/${configId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(configData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                if (data.message === 'Config updated successfully') {
+                    // Show success alert
+                    const successAlert = createAlert('Configuration updated successfully!', 'success');
+                    document.getElementById('save-config-alerts').appendChild(successAlert);
+
+                    // Redirect after a delay
+                    setTimeout(() => {
+                        window.location.href = '/configs';
+                    }, 1500);
+                } else {
+                    // Show error alert
+                    const errorAlert = createAlert(data.message || 'Failed to update configuration', 'danger');
+                    document.getElementById('save-config-alerts').appendChild(errorAlert);
+                }
+            })
+            .catch(error => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                // Show error alert
+                const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
+                document.getElementById('save-config-alerts').appendChild(errorAlert);
+
+                console.error('Error updating configuration:', error);
+            });
+    }
+</script>
+<script>
+    // Check if we're in edit mode
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParts = window.location.pathname.split('/');
+        if (urlParts.includes('edit')) {
+            const configId = urlParts[urlParts.length - 1];
+            if (configId) {
+                // We're in edit mode, load the configuration
+                document.querySelector('h1').textContent = 'Edit Configuration';
+                loadConfigForEdit(configId);
+
+                // Update save function to handle edit
+                document.getElementById('confirm-save-config').addEventListener('click', function () {
+                    saveConfigurationEdit(configId);
+                }, {once: true});
+            }
+        }
+    });
+
+    /**
+     * Save the configuration (edit mode)
+     */
+    function saveConfigurationEdit(configId) {
+        const config = buildConfigObject();
+        const configData = {
+            name: config.config_name,
+            description: config.description,
+            config_json: JSON.stringify(config),
+            is_default: document.getElementById('config-default').checked
+        };
+
+        const token = localStorage.getItem('token');
+
+        // Clear previous alerts
+        document.getElementById('save-config-alerts').innerHTML = '';
+
+        // Show loading
+        const loadingAlert = createAlert('Updating configuration...', 'info');
+        document.getElementById('save-config-alerts').appendChild(loadingAlert);
+
+        // Update configuration
+        fetch(`/api/configs/${configId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(configData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                if (data.message === 'Config updated successfully') {
+                    // Show success alert
+                    const successAlert = createAlert('Configuration updated successfully!', 'success');
+                    document.getElementById('save-config-alerts').appendChild(successAlert);
+
+                    // Redirect after a delay
+                    setTimeout(() => {
+                        window.location.href = '/configs';
+                    }, 1500);
+                } else {
+                    // Show error alert
+                    const errorAlert = createAlert(data.message || 'Failed to update configuration', 'danger');
+                    document.getElementById('save-config-alerts').appendChild(errorAlert);
+                }
+            })
+            .catch(error => {
+                // Remove loading alert
+                loadingAlert.remove();
+
+                // Show error alert
+                const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
+                document.getElementById('save-config-alerts').appendChild(errorAlert);
+
+                console.error('Error updating configuration:', error);
+            });
+    }
+</script>

@@ -1,0 +1,764 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Details - Media Transcode Service{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Job Details</h1>
+    <a href="/jobs" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Jobs
+    </a>
+</div>
+
+<div id="job-container">
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Job Summary Template -->
+<template id="job-summary-template">
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Job #<span id="job-id"></span></h5>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-outline-primary me-2" id="refresh-job">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" id="delete-job">
+                        <i class="fas fa-trash-alt me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span id="job-status-badge"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Created:</strong>
+                        <span id="job-created"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong>
+                        <span id="job-updated"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <strong>Configuration:</strong>
+                        <span id="job-config"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Media Files:</strong>
+                        <span id="job-media-count"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Media Types:</strong>
+                        <span id="job-media-types"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Media List Template -->
+<template id="media-list-template">
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Media Files</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="accordion" id="media-accordion">
+                <!-- Media items will be added here -->
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Media Item Template -->
+<template id="media-item-template">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#media-collapse-{id}">
+                <div class="d-flex align-items-center w-100">
+                    <i class="media-icon me-2"></i>
+                    <span class="media-filename"></span>
+                    <span class="badge bg-secondary ms-2 media-status"></span>
+                    <small class="text-muted ms-auto media-info"></small>
+                </div>
+            </button>
+        </h2>
+        <div id="media-collapse-{id}" class="accordion-collapse collapse" data-bs-parent="#media-accordion">
+            <div class="accordion-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="media-thumbnail-container">
+                            <!-- Media thumbnail or icon will be added here -->
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <strong>Filename:</strong>
+                                    <span class="media-original-filename"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Type:</strong>
+                                    <span class="media-file-type"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Size:</strong>
+                                    <span class="media-file-size"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2 media-dimensions">
+                                    <strong>Dimensions:</strong>
+                                    <span class="media-dimensions-value"></span>
+                                </div>
+                                <div class="mb-2 media-duration">
+                                    <strong>Duration:</strong>
+                                    <span class="media-duration-value"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>MIME Type:</strong>
+                                    <span class="media-mime-type"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tasks-container">
+                    <h6>Processing Tasks</h6>
+                    <div class="tasks-list">
+                        <!-- Tasks will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Task Item Template -->
+<template id="task-item-template">
+    <div class="task-item">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 task-title"></h6>
+            <span class="task-status-badge"></span>
+        </div>
+        <div class="task-details mb-2">
+            <small class="text-muted task-details-text"></small>
+        </div>
+        <div class="task-outputs">
+            <!-- Outputs will be added here -->
+        </div>
+    </div>
+</template>
+
+<!-- Video Output Item Template -->
+<template id="video-output-template">
+    <div class="output-item">
+        <div class="output-thumbnail">
+            <video class="output-video" controls poster="" style="max-width: 100%; max-height: 150px;">
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="output-details">
+            <small class="output-filename"></small>
+            <div>
+                <a href="#" class="output-download btn btn-sm btn-outline-primary mt-1">
+                    <i class="fas fa-download me-1"></i>Download
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Image Output Item Template -->
+<template id="image-output-template">
+    <div class="output-item">
+        <div class="output-thumbnail">
+            <img class="output-image" src="" alt="Thumbnail" style="max-width: 100%; max-height: 150px;">
+        </div>
+        <div class="output-details">
+            <small class="output-filename"></small>
+            <div>
+                <a href="#" class="output-download btn btn-sm btn-outline-primary mt-1">
+                    <i class="fas fa-download me-1"></i>Download
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- No Media Template -->
+<template id="no-media-template">
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-film fa-4x mb-3 text-secondary"></i>
+            <h3>No Media Files</h3>
+            <p>This job doesn't have any media files.</p>
+        </div>
+    </div>
+</template>
+
+<!-- Error Template -->
+<template id="error-template">
+    <div class="alert alert-danger">
+        <h4 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Error</h4>
+        <p class="error-message"></p>
+    </div>
+</template>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        // Get job ID from URL
+        const path = window.location.pathname;
+        const jobId = path.split('/').pop();
+
+        // Load job
+        loadJobDetails(jobId);
+
+        // Event delegation for buttons
+        document.addEventListener('click', function(e) {
+            // Refresh job
+            if (e.target.id === 'refresh-job' || e.target.closest('#refresh-job')) {
+                loadJobDetails(jobId);
+            }
+
+            // Delete job
+            if (e.target.id === 'delete-job' || e.target.closest('#delete-job')) {
+                if (confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+                    deleteJob(jobId);
+                }
+            }
+
+            // Download output
+            if (e.target.classList.contains('output-download') || e.target.closest('.output-download')) {
+                e.preventDefault();
+                const link = e.target.closest('.output-download');
+                window.open(link.href, '_blank');
+            }
+        });
+    });
+
+    /**
+     * Load job details from API
+     */
+    function loadJobDetails(jobId) {
+        const jobContainer = document.getElementById('job-container');
+        jobContainer.innerHTML = `
+            <div class="d-flex justify-content-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        const token = localStorage.getItem('token');
+
+        fetch(`/api/jobs/${jobId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load job details');
+            }
+            return response.json();
+        })
+        .then(data => {
+            renderJobDetails(data);
+        })
+        .catch(error => {
+            console.error('Error loading job details:', error);
+            renderError('Failed to load job details. Please try again.');
+        });
+    }
+
+    /**
+     * Render job details
+     */
+    function renderJobDetails(job) {
+        const jobContainer = document.getElementById('job-container');
+        jobContainer.innerHTML = '';
+
+        // Render job summary
+        renderJobSummary(job);
+
+        // Render media list
+        if (job.media && job.media.length > 0) {
+            renderMediaList(job.media);
+        } else {
+            // No media
+            const template = document.getElementById('no-media-template');
+            const content = template.content.cloneNode(true);
+            jobContainer.appendChild(content);
+        }
+    }
+
+    /**
+     * Render job summary
+     */
+    function renderJobSummary(job) {
+        const jobContainer = document.getElementById('job-container');
+
+        // Clone template
+        const template = document.getElementById('job-summary-template');
+        const content = template.content.cloneNode(true);
+
+        // Update content
+        content.getElementById('job-id').textContent = job.id;
+
+        // Status badge
+        const statusBadge = content.getElementById('job-status-badge');
+        let badgeHtml = '';
+
+        switch (job.status) {
+            case 'pending':
+                badgeHtml = '<span class="badge bg-secondary">Pending</span>';
+                break;
+            case 'processing':
+                badgeHtml = '<span class="badge bg-primary">Processing</span>';
+                break;
+            case 'completed':
+                badgeHtml = '<span class="badge bg-success">Completed</span>';
+                break;
+            case 'failed':
+                badgeHtml = '<span class="badge bg-danger">Failed</span>';
+                break;
+            case 'partial':
+                badgeHtml = '<span class="badge bg-warning">Partial</span>';
+                break;
+            default:
+                badgeHtml = `<span class="badge bg-secondary">${job.status}</span>`;
+        }
+
+        statusBadge.innerHTML = badgeHtml;
+
+        // Dates
+        const createdDate = new Date(job.created_at);
+        content.getElementById('job-created').textContent = createdDate.toLocaleString();
+
+        const updatedDate = new Date(job.updated_at);
+        content.getElementById('job-updated').textContent = updatedDate.toLocaleString();
+
+        // Config
+        content.getElementById('job-config').textContent = `#${job.config_id}`;
+
+        // Media info
+        content.getElementById('job-media-count').textContent = job.media ? job.media.length : 0;
+
+        // Media types
+        const mediaTypes = job.media ? [...new Set(job.media.map(m => m.file_type))] : [];
+        content.getElementById('job-media-types').textContent = mediaTypes.join(', ');
+
+        // Add to container
+        jobContainer.appendChild(content);
+    }
+
+    /**
+     * Render media list
+     */
+    function renderMediaList(mediaList) {
+        const jobContainer = document.getElementById('job-container');
+
+        // Clone template
+        const template = document.getElementById('media-list-template');
+        const content = template.content.cloneNode(true);
+
+        // Add to container
+        jobContainer.appendChild(content);
+
+        // Get accordion container
+        const mediaAccordion = document.getElementById('media-accordion');
+
+        // Add each media item
+        mediaList.forEach((media, index) => {
+            renderMediaItem(media, mediaAccordion, index);
+        });
+    }
+
+    /**
+     * Render a media item
+     */
+    function renderMediaItem(media, container, index) {
+        // Clone template
+        const template = document.getElementById('media-item-template');
+        const content = template.content.cloneNode(true);
+
+        // Replace ID placeholder
+        const mediaId = `media-${media.id}`;
+        const collapseId = `media-collapse-${media.id}`;
+
+        content.querySelector('.accordion-button').setAttribute('data-bs-target', `#${collapseId}`);
+        content.querySelector('.accordion-collapse').id = collapseId;
+
+        // Icon
+        const iconElement = content.querySelector('.media-icon');
+        if (media.file_type === 'video') {
+            iconElement.className = 'media-icon fas fa-film text-primary me-2';
+        } else if (media.file_type === 'image') {
+            iconElement.className = 'media-icon fas fa-image text-success me-2';
+        }
+
+        // Basic info
+        content.querySelector('.media-filename').textContent = media.original_filename;
+
+        // Get task status
+        let status = 'pending';
+        if (media.tasks && media.tasks.length > 0) {
+            const statuses = media.tasks.map(t => t.status);
+            if (statuses.every(s => s === 'completed')) {
+                status = 'completed';
+            } else if (statuses.some(s => s === 'failed')) {
+                status = 'failed';
+            } else if (statuses.some(s => s === 'processing')) {
+                status = 'processing';
+            }
+        }
+
+        // Status badge
+        const statusElement = content.querySelector('.media-status');
+        switch (status) {
+            case 'pending':
+                statusElement.className = 'badge bg-secondary ms-2 media-status';
+                statusElement.textContent = 'Pending';
+                break;
+            case 'processing':
+                statusElement.className = 'badge bg-primary ms-2 media-status';
+                statusElement.textContent = 'Processing';
+                break;
+            case 'completed':
+                statusElement.className = 'badge bg-success ms-2 media-status';
+                statusElement.textContent = 'Completed';
+                break;
+            case 'failed':
+                statusElement.className = 'badge bg-danger ms-2 media-status';
+                statusElement.textContent = 'Failed';
+                break;
+        }
+
+        // Media info
+        let infoText = '';
+        if (media.width && media.height) {
+            infoText += `${media.width}x${media.height}`;
+        }
+        if (media.duration) {
+            if (infoText) infoText += ' • ';
+            infoText += `${formatDuration(media.duration)}`;
+        }
+        if (media.file_size) {
+            if (infoText) infoText += ' • ';
+            infoText += formatFileSize(media.file_size);
+        }
+
+        content.querySelector('.media-info').textContent = infoText;
+
+        // Detailed info
+        content.querySelector('.media-original-filename').textContent = media.original_filename;
+        content.querySelector('.media-file-type').textContent = media.file_type;
+        content.querySelector('.media-file-size').textContent = formatFileSize(media.file_size);
+        content.querySelector('.media-mime-type').textContent = media.mime_type;
+
+        if (media.width && media.height) {
+            content.querySelector('.media-dimensions-value').textContent = `${media.width}x${media.height}`;
+        } else {
+            content.querySelector('.media-dimensions').style.display = 'none';
+        }
+
+        if (media.duration) {
+            content.querySelector('.media-duration-value').textContent = formatDuration(media.duration);
+        } else {
+            content.querySelector('.media-duration').style.display = 'none';
+        }
+
+        // Thumbnail placeholder
+        const thumbnailContainer = content.querySelector('.media-thumbnail-container');
+        if (media.file_type === 'video') {
+            thumbnailContainer.innerHTML = `<div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px; border-radius: 0.25rem;">
+                <i class="fas fa-film fa-3x text-secondary"></i>
+            </div>`;
+        } else if (media.file_type === 'image') {
+            thumbnailContainer.innerHTML = `<div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px; border-radius: 0.25rem;">
+                <i class="fas fa-image fa-3x text-secondary"></i>
+            </div>`;
+        }
+
+        // Add tasks
+        const tasksContainer = content.querySelector('.tasks-list');
+        if (media.tasks && media.tasks.length > 0) {
+            media.tasks.forEach(task => {
+                renderTaskItem(task, tasksContainer);
+            });
+        } else {
+            tasksContainer.innerHTML = '<div class="alert alert-info">No tasks found for this media.</div>';
+        }
+
+        // Add to container
+        container.appendChild(content);
+
+        // Check for thumbnail in completed tasks
+        if (media.tasks) {
+            const thumbnailTasks = media.tasks.filter(t =>
+                t.status === 'completed' &&
+                t.task_type === 'thumbnail' &&
+                t.outputs &&
+                t.outputs.length > 0
+            );
+
+            if (thumbnailTasks.length > 0) {
+                // Find smallest thumbnail
+                const thumbnails = [];
+                thumbnailTasks.forEach(task => {
+                    task.outputs.forEach(output => {
+                        thumbnails.push({
+                            url: output.s3_url,
+                            width: output.width,
+                            height: output.height
+                        });
+                    });
+                });
+
+                // Sort by area (smallest first)
+                thumbnails.sort((a, b) => (a.width * a.height) - (b.width * b.height));
+
+                if (thumbnails.length > 0) {
+                    const thumbnail = thumbnails[0];
+                    if (media.file_type === 'video') {
+                        thumbnailContainer.innerHTML = `<img src="${thumbnail.url}" alt="Thumbnail" style="max-width: 100%; max-height: 150px; border-radius: 0.25rem;">`;
+                    } else if (media.file_type === 'image') {
+                        thumbnailContainer.innerHTML = `<img src="${thumbnail.url}" alt="Thumbnail" style="max-width: 100%; max-height: 150px; border-radius: 0.25rem;">`;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Render a task item
+     */
+    function renderTaskItem(task, container) {
+        // Clone template
+        const template = document.getElementById('task-item-template');
+        const content = template.content.cloneNode(true);
+
+        // Task title
+        let title = '';
+        if (task.task_type === 'transcode') {
+            title = `Transcode (${task.profile_name})`;
+        } else if (task.task_type === 'preview') {
+            title = `Preview (${task.profile_name})`;
+        } else if (task.task_type === 'thumbnail') {
+            title = `Thumbnail (${task.profile_name})`;
+        } else {
+            title = task.task_type;
+        }
+
+        content.querySelector('.task-title').textContent = title;
+
+        // Status badge
+        const statusBadge = content.querySelector('.task-status-badge');
+        switch (task.status) {
+            case 'pending':
+                statusBadge.className = 'badge bg-secondary';
+                statusBadge.textContent = 'Pending';
+                break;
+            case 'processing':
+                statusBadge.className = 'badge bg-primary';
+                statusBadge.textContent = 'Processing';
+                break;
+            case 'completed':
+                statusBadge.className = 'badge bg-success';
+                statusBadge.textContent = 'Completed';
+                break;
+            case 'failed':
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = 'Failed';
+                break;
+        }
+
+        // Task class based on status
+        const taskItem = content.querySelector('.task-item');
+        taskItem.classList.add(`task-${task.status}`);
+
+        // Task details
+        let detailsText = '';
+        if (task.started_at) {
+            const startedDate = new Date(task.started_at);
+            detailsText += `Started: ${startedDate.toLocaleString()}`;
+        }
+        if (task.completed_at) {
+            if (detailsText) detailsText += ' • ';
+            const completedDate = new Date(task.completed_at);
+            detailsText += `Completed: ${completedDate.toLocaleString()}`;
+
+            // Add duration if both times available
+            if (task.started_at) {
+                const startedDate = new Date(task.started_at);
+                const completedDate = new Date(task.completed_at);
+                const durationMs = completedDate - startedDate;
+                const durationSec = durationMs / 1000;
+                detailsText += ` • Duration: ${durationSec.toFixed(1)}s`;
+            }
+        }
+
+        content.querySelector('.task-details-text').textContent = detailsText;
+
+        // Add error message if failed
+        if (task.status === 'failed' && task.error_message) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'alert alert-danger mt-2 mb-2';
+            errorElement.textContent = task.error_message;
+            taskItem.querySelector('.task-details').appendChild(errorElement);
+        }
+
+        // Add outputs
+        const outputsContainer = content.querySelector('.task-outputs');
+        if (task.status === 'completed' && task.outputs && task.outputs.length > 0) {
+            task.outputs.forEach(output => {
+                renderTaskOutput(output, outputsContainer, task.task_type);
+            });
+        }
+
+        // Add to container
+        container.appendChild(content);
+    }
+
+    /**
+     * Render a task output
+     */
+    function renderTaskOutput(output, container, taskType) {
+        // Determine if it's video or image
+        const isVideo = output.format && ['mp4', 'webm', 'mov', 'avi'].includes(output.format.toLowerCase());
+
+        // Clone appropriate template
+        const template = document.getElementById(isVideo ? 'video-output-template' : 'image-output-template');
+        const content = template.content.cloneNode(true);
+
+        // Set common properties
+        content.querySelector('.output-filename').textContent = output.output_filename;
+        content.querySelector('.output-download').href = output.s3_url;
+
+        if (isVideo) {
+            // Video properties
+            content.querySelector('.output-video').src = output.s3_url;
+
+            // Try to find a thumbnail for the video
+            // For now, we'll leave it empty, as it requires the poster
+
+        } else {
+            // Image properties
+            content.querySelector('.output-image').src = output.s3_url;
+        }
+
+        // Add to container
+        container.appendChild(content);
+    }
+
+    /**
+     * Render error message
+     */
+    function renderError(message) {
+        const jobContainer = document.getElementById('job-container');
+
+        // Clone template
+        const template = document.getElementById('error-template');
+        const content = template.content.cloneNode(true);
+
+        // Set message
+        content.querySelector('.error-message').textContent = message;
+
+        // Add to container
+        jobContainer.innerHTML = '';
+        jobContainer.appendChild(content);
+    }
+
+    /**
+     * Delete a job
+     */
+    function deleteJob(jobId) {
+        const token = localStorage.getItem('token');
+
+        fetch(`/api/jobs/${jobId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete job');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Redirect to jobs page
+            window.location.href = '/jobs';
+        })
+        .catch(error => {
+            console.error('Error deleting job:', error);
+            alert('Failed to delete job. Please try again.');
+        });
+    }
+
+    /**
+     * Format file size
+     */
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 Bytes';
+
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Format duration in seconds to HH:MM:SS
+     */
+    function formatDuration(seconds) {
+        if (!seconds) return '0:00';
+
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+
+        let result = '';
+
+        if (hrs > 0) {
+            result += hrs + ':';
+            result += (mins < 10 ? '0' : '') + mins + ':';
+        } else {
+            result += mins + ':';
+        }
+
+        result += (secs < 10 ? '0' : '') + secs;
+
+        return result;
+    }
+</script>
+{% endblock %}
