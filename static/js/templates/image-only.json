@@ -1,7 +1,7 @@
 {
   "config_name": "Image Transcode Profile",
   "description": "Bộ cấu hình dành riêng cho xử lý hình ảnh với nhiều định dạng và kích thước",
-  "created_at": "2025-05-08T10:00:00Z",
+  "created_at": "2025-05-10T10:00:00Z",
   "image_settings": {
     "transcode_profiles": [
       {
@@ -129,6 +129,20 @@
         "quality": 85
       }
     ]
+  },
+  "face_detection": {
+    "enabled": true,
+    "config": {
+      "similarity_threshold": 0.6,
+      "min_faces_in_group": 2,
+      "face_detector_size": "640x640",
+      "face_detector_score_threshold": 0.6,
+      "avatar_size": 512,
+      "avatar_padding": 0.2,
+      "avatar_quality": 95,
+      "output_path": "./output/faces/images",
+      "max_workers": 2
+    }
   },
   "output_settings": {
     "s3_bucket": "image-transcode-bucket",

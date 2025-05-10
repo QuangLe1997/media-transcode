@@ -111,13 +111,13 @@ def create_app(config_class=None):
     def not_found(error):
         if request.path.startswith('/api/'):
             return jsonify({'message': 'Not found'}), 404
-        return render_template('404.html'), 404
+        return render_template('errors/404.html'), 404
 
     @app.errorhandler(500)
     def server_error(error):
         if request.path.startswith('/api/'):
             return jsonify({'message': 'Server error'}), 500
-        return render_template('500.html'), 500
+        return render_template('errors/500.html'), 500
 
     return app
 

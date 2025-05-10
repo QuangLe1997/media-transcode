@@ -570,9 +570,11 @@
         if (task.task_type === 'transcode') {
             title = `Transcode (${task.profile_name})`;
         } else if (task.task_type === 'preview') {
-            title = `Preview (${task.profile_name})`;
+            title = `GIF Preview (${task.profile_name})`;
         } else if (task.task_type === 'thumbnail') {
             title = `Thumbnail (${task.profile_name})`;
+        } else if (task.task_type === 'face_detection') {
+            title = `Face Detection`;
         } else {
             title = task.task_type;
         }
@@ -651,8 +653,31 @@
      * Render a task output
      */
     function renderTaskOutput(output, container, taskType) {
-        // Determine if it's video or image
-        const isVideo = output.format && ['mp4', 'webm', 'mov', 'avi'].includes(output.format.toLowerCase());
+        // Determine if it's video, image, or JSON (for face detection results)
+        let isVideo = false;
+        let isImage = false;
+        let isJson = false;
+
+        if (output.format) {
+            isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(output.format.toLowerCase());
+            isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(output.format.toLowerCase());
+            isJson = output.format.toLowerCase() === 'json';
+        } else {
+            // If format is not specified, try to determine from filename
+            const lowerFilename = output.output_filename.toLowerCase();
+            isVideo = lowerFilename.endsWith('.mp4') || lowerFilename.endsWith('.webm') ||
+                lowerFilename.endsWith('.mov') || lowerFilename.endsWith('.avi');
+            isImage = lowerFilename.endsWith('.jpg') || lowerFilename.endsWith('.jpeg') ||
+                lowerFilename.endsWith('.png') || lowerFilename.endsWith('.webp') ||
+                lowerFilename.endsWith('.gif');
+            isJson = lowerFilename.endsWith('.json');
+        }
+
+        // For face detection output, create a specialized output display
+        if (isJson && taskType === 'face_detection') {
+            renderFaceDetectionOutput(output, container);
+            return;
+        }
 
         // Clone appropriate template
         const template = document.getElementById(isVideo ? 'video-output-template' : 'image-output-template');
@@ -676,6 +701,100 @@
 
         // Add to container
         container.appendChild(content);
+    }
+
+    /**
+     * Render face detection output (specialized for face detection results)
+     */
+    function renderFaceDetectionOutput(output, container) {
+        // Create a custom face detection output UI
+        const facesContainer = document.createElement('div');
+        facesContainer.className = 'faces-output mt-3';
+
+        // Add header
+        const header = document.createElement('h6');
+        header.textContent = 'Detected Faces';
+        facesContainer.appendChild(header);
+
+        // Add download link for JSON results
+        const downloadLink = document.createElement('a');
+        downloadLink.href = output.s3_url;
+        downloadLink.className = 'btn btn-sm btn-outline-primary mb-3';
+        downloadLink.target = '_blank';
+        downloadLink.innerHTML = '<i class="fas fa-download me-1"></i> Download Face Data (JSON)';
+        facesContainer.appendChild(downloadLink);
+
+        // Fetch the face detection results to display
+        fetch(output.s3_url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load face detection results');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.faces && data.faces.length > 0) {
+                    // Create face gallery
+                    const gallery = document.createElement('div');
+                    gallery.className = 'row face-gallery';
+
+                    // Add each face
+                    data.faces.forEach(face => {
+                        if (face.avatar) {
+                            const faceCol = document.createElement('div');
+                            faceCol.className = 'col-md-3 col-sm-4 col-6 mb-3';
+
+                            const faceCard = document.createElement('div');
+                            faceCard.className = 'card h-100';
+
+                            const faceImg = document.createElement('img');
+                            faceImg.src = `data:image/jpeg;base64,${face.avatar}`;
+                            faceImg.className = 'card-img-top';
+                            faceImg.alt = 'Face';
+
+                            const cardBody = document.createElement('div');
+                            cardBody.className = 'card-body p-2';
+
+                            const faceInfo = document.createElement('div');
+                            faceInfo.className = 'small';
+
+                            // Add face information (gender, age if available)
+                            let infoText = `Face ${face.index + 1}`;
+                            if (face.gender !== undefined) {
+                                infoText += ` • ${face.gender === 1 ? 'Male' : 'Female'}`;
+                            }
+                            if (face.age !== undefined) {
+                                infoText += ` • Age: ~${face.age}`;
+                            }
+                            faceInfo.textContent = infoText;
+
+                            cardBody.appendChild(faceInfo);
+                            faceCard.appendChild(faceImg);
+                            faceCard.appendChild(cardBody);
+                            faceCol.appendChild(faceCard);
+                            gallery.appendChild(faceCol);
+                        }
+                    });
+
+                    facesContainer.appendChild(gallery);
+                } else {
+                    // No faces found
+                    const noFaces = document.createElement('div');
+                    noFaces.className = 'alert alert-info';
+                    noFaces.textContent = 'No faces detected in this media.';
+                    facesContainer.appendChild(noFaces);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading face detection results:', error);
+                const errorElement = document.createElement('div');
+                errorElement.className = 'alert alert-danger';
+                errorElement.textContent = 'Failed to load face detection results.';
+                facesContainer.appendChild(errorElement);
+            });
+
+        // Add to container
+        container.appendChild(facesContainer);
     }
 
     /**

@@ -1,9 +1,10 @@
 import logging
-from .celery_config import celery_app
-from services.transcode_service import TranscodeService
+
+from config import get_config
 from services.ffmpeg_service import FFmpegService
 from services.s3_service import S3Service
-from config import get_config
+from services.transcode_service import TranscodeService
+from .celery_config import celery_app
 
 # Get configuration
 config = get_config()
@@ -44,6 +45,13 @@ def create_image_thumbnail(task_id):
     """Process an image thumbnail task."""
     logger.info(f"Processing image thumbnail task {task_id}")
     return transcode_service.process_image_thumbnail(task_id)
+
+
+@celery_app.task(name='tasks.image_tasks.detect_faces')
+def detect_faces(task_id):
+    """Process face detection task for image."""
+    logger.info(f"Processing face detection task {task_id}")
+    return transcode_service.process_face_detection(task_id)
 
 
 @celery_app.task(name='tasks.image_tasks.process_all_image_tasks')

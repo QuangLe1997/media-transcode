@@ -1,401 +1,363 @@
 {% extends 'base.html' %}
 
-{% block title %}Configuration UI - Media Transcode Service{% endblock %}
-
-{% block css %}
-    <style>
-        .tab-pane {
-            padding: 20px 0;
-        }
-
-        .form-section {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-section h5 {
-            margin-bottom: 15px;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 10px;
-        }
-
-        .profile-item {
-            background-color: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            position: relative;
-        }
-
-        .profile-item .remove-profile {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            color: #dc3545;
-        }
-
-        .add-profile-btn {
-            margin-top: 10px;
-        }
-
-        .json-preview {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .badge-preview {
-            position: absolute;
-            top: 0;
-            right: 0;
-            margin: 10px;
-        }
-    </style>
-{% endblock %}
+{% block title %}Media Transcode Configuration Editor{% endblock %}
 
 {% block content %}
+    <body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div class="container">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h1>Configuration Builder</h1>
-                    <div>
-                        <a href="/configs" class="btn btn-outline-primary me-2">
-                            <i class="fas fa-arrow-left"></i> Back to Configs
-                        </a>
-                        <button type="button" class="btn btn-success" id="save-config-btn">
-                            <i class="fas fa-save me-1"></i> Save Configuration
-                        </button>
+        <div class="header">
+            <h1>Media Transcode Configuration Editor</h1>
+            <div class="header-actions">
+                <button id="load-config" class="btn btn-secondary">Load Config</button>
+                <button id="save-config" class="btn btn-success">Save Config</button>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            Select a configuration template to get started or create a new custom configuration.
+        </div>
+
+        <div class="config-templates">
+            <div class="config-template" data-template="high-quality">
+                <h3>High Quality</h3>
+                <p>Configuration for high-quality video and image processing</p>
+                <div class="badges">
+                    <span class="badge badge-primary">Video</span>
+                    <span class="badge badge-primary">Image</span>
+                    <span class="badge badge-success">Face Detection</span>
+                </div>
+            </div>
+            <div class="config-template" data-template="standard">
+                <h3>Standard</h3>
+                <p>Standard configuration for video and image transcoding</p>
+                <div class="badges">
+                    <span class="badge badge-primary">Video</span>
+                    <span class="badge badge-primary">Image</span>
+                    <span class="badge badge-success">Face Detection</span>
+                </div>
+            </div>
+            <div class="config-template" data-template="minimal">
+                <h3>Minimal</h3>
+                <p>Minimal configuration for basic transcoding needs</p>
+                <div class="badges">
+                    <span class="badge badge-primary">Video</span>
+                    <span class="badge badge-primary">Image</span>
+                </div>
+            </div>
+            <div class="config-template" data-template="video-only">
+                <h3>Video Only</h3>
+                <p>Configuration dedicated to video transcoding</p>
+                <div class="badges">
+                    <span class="badge badge-primary">Video</span>
+                    <span class="badge badge-success">Face Detection</span>
+                </div>
+            </div>
+            <div class="config-template" data-template="image-only">
+                <h3>Image Only</h3>
+                <p>Configuration dedicated to image processing</p>
+                <div class="badges">
+                    <span class="badge badge-primary">Image</span>
+                    <span class="badge badge-success">Face Detection</span>
+                </div>
+            </div>
+            <div class="config-template" data-template="custom">
+                <h3>Custom</h3>
+                <p>Create a fully customized configuration</p>
+                <div class="badges">
+                    <span class="badge badge-info">Custom</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span>Basic Configuration</span>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="config-name">Configuration Name</label>
+                    <input type="text" id="config-name" placeholder="Enter a name for this configuration">
+                </div>
+                <div class="form-group">
+                    <label for="config-description">Description</label>
+                    <textarea id="config-description"
+                              placeholder="Enter a description for this configuration"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="video-settings">Video Settings</div>
+            <div class="tab" data-tab="image-settings">Image Settings</div>
+            <div class="tab" data-tab="face-detection">Face Detection</div>
+            <div class="tab" data-tab="output-settings">Output Settings</div>
+            <div class="tab" data-tab="json-preview">JSON Preview</div>
+        </div>
+
+        <div class="tab-content active" id="video-settings">
+            <div class="card">
+                <div class="card-header">
+                    <span>Video Transcode Profiles</span>
+                    <button id="add-video-profile" class="btn btn-primary btn-sm">Add Profile</button>
+                </div>
+                <div class="card-body">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="enable-video-settings" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>Enable Video Settings</span>
+                    </div>
+                    <div id="video-profiles-container" class="profile-list"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Video Preview Settings</span>
+                    <button id="add-preview-profile" class="btn btn-primary btn-sm">Add Profile</button>
+                </div>
+                <div class="card-body">
+                    <div id="preview-profiles-container" class="profile-list"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Video Thumbnail Settings</span>
+                    <button id="add-video-thumbnail-profile" class="btn btn-primary btn-sm">Add Profile</button>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="thumbnail-timestamp">Thumbnail Timestamp (seconds)</label>
+                        <input type="number" id="thumbnail-timestamp" min="0" value="5">
+                    </div>
+                    <div id="video-thumbnail-profiles-container" class="profile-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="image-settings">
+            <div class="card">
+                <div class="card-header">
+                    <span>Image Transcode Profiles</span>
+                    <button id="add-image-profile" class="btn btn-primary btn-sm">Add Profile</button>
+                </div>
+                <div class="card-body">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="enable-image-settings" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>Enable Image Settings</span>
+                    </div>
+                    <div id="image-profiles-container" class="profile-list"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>Image Thumbnail Profiles</span>
+                    <button id="add-image-thumbnail-profile" class="btn btn-primary btn-sm">Add Profile</button>
+                </div>
+                <div class="card-body">
+                    <div id="image-thumbnail-profiles-container" class="profile-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="face-detection">
+            <div class="card">
+                <div class="card-header">
+                    <span>Face Detection Settings</span>
+                </div>
+                <div class="card-body">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="enable-face-detection" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>Enable Face Detection</span>
+                    </div>
+
+                    <div id="face-detection-settings" class="grid">
+                        <div class="form-group">
+                            <label for="similarity-threshold">Similarity Threshold</label>
+                            <input type="number" id="similarity-threshold" min="0" max="1" step="0.05" value="0.6">
+                        </div>
+                        <div class="form-group">
+                            <label for="min-faces-in-group">Min Faces in Group</label>
+                            <input type="number" id="min-faces-in-group" min="1" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label for="sample-interval">Sample Interval</label>
+                            <input type="number" id="sample-interval" min="1" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="face-detector-size">Face Detector Size</label>
+                            <input type="text" id="face-detector-size" value="640x640">
+                        </div>
+                        <div class="form-group">
+                            <label for="face-detector-score-threshold">Face Detector Score Threshold</label>
+                            <input type="number" id="face-detector-score-threshold" min="0" max="1" step="0.05"
+                                   value="0.6">
+                        </div>
+                        <div class="form-group">
+                            <label for="min-appearance-ratio">Min Appearance Ratio</label>
+                            <input type="number" id="min-appearance-ratio" min="0" max="1" step="0.05" value="0.15">
+                        </div>
+                        <div class="form-group">
+                            <label for="min-frontality">Min Frontality</label>
+                            <input type="number" id="min-frontality" min="0" max="1" step="0.05" value="0.2">
+                        </div>
+                        <div class="form-group">
+                            <label for="avatar-size">Avatar Size</label>
+                            <input type="number" id="avatar-size" min="32" value="256">
+                        </div>
+                        <div class="form-group">
+                            <label for="avatar-padding">Avatar Padding</label>
+                            <input type="number" id="avatar-padding" min="0" max="1" step="0.05" value="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="avatar-quality">Avatar Quality</label>
+                            <input type="number" id="avatar-quality" min="1" max="100" value="90">
+                        </div>
+                        <div class="form-group">
+                            <label for="output-path">Output Path</label>
+                            <input type="text" id="output-path" value="./output/faces">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-workers">Max Workers</label>
+                            <input type="number" id="max-workers" min="1" value="4">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ignore Frames (comma separated)</label>
+                        <input type="text" id="ignore-frames" placeholder="e.g. 0,1,2">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ignore Ranges (comma separated ranges, e.g. 500-600,700-800)</label>
+                        <input type="text" id="ignore-ranges" placeholder="e.g. 500-600,700-800">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <form id="config-basics-form">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="config-name" class="form-label">Configuration Name <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="config-name" required
-                                           placeholder="My Transcode Configuration">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="config-description" class="form-label">Description</label>
-                                    <input type="text" class="form-control" id="config-description"
-                                           placeholder="Configuration for video and image processing">
-                                </div>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="config-default">
-                                <label class="form-check-label" for="config-default">
-                                    Set as default configuration
-                                </label>
-                            </div>
-                        </form>
-                    </div>
+        <div class="tab-content" id="output-settings">
+            <div class="card">
+                <div class="card-header">
+                    <span>Output Settings</span>
                 </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <ul class="nav nav-tabs card-header-tabs" id="config-tabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="video-tab" data-bs-toggle="tab"
-                                        data-bs-target="#video" type="button" role="tab">Video Settings
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image"
-                                        type="button" role="tab">Image Settings
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#output"
-                                        type="button" role="tab">Output Settings
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview"
-                                        type="button" role="tab">JSON Preview
-                                </button>
-                            </li>
-                        </ul>
+                <div class="card-body">
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="s3-bucket">S3 Bucket</label>
+                            <input type="text" id="s3-bucket" value="media-transcode-bucket">
+                        </div>
+                        <div class="form-group">
+                            <label for="folder-structure">Folder Structure</label>
+                            <input type="text" id="folder-structure" value="{user_id}/{job_id}/{type}/{profile_name}/">
+                        </div>
+                        <div class="form-group">
+                            <label for="local-storage-path">Local Storage Path</label>
+                            <input type="text" id="local-storage-path" value="/tmp/transcode-jobs/">
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="tab-content" id="config-tab-content">
-                            <!-- VIDEO SETTINGS TAB -->
-                            <div class="tab-pane fade show active" id="video" role="tabpanel"
-                                 aria-labelledby="video-tab">
-                                <div class="form-section">
-                                    <h5>Video Transcode Profiles</h5>
-                                    <p class="text-muted">Define video transcode settings for different resolutions and
-                                        formats</p>
 
-                                    <div id="video-profiles-container">
-                                        <!-- Video profiles will be added here -->
-                                    </div>
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="toggle">
+                                <input type="checkbox" id="generate-unique-filenames" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Generate Unique Filenames</span>
+                        </div>
+                    </div>
 
-                                    <button type="button" class="btn btn-primary add-profile-btn"
-                                            id="add-video-profile">
-                                        <i class="fas fa-plus me-1"></i> Add Video Profile
-                                    </button>
-                                </div>
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="toggle">
+                                <input type="checkbox" id="preserve-original-filename" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Preserve Original Filename</span>
+                        </div>
+                    </div>
 
-                                <div class="form-section">
-                                    <h5>Video Preview Settings</h5>
-                                    <p class="text-muted">Settings for generating video previews</p>
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="toggle">
+                                <input type="checkbox" id="use-temporary-local-storage" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Use Temporary Local Storage</span>
+                        </div>
+                    </div>
 
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label for="preview-duration" class="form-label">Preview Duration
-                                                (seconds)</label>
-                                            <input type="number" class="form-control" id="preview-duration" value="30"
-                                                   min="1" max="300">
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Use Profiles for Preview</label>
-                                        <div id="preview-profiles-container">
-                                            <p class="text-muted fst-italic">Add video profiles first to enable preview
-                                                generation.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-section">
-                                    <h5>Video Thumbnail Settings</h5>
-                                    <p class="text-muted">Settings for extracting thumbnails from videos</p>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Timestamps (format: HH:MM:SS)</label>
-                                        <div class="row" id="timestamp-container">
-                                            <div class="col-md-3 mb-2">
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control timestamp-input"
-                                                           value="00:00:05" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}">
-                                                    <button class="btn btn-outline-danger remove-timestamp"
-                                                            type="button">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                                id="add-timestamp">
-                                            <i class="fas fa-plus me-1"></i> Add Timestamp
-                                        </button>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <label for="thumbnail-format" class="form-label">Image Format</label>
-                                                <select class="form-select" id="thumbnail-format">
-                                                    <option value="jpg">JPG</option>
-                                                    <option value="png">PNG</option>
-                                                    <option value="webp">WebP</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="thumbnail-quality" class="form-label">Quality
-                                                    (1-100)</label>
-                                                <input type="number" class="form-control" id="thumbnail-quality"
-                                                       value="90" min="1" max="100">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Thumbnail Sizes</label>
-                                        <div id="thumbnail-sizes-container">
-                                            <!-- Thumbnail size profiles will be added here -->
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                                id="add-thumbnail-size">
-                                            <i class="fas fa-plus me-1"></i> Add Thumbnail Size
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- IMAGE SETTINGS TAB -->
-                            <div class="tab-pane fade" id="image" role="tabpanel" aria-labelledby="image-tab">
-                                <div class="form-section">
-                                    <h5>Image Transcode Profiles</h5>
-                                    <p class="text-muted">Define image transcode settings for different formats</p>
-
-                                    <div id="image-profiles-container">
-                                        <!-- Image profiles will be added here -->
-                                    </div>
-
-                                    <button type="button" class="btn btn-primary add-profile-btn"
-                                            id="add-image-profile">
-                                        <i class="fas fa-plus me-1"></i> Add Image Profile
-                                    </button>
-                                </div>
-
-                                <div class="form-section">
-                                    <h5>Image Thumbnail Profiles</h5>
-                                    <p class="text-muted">Settings for generating image thumbnails</p>
-
-                                    <div id="image-thumbnail-profiles-container">
-                                        <!-- Image thumbnail profiles will be added here -->
-                                    </div>
-
-                                    <button type="button" class="btn btn-primary add-profile-btn"
-                                            id="add-image-thumbnail-profile">
-                                        <i class="fas fa-plus me-1"></i> Add Image Thumbnail Profile
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- OUTPUT SETTINGS TAB -->
-                            <div class="tab-pane fade" id="output" role="tabpanel" aria-labelledby="output-tab">
-                                <div class="form-section">
-                                    <h5>Storage Settings</h5>
-
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label for="s3-bucket" class="form-label">S3 Bucket Name</label>
-                                            <input type="text" class="form-control" id="s3-bucket"
-                                                   placeholder="my-transcode-bucket">
-                                        </div>
-                                    </div>
-
-                                    <div class="row mb-3">
-                                        <div class="col-md-8">
-                                            <label for="folder-structure" class="form-label">Folder Structure</label>
-                                            <input type="text" class="form-control" id="folder-structure"
-                                                   value="{user_id}/{job_id}/{type}/{profile_name}/">
-                                            <div class="form-text">
-                                                Available variables: {user_id}, {job_id}, {type}, {profile_name}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                       id="generate-unique-filenames" checked>
-                                                <label class="form-check-label" for="generate-unique-filenames">
-                                                    Generate unique filenames
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                       id="preserve-original-filename" checked>
-                                                <label class="form-check-label" for="preserve-original-filename">
-                                                    Preserve original filename
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-section">
-                                    <h5>Temporary Storage Settings</h5>
-
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="use-temp-storage"
-                                                       checked>
-                                                <label class="form-check-label" for="use-temp-storage">
-                                                    Use temporary local storage
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="delete-after-upload"
-                                                       checked>
-                                                <label class="form-check-label" for="delete-after-upload">
-                                                    Delete local files after upload
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mb-3">
-                                        <div class="col-md-8">
-                                            <label for="temp-storage-path" class="form-label">Temporary Storage
-                                                Path</label>
-                                            <input type="text" class="form-control" id="temp-storage-path"
-                                                   value="/tmp/transcode-jobs/">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- JSON PREVIEW TAB -->
-                            <div class="tab-pane fade" id="preview" role="tabpanel" aria-labelledby="preview-tab">
-                                <div class="position-relative mb-3">
-                                    <span class="badge bg-info badge-preview">Auto-generated</span>
-                                    <pre class="json-preview p-3 bg-light"><code id="json-preview"></code></pre>
-                                </div>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-outline-secondary" id="copy-json-btn">
-                                        <i class="fas fa-copy me-1"></i> Copy JSON
-                                    </button>
-                                </div>
-                            </div>
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="toggle">
+                                <input type="checkbox" id="delete-local-after-upload" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Delete Local After Upload</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="tab-content" id="json-preview">
+            <div class="card">
+                <div class="card-header">
+                    <span>JSON Configuration</span>
+                    <button id="copy-json" class="btn btn-secondary btn-sm">Copy JSON</button>
+                </div>
+                <div class="card-body">
+                    <pre id="json-output" class="json-preview"></pre>
+            </div>
+        </div>
+    </div>
     </div>
 
-    <!-- TEMPLATES -->
-
-    <!-- Video Profile Template -->
-    <template id="video-profile-template">
-        <div class="profile-item video-profile">
-            <i class="fas fa-times remove-profile"></i>
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label class="form-label">Profile Name</label>
-                    <input type="text" class="form-control profile-name" placeholder="720p">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Width</label>
-                    <input type="number" class="form-control profile-width" placeholder="1280">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Height</label>
-                    <input type="number" class="form-control profile-height" placeholder="720">
-                </div>
+    <!-- Video Profile Modal -->
+    <div id="video-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Video Transcode Profile</span>
+                <button class="modal-close">&times;</button>
             </div>
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Video Codec</label>
-                    <select class="form-select profile-codec">
-                        <option value="libx264">H.264 (libx264)</option>
-                        <option value="libx265">H.265 (libx265)</option>
-                        <option value="libvpx-vp9">VP9 (libvpx-vp9)</option>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="video-profile-name">Profile Name</label>
+                    <input type="text" id="video-profile-name" placeholder="e.g. 720p">
+                </div>
+                <div class="form-group">
+                    <label for="video-profile-width">Width</label>
+                    <input type="number" id="video-profile-width" min="1" value="1280">
+            </div>
+                <div class="form-group">
+                    <label for="video-profile-height">Height</label>
+                    <input type="number" id="video-profile-height" min="1" value="720">
+                </div>
+                <div class="form-group">
+                    <label for="video-profile-codec">Codec</label>
+                    <select id="video-profile-codec">
+                        <option value="libx264">libx264</option>
+                        <option value="libx265">libx265</option>
+                        <option value="libvpx-vp9">libvpx-vp9</option>
+                        <option value="av1">av1</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Format</label>
-                    <select class="form-select profile-format">
-                        <option value="mp4">MP4</option>
-                        <option value="webm">WebM</option>
-                        <option value="mov">MOV</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Preset</label>
-                    <select class="form-select profile-preset">
+                <div class="form-group">
+                    <label for="video-profile-preset">Preset</label>
+                    <select id="video-profile-preset">
                         <option value="ultrafast">ultrafast</option>
                         <option value="superfast">superfast</option>
                         <option value="veryfast">veryfast</option>
@@ -407,884 +369,1616 @@
                         <option value="veryslow">veryslow</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">CRF (0-51)</label>
-                    <input type="number" class="form-control profile-crf" value="23" min="0" max="51">
+                <div class="form-group">
+                    <label for="video-profile-crf">CRF (Quality, lower is better)</label>
+                    <input type="number" id="video-profile-crf" min="0" max="51" value="23">
                 </div>
+                <div class="form-group">
+                    <label for="video-profile-format">Format</label>
+                    <select id="video-profile-format">
+                        <option value="mp4">mp4</option>
+                        <option value="webm">webm</option>
+                        <option value="mov">mov</option>
+                        <option value="mkv">mkv</option>
+                    </select>
             </div>
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Audio Codec</label>
-                    <select class="form-select profile-audio-codec">
-                        <option value="aac">AAC</option>
-                        <option value="libmp3lame">MP3</option>
-                        <option value="libopus">Opus</option>
+                <div class="form-group">
+                    <label for="video-profile-audio-codec">Audio Codec</label>
+                    <select id="video-profile-audio-codec">
+                        <option value="aac">aac</option>
+                        <option value="libmp3lame">mp3</option>
+                        <option value="libopus">opus</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Audio Bitrate</label>
-                    <input type="text" class="form-control profile-audio-bitrate" value="128k">
+                <div class="form-group">
+                    <label for="video-profile-audio-bitrate">Audio Bitrate</label>
+                    <input type="text" id="video-profile-audio-bitrate" value="128k">
                 </div>
-                <div class="col-md-6">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input profile-use-gpu" type="checkbox" checked>
-                        <label class="form-check-label">
-                            Use GPU acceleration (if available)
+                <div class="form-group">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="video-profile-use-gpu" checked>
+                            <span class="slider"></span>
                         </label>
+                        <span>Use GPU Acceleration</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </template>
-
-    <!-- Thumbnail Size Template -->
-    <template id="thumbnail-size-template">
-        <div class="row mb-2 thumbnail-size-item">
-            <div class="col-md-3">
-                <label class="form-label">Name</label>
-                <input type="text" class="form-control thumbnail-size-name" placeholder="small">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Width</label>
-                <input type="number" class="form-control thumbnail-size-width" placeholder="320">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Height</label>
-                <input type="number" class="form-control thumbnail-size-height" placeholder="180">
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="button" class="btn btn-outline-danger remove-thumbnail-size">
-                    <i class="fas fa-times"></i> Remove
-                </button>
-            </div>
-        </div>
-    </template>
-
-    <!-- Image Profile Template -->
-    <template id="image-profile-template">
-        <div class="profile-item image-profile">
-            <i class="fas fa-times remove-profile"></i>
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label class="form-label">Profile Name</label>
-                    <input type="text" class="form-control profile-name" placeholder="original_webp">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Format</label>
-                    <select class="form-select profile-format">
-                        <option value="webp">WebP</option>
-                        <option value="jpg">JPG</option>
-                        <option value="png">PNG</option>
-                        <option value="avif">AVIF</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Quality (1-100)</label>
-                    <input type="number" class="form-control profile-quality" value="90" min="1" max="100">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-check">
-                        <input class="form-check-input profile-resize" type="checkbox">
-                        <label class="form-check-label">
-                            Resize image
-                        </label>
+                <div id="gpu-options-container">
+                    <div class="form-group">
+                        <label for="video-profile-gpu-encoder">Hardware Encoder</label>
+                        <select id="video-profile-gpu-encoder">
+                            <option value="h264_nvenc">h264_nvenc (NVIDIA)</option>
+                            <option value="h264_qsv">h264_qsv (Intel QuickSync)</option>
+                            <option value="h264_amf">h264_amf (AMD)</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <!-- Image Thumbnail Profile Template -->
-    <template id="image-thumbnail-template">
-        <div class="profile-item image-thumbnail-profile">
-            <i class="fas fa-times remove-profile"></i>
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Profile Name</label>
-                    <input type="text" class="form-control profile-name" placeholder="small">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Width</label>
-                    <input type="number" class="form-control profile-width" placeholder="320">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Height</label>
-                    <input type="number" class="form-control profile-height" placeholder="240">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Format</label>
-                    <select class="form-select profile-format">
-                        <option value="webp">WebP</option>
-                        <option value="jpg">JPG</option>
-                        <option value="png">PNG</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="form-label">Quality (1-100)</label>
-                    <input type="number" class="form-control profile-quality" value="85" min="1" max="100">
-                </div>
-                <div class="col-md-6">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input profile-maintain-aspect" type="checkbox" checked>
-                        <label class="form-check-label">
-                            Maintain aspect ratio
-                        </label>
+                    <div class="form-group">
+                        <label for="video-profile-gpu-preset">GPU Preset</label>
+                        <select id="video-profile-gpu-preset">
+                            <option value="p1">p1 (Highest Quality)</option>
+                            <option value="p2">p2</option>
+                            <option value="p3">p3</option>
+                            <option value="p4" selected>p4</option>
+                            <option value="p5">p5</option>
+                            <option value="p6">p6</option>
+                            <option value="p7">p7 (Fastest)</option>
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <label for="video-profile-gpu-rc">Rate Control</label>
+                        <select id="video-profile-gpu-rc">
+                            <option value="vbr" selected>Variable Bitrate (VBR)</option>
+                            <option value="cbr">Constant Bitrate (CBR)</option>
+                            <option value="cqp">Constant QP (CQP)</option>
+                        </select>
+                </div>
+                </div>
+                <div class="form-group">
+                    <label for="video-profile-start">Start Time (seconds, optional)</label>
+                    <input type="number" id="video-profile-start" min="0" placeholder="Leave empty for beginning">
+            </div>
+                <div class="form-group">
+                    <label for="video-profile-end">End Time (seconds, optional)</label>
+                    <input type="number" id="video-profile-end" min="0" placeholder="Leave empty for full duration">
                 </div>
             </div>
-        </div>
-    </template>
-
-    <!-- Preview Profile Checkbox Template -->
-    <template id="preview-profile-checkbox-template">
-        <div class="form-check">
-            <input class="form-check-input preview-profile-checkbox" type="checkbox" id="preview-profile-{id}">
-            <label class="form-check-label" for="preview-profile-{id}">
-                {name}
-            </label>
-        </div>
-    </template>
-
-    <!-- Save Modal -->
-    <div class="modal fade" id="save-config-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Save Configuration</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="save-config-alerts"></div>
-                    <p>Are you sure you want to save this configuration?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirm-save-config">Save</button>
-                </div>
+            <div class="modal-footer">
+                <button id="video-profile-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="video-profile-save" class="btn btn-primary">Save Profile</button>
             </div>
         </div>
     </div>
-{% endblock %}
 
+    <!-- Preview Profile Modal -->
+    <div id="preview-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Preview Profile</span>
+                <button class="modal-close">&times;</button>
+        </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="preview-profile-name">Profile Name</label>
+                    <input type="text" id="preview-profile-name" placeholder="e.g. small_gif">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-start">Start Time (seconds)</label>
+                    <input type="number" id="preview-profile-start" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-end">End Time (seconds)</label>
+                    <input type="number" id="preview-profile-end" min="0" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-fps">FPS</label>
+                    <input type="number" id="preview-profile-fps" min="1" value="10">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-width">Width</label>
+                    <input type="number" id="preview-profile-width" min="1" value="320">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-height">Height</label>
+                    <input type="number" id="preview-profile-height" min="1" value="180">
+                </div>
+                <div class="form-group">
+                    <label for="preview-profile-quality">Quality (1-100)</label>
+                    <input type="number" id="preview-profile-quality" min="1" max="100" value="80">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="preview-profile-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="preview-profile-save" class="btn btn-primary">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Thumbnail Profile Modal -->
+    <div id="video-thumbnail-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Video Thumbnail Profile</span>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="video-thumbnail-profile-name">Profile Name</label>
+                    <input type="text" id="video-thumbnail-profile-name" placeholder="e.g. small">
+                </div>
+                <div class="form-group">
+                    <label for="video-thumbnail-profile-width">Width</label>
+                    <input type="number" id="video-thumbnail-profile-width" min="1" value="320">
+            </div>
+                <div class="form-group">
+                    <label for="video-thumbnail-profile-height">Height</label>
+                    <input type="number" id="video-thumbnail-profile-height" min="1" value="180">
+                </div>
+                <div class="form-group">
+                    <label for="video-thumbnail-profile-format">Format</label>
+                    <select id="video-thumbnail-profile-format">
+                        <option value="jpg">jpg</option>
+                        <option value="png">png</option>
+                        <option value="webp">webp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="video-thumbnail-profile-quality">Quality (1-100)</label>
+                    <input type="number" id="video-thumbnail-profile-quality" min="1" max="100" value="90">
+            </div>
+        </div>
+            <div class="modal-footer">
+                <button id="video-thumbnail-profile-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="video-thumbnail-profile-save" class="btn btn-primary">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Profile Modal -->
+    <div id="image-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Image Transcode Profile</span>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="image-profile-name">Profile Name</label>
+                    <input type="text" id="image-profile-name" placeholder="e.g. original_webp">
+                </div>
+                <div class="form-group">
+                    <label for="image-profile-format">Format</label>
+                    <select id="image-profile-format">
+                        <option value="webp">webp</option>
+                        <option value="jpg">jpg</option>
+                        <option value="png">png</option>
+                        <option value="avif">avif</option>
+                    </select>
+                </div>
+                <div id="image-quality-container" class="form-group">
+                    <label for="image-profile-quality">Quality (1-100)</label>
+                    <input type="number" id="image-profile-quality" min="1" max="100" value="90">
+            </div>
+                <div id="image-compression-container" class="form-group hidden">
+                    <label for="image-profile-compression">Compression Level (0-9)</label>
+                    <input type="number" id="image-profile-compression" min="0" max="9" value="6">
+                </div>
+                <div class="form-group">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="image-profile-resize">
+                            <span class="slider"></span>
+                        </label>
+                        <span>Resize Image</span>
+                    </div>
+                </div>
+                <div id="image-resize-options" class="hidden">
+                    <div class="form-group">
+                        <label for="image-profile-width">Width</label>
+                        <input type="number" id="image-profile-width" min="1" value="2048">
+                    </div>
+                    <div class="form-group">
+                        <label for="image-profile-height">Height</label>
+                        <input type="number" id="image-profile-height" min="1" value="2048">
+                    </div>
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="toggle">
+                                <input type="checkbox" id="image-profile-maintain-aspect" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Maintain Aspect Ratio</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="image-profile-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="image-profile-save" class="btn btn-primary">Save Profile</button>
+        </div>
+        </div>
+    </div>
+
+    <!-- Image Thumbnail Profile Modal -->
+    <div id="image-thumbnail-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Image Thumbnail Profile</span>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="image-thumbnail-profile-name">Profile Name</label>
+                    <input type="text" id="image-thumbnail-profile-name" placeholder="e.g. small">
+                </div>
+                <div class="form-group">
+                    <label for="image-thumbnail-profile-width">Width</label>
+                    <input type="number" id="image-thumbnail-profile-width" min="1" value="320">
+                </div>
+                <div class="form-group">
+                    <label for="image-thumbnail-profile-height">Height</label>
+                    <input type="number" id="image-thumbnail-profile-height" min="1" value="240">
+                </div>
+                <div class="form-group">
+                    <div class="toggle-container">
+                        <label class="toggle">
+                            <input type="checkbox" id="image-thumbnail-profile-maintain-aspect" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>Maintain Aspect Ratio</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="image-thumbnail-profile-format">Format</label>
+                    <select id="image-thumbnail-profile-format">
+                        <option value="webp">webp</option>
+                        <option value="jpg">jpg</option>
+                        <option value="png">png</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image-thumbnail-profile-quality">Quality (1-100)</label>
+                    <input type="number" id="image-thumbnail-profile-quality" min="1" max="100" value="85">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="image-thumbnail-profile-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="image-thumbnail-profile-save" class="btn btn-primary">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Config Modal -->
+    <div id="load-config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Load Configuration</span>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="load-config-input">Paste JSON Configuration</label>
+                    <textarea id="load-config-input" rows="10"
+                              placeholder="Paste your JSON configuration here"></textarea>
+            </div>
+        </div>
+            <div class="modal-footer">
+                <button id="load-config-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="load-config-confirm" class="btn btn-primary">Load</button>
+            </div>
+        </div>
+    </div>
+    </body>
+{% endblock %}
 {% block js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Check if user is authenticated
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login';
+<script>
+    function renderImageThumbnailProfiles() {
+        elements.imageThumbnailProfilesContainer.innerHTML = '';
+
+        if (!config.image_settings.thumbnail_profiles.length) {
+            elements.imageThumbnailProfilesContainer.innerHTML = '<p>No image thumbnail profiles defined.</p>';
+            return;
+        }
+
+        config.image_settings.thumbnail_profiles.forEach((profile, index) => {
+            const profileItem = document.createElement('div');
+            profileItem.className = 'profile-item';
+
+            const nameSpan = document.createElement('span');
+            const aspectInfo = profile.maintain_aspect_ratio ? ' (maintain aspect)' : '';
+            nameSpan.textContent = `${profile.name} (${profile.width}x${profile.height}, ${profile.format}${aspectInfo})`;
+            profileItem.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'profile-item-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary btn-sm';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                currentEditingIndex = index;
+                populateImageThumbnailProfileForm(profile);
+                openModal(elements.imageThumbnailProfileModal);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this profile?')) {
+                    config.image_settings.thumbnail_profiles.splice(index, 1);
+                    renderImageThumbnailProfiles();
+                    updateJsonPreview();
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            profileItem.appendChild(actionsDiv);
+            elements.imageThumbnailProfilesContainer.appendChild(profileItem);
+        });
+    }
+
+    // Update UI based on config
+    function updateUiFromConfig() {
+        // Basic configuration
+        elements.configName.value = config.config_name || '';
+        elements.configDescription.value = config.description || '';
+
+        // Video settings
+        const hasVideoSettings = config.video_settings && Object.keys(config.video_settings).length > 0;
+        elements.enableVideoSettings.checked = hasVideoSettings;
+
+        if (hasVideoSettings) {
+            if (config.video_settings.thumbnail_settings && config.video_settings.thumbnail_settings.timestamp) {
+                elements.thumbnailTimestamp.value = config.video_settings.thumbnail_settings.timestamp;
+            }
+
+            renderVideoProfiles();
+            renderPreviewProfiles();
+            renderVideoThumbnailProfiles();
+        } else {
+            elements.videoProfilesContainer.innerHTML = '<p>No video transcode profiles defined.</p>';
+            elements.previewProfilesContainer.innerHTML = '<p>No preview profiles defined.</p>';
+            elements.videoThumbnailProfilesContainer.innerHTML = '<p>No video thumbnail profiles defined.</p>';
+        }
+
+        // Image settings
+        const hasImageSettings = config.image_settings && Object.keys(config.image_settings).length > 0;
+        elements.enableImageSettings.checked = hasImageSettings;
+
+        if (hasImageSettings) {
+            renderImageProfiles();
+            renderImageThumbnailProfiles();
+        } else {
+            elements.imageProfilesContainer.innerHTML = '<p>No image transcode profiles defined.</p>';
+            elements.imageThumbnailProfilesContainer.innerHTML = '<p>No image thumbnail profiles defined.</p>';
+        }
+
+        // Face detection settings
+        const hasFaceDetection = config.face_detection && config.face_detection.enabled;
+        elements.enableFaceDetection.checked = hasFaceDetection;
+
+        if (hasFaceDetection && config.face_detection.config) {
+            const fd = config.face_detection.config;
+
+            document.getElementById('similarity-threshold').value = fd.similarity_threshold || 0.6;
+            document.getElementById('min-faces-in-group').value = fd.min_faces_in_group || 3;
+            document.getElementById('sample-interval').value = fd.sample_interval || 5;
+            document.getElementById('face-detector-size').value = fd.face_detector_size || '640x640';
+            document.getElementById('face-detector-score-threshold').value = fd.face_detector_score_threshold || 0.6;
+            document.getElementById('min-appearance-ratio').value = fd.min_appearance_ratio || 0.15;
+            document.getElementById('min-frontality').value = fd.min_frontality || 0.2;
+            document.getElementById('avatar-size').value = fd.avatar_size || 256;
+            document.getElementById('avatar-padding').value = fd.avatar_padding || 0.1;
+            document.getElementById('avatar-quality').value = fd.avatar_quality || 90;
+            document.getElementById('output-path').value = fd.output_path || './output/faces';
+            document.getElementById('max-workers').value = fd.max_workers || 4;
+
+            // Ignore frames and ranges
+            if (fd.ignore_frames && Array.isArray(fd.ignore_frames)) {
+                elements.ignoreFrames.value = fd.ignore_frames.join(',');
+            }
+
+            if (fd.ignore_ranges && Array.isArray(fd.ignore_ranges)) {
+                const ranges = fd.ignore_ranges.map(range => range.join('-')).join(',');
+                elements.ignoreRanges.value = ranges;
+            }
+        }
+
+        // Output settings
+        if (config.output_settings) {
+            const os = config.output_settings;
+            elements.s3Bucket.value = os.s3_bucket || 'media-transcode-bucket';
+            elements.folderStructure.value = os.folder_structure || '{user_id}/{job_id}/{type}/{profile_name}/';
+            elements.localStoragePath.value = os.local_storage_path || '/tmp/transcode-jobs/';
+            elements.generateUniqueFilenames.checked = os.generate_unique_filenames !== undefined ? os.generate_unique_filenames : true;
+            elements.preserveOriginalFilename.checked = os.preserve_original_filename !== undefined ? os.preserve_original_filename : true;
+            elements.useTemporaryLocalStorage.checked = os.use_temporary_local_storage !== undefined ? os.use_temporary_local_storage : true;
+            elements.deleteLocalAfterUpload.checked = os.delete_local_after_upload !== undefined ? os.delete_local_after_upload : true;
+        }
+
+        // Update UI based on toggle states
+        const videoSettingsCards = document.querySelectorAll('#video-settings .card:not(:first-child)');
+        videoSettingsCards.forEach(card => {
+            card.style.opacity = elements.enableVideoSettings.checked ? '1' : '0.5';
+            card.style.pointerEvents = elements.enableVideoSettings.checked ? 'auto' : 'none';
+        });
+
+        const imageSettingsCards = document.querySelectorAll('#image-settings .card');
+        imageSettingsCards.forEach(card => {
+            card.style.opacity = elements.enableImageSettings.checked ? '1' : '0.5';
+            card.style.pointerEvents = elements.enableImageSettings.checked ? 'auto' : 'none';
+    });
+
+        elements.faceDetectionSettings.style.opacity = elements.enableFaceDetection.checked ? '1' : '0.5';
+        elements.faceDetectionSettings.style.pointerEvents = elements.enableFaceDetection.checked ? 'auto' : 'none';
+        elements.ignoreFrames.parentNode.style.opacity = elements.enableFaceDetection.checked ? '1' : '0.5';
+        elements.ignoreFrames.parentNode.style.pointerEvents = elements.enableFaceDetection.checked ? 'auto' : 'none';
+        elements.ignoreRanges.parentNode.style.opacity = elements.enableFaceDetection.checked ? '1' : '0.5';
+        elements.ignoreRanges.parentNode.style.pointerEvents = elements.enableFaceDetection.checked ? 'auto' : 'none';
+    }
+
+    // Update config from UI
+    function updateConfigFromUi() {
+        // Basic configuration
+        config.config_name = elements.configName.value;
+        config.description = elements.configDescription.value;
+        config.created_at = new Date().toISOString();
+
+        // Video settings
+        const enableVideo = elements.enableVideoSettings.checked;
+        if (!enableVideo) {
+            delete config.video_settings;
+        } else {
+            config.video_settings = config.video_settings || {
+                transcode_profiles: [],
+                preview_settings: {
+                    profiles: []
+                },
+                thumbnail_settings: {
+                    timestamp: parseInt(elements.thumbnailTimestamp.value) || 5,
+                    profiles: []
+                }
+        };
+
+            config.video_settings.thumbnail_settings.timestamp = parseInt(elements.thumbnailTimestamp.value) || 5;
+        }
+
+        // Image settings
+        const enableImage = elements.enableImageSettings.checked;
+        if (!enableImage) {
+            delete config.image_settings;
+        } else {
+            config.image_settings = config.image_settings || {
+                transcode_profiles: [],
+                thumbnail_profiles: []
+            };
+        }
+
+        // Face detection settings
+        const enableFaceDetection = elements.enableFaceDetection.checked;
+        config.face_detection = {
+            enabled: enableFaceDetection
+        };
+
+        if (enableFaceDetection) {
+            const ignoreFrames = elements.ignoreFrames.value.trim();
+            const ignoreRanges = elements.ignoreRanges.value.trim();
+
+            config.face_detection.config = {
+                similarity_threshold: parseFloat(document.getElementById('similarity-threshold').value) || 0.6,
+                min_faces_in_group: parseInt(document.getElementById('min-faces-in-group').value) || 3,
+                sample_interval: parseInt(document.getElementById('sample-interval').value) || 5,
+                face_detector_size: document.getElementById('face-detector-size').value || '640x640',
+                face_detector_score_threshold: parseFloat(document.getElementById('face-detector-score-threshold').value) || 0.6,
+                min_appearance_ratio: parseFloat(document.getElementById('min-appearance-ratio').value) || 0.15,
+                min_frontality: parseFloat(document.getElementById('min-frontality').value) || 0.2,
+                avatar_size: parseInt(document.getElementById('avatar-size').value) || 256,
+                avatar_padding: parseFloat(document.getElementById('avatar-padding').value) || 0.1,
+                avatar_quality: parseInt(document.getElementById('avatar-quality').value) || 90,
+                output_path: document.getElementById('output-path').value || './output/faces',
+                max_workers: parseInt(document.getElementById('max-workers').value) || 4
+            };
+
+            if (ignoreFrames) {
+                config.face_detection.config.ignore_frames = ignoreFrames.split(',').map(n => parseInt(n.trim()));
+            }
+
+            if (ignoreRanges) {
+                config.face_detection.config.ignore_ranges = ignoreRanges.split(',').map(range => {
+                    const [start, end] = range.split('-').map(n => parseInt(n.trim()));
+                    return [start, end];
+                });
+            }
+        }
+
+        // Output settings
+        config.output_settings = {
+            s3_bucket: elements.s3Bucket.value,
+            folder_structure: elements.folderStructure.value,
+            local_storage_path: elements.localStoragePath.value,
+            generate_unique_filenames: elements.generateUniqueFilenames.checked,
+            preserve_original_filename: elements.preserveOriginalFilename.checked,
+            use_temporary_local_storage: elements.useTemporaryLocalStorage.checked,
+            delete_local_after_upload: elements.deleteLocalAfterUpload.checked
+        };
+    }
+
+    // Update JSON preview
+    function updateJsonPreview() {
+        updateConfigFromUi();
+        elements.jsonOutput.textContent = JSON.stringify(config, null, 2);
+    }
+
+    // Reset configuration
+    function resetConfig() {
+        config = {
+            config_name: "",
+            description: "",
+            created_at: new Date().toISOString(),
+            video_settings: {
+                transcode_profiles: [],
+                preview_settings: {
+                    profiles: []
+            },
+                thumbnail_settings: {
+                    timestamp: 5,
+                    profiles: []
+                }
+            },
+            image_settings: {
+                transcode_profiles: [],
+                thumbnail_profiles: []
+            },
+            face_detection: {
+                enabled: false,
+                config: {
+                    similarity_threshold: 0.6,
+                    min_faces_in_group: 3,
+                    sample_interval: 5,
+                    face_detector_size: "640x640",
+                    face_detector_score_threshold: 0.6,
+                    min_appearance_ratio: 0.15,
+                    min_frontality: 0.2,
+                    avatar_size: 256,
+                    avatar_padding: 0.1,
+                    avatar_quality: 90,
+                    output_path: "./output/faces",
+                    max_workers: 4
+                }
+            },
+            output_settings: {
+                s3_bucket: "media-transcode-bucket",
+                folder_structure: "{user_id}/{job_id}/{type}/{profile_name}/",
+                generate_unique_filenames: true,
+                preserve_original_filename: true,
+                use_temporary_local_storage: true,
+                local_storage_path: "/tmp/transcode-jobs/",
+                delete_local_after_upload: true
+            }
+        };
+
+        updateUiFromConfig();
+        updateJsonPreview();
+        showAlert('Configuration reset', 'info');
+    }
+
+    // Show alert
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+
+        // Remove any existing alerts
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => {
+            if (alert.classList.contains('alert-info')) {
+                alert.remove();
+            }
+        });
+
+        // Insert after header
+        const header = document.querySelector('.header');
+        header.parentNode.insertBefore(alertDiv, header.nextSibling);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    }
+
+    // Initialize UI
+    function init() {
+        renderVideoProfiles();
+        renderPreviewProfiles();
+        renderVideoThumbnailProfiles();
+        renderImageProfiles();
+        renderImageThumbnailProfiles();
+        updateJsonPreview();
+    }
+
+    // Ready state handler
+    document.addEventListener('DOMContentLoaded', init);// Main data store for the configuration
+    let config = {
+        config_name: "",
+        description: "",
+        created_at: new Date().toISOString(),
+        video_settings: {
+            transcode_profiles: [],
+            preview_settings: {
+                profiles: []
+            },
+            thumbnail_settings: {
+                timestamp: 5,
+                profiles: []
+            }
+        },
+        image_settings: {
+            transcode_profiles: [],
+            thumbnail_profiles: []
+        },
+        face_detection: {
+            enabled: true,
+            config: {
+                similarity_threshold: 0.6,
+                min_faces_in_group: 3,
+                sample_interval: 5,
+                ignore_frames: [0, 1, 2],
+                ignore_ranges: [[500, 600]],
+                face_detector_size: "640x640",
+                face_detector_score_threshold: 0.6,
+                min_appearance_ratio: 0.15,
+                min_frontality: 0.2,
+                avatar_size: 256,
+                avatar_padding: 0.1,
+                avatar_quality: 90,
+                output_path: "./output/faces",
+                max_workers: 4
+            }
+        },
+        output_settings: {
+            s3_bucket: "media-transcode-bucket",
+            folder_structure: "{user_id}/{job_id}/{type}/{profile_name}/",
+            generate_unique_filenames: true,
+            preserve_original_filename: true,
+            use_temporary_local_storage: true,
+            local_storage_path: "/tmp/transcode-jobs/",
+            delete_local_after_upload: true
+        }
+    };
+
+    // Sample configuration templates
+    const configTemplates = {
+        "high-quality": "high-quality.json",
+        "standard": "standard.json",
+        "minimal": "minimal.json",
+        "video-only": "video-only.json",
+        "image-only": "image-only.json",
+        "custom": null
+    };
+
+    // Cache DOM elements
+    const elements = {
+        loading: document.querySelector('.loading'),
+        tabs: document.querySelectorAll('.tab'),
+        tabContents: document.querySelectorAll('.tab-content'),
+        configTemplates: document.querySelectorAll('.config-template'),
+        videoProfilesContainer: document.getElementById('video-profiles-container'),
+        previewProfilesContainer: document.getElementById('preview-profiles-container'),
+        videoThumbnailProfilesContainer: document.getElementById('video-thumbnail-profiles-container'),
+        imageProfilesContainer: document.getElementById('image-profiles-container'),
+        imageThumbnailProfilesContainer: document.getElementById('image-thumbnail-profiles-container'),
+        jsonOutput: document.getElementById('json-output'),
+        configName: document.getElementById('config-name'),
+        configDescription: document.getElementById('config-description'),
+        thumbnailTimestamp: document.getElementById('thumbnail-timestamp'),
+        enableVideoSettings: document.getElementById('enable-video-settings'),
+        enableImageSettings: document.getElementById('enable-image-settings'),
+        enableFaceDetection: document.getElementById('enable-face-detection'),
+        faceDetectionSettings: document.getElementById('face-detection-settings'),
+        ignoreFrames: document.getElementById('ignore-frames'),
+        ignoreRanges: document.getElementById('ignore-ranges'),
+        s3Bucket: document.getElementById('s3-bucket'),
+        folderStructure: document.getElementById('folder-structure'),
+        localStoragePath: document.getElementById('local-storage-path'),
+        generateUniqueFilenames: document.getElementById('generate-unique-filenames'),
+        preserveOriginalFilename: document.getElementById('preserve-original-filename'),
+        useTemporaryLocalStorage: document.getElementById('use-temporary-local-storage'),
+        deleteLocalAfterUpload: document.getElementById('delete-local-after-upload'),
+        // For modal forms
+        videoProfileModal: document.getElementById('video-profile-modal'),
+        previewProfileModal: document.getElementById('preview-profile-modal'),
+        videoThumbnailProfileModal: document.getElementById('video-thumbnail-profile-modal'),
+        imageProfileModal: document.getElementById('image-profile-modal'),
+        imageThumbnailProfileModal: document.getElementById('image-thumbnail-profile-modal'),
+        loadConfigModal: document.getElementById('load-config-modal'),
+        // Buttons
+        addVideoProfileBtn: document.getElementById('add-video-profile'),
+        addPreviewProfileBtn: document.getElementById('add-preview-profile'),
+        addVideoThumbnailProfileBtn: document.getElementById('add-video-thumbnail-profile'),
+        addImageProfileBtn: document.getElementById('add-image-profile'),
+        addImageThumbnailProfileBtn: document.getElementById('add-image-thumbnail-profile'),
+        loadConfigBtn: document.getElementById('load-config'),
+        saveConfigBtn: document.getElementById('save-config'),
+        copyJsonBtn: document.getElementById('copy-json'),
+        // Modal close buttons
+        modalCloseButtons: document.querySelectorAll('.modal-close'),
+        // Form elements in modals
+        videoProfileSaveBtn: document.getElementById('video-profile-save'),
+        videoProfileCancelBtn: document.getElementById('video-profile-cancel'),
+        previewProfileSaveBtn: document.getElementById('preview-profile-save'),
+        previewProfileCancelBtn: document.getElementById('preview-profile-cancel'),
+        videoThumbnailProfileSaveBtn: document.getElementById('video-thumbnail-profile-save'),
+        videoThumbnailProfileCancelBtn: document.getElementById('video-thumbnail-profile-cancel'),
+        imageProfileSaveBtn: document.getElementById('image-profile-save'),
+        imageProfileCancelBtn: document.getElementById('image-profile-cancel'),
+        imageThumbnailProfileSaveBtn: document.getElementById('image-thumbnail-profile-save'),
+        imageThumbnailProfileCancelBtn: document.getElementById('image-thumbnail-profile-cancel'),
+        loadConfigConfirmBtn: document.getElementById('load-config-confirm'),
+        loadConfigCancelBtn: document.getElementById('load-config-cancel'),
+        loadConfigInput: document.getElementById('load-config-input'),
+        // Specific modal form elements
+        videoProfileUseGpu: document.getElementById('video-profile-use-gpu'),
+        gpuOptionsContainer: document.getElementById('gpu-options-container'),
+        imageProfileResize: document.getElementById('image-profile-resize'),
+        imageResizeOptions: document.getElementById('image-resize-options'),
+        imageProfileFormat: document.getElementById('image-profile-format'),
+        imageQualityContainer: document.getElementById('image-quality-container'),
+        imageCompressionContainer: document.getElementById('image-compression-container')
+    };
+
+    // State variables
+    let currentEditingIndex = null;
+    let currentProfileType = null;
+
+    // Initialize tabs
+    elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            elements.tabs.forEach(t => t.classList.remove('active'));
+            elements.tabContents.forEach(content => content.classList.remove('active'));
+
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+
+            // Update JSON preview whenever we switch to it
+            if (tabId === 'json-preview') {
+                updateJsonPreview();
+            }
+        });
+    });
+
+    // Modal handling
+    function openModal(modalElement) {
+        modalElement.style.display = 'flex';
+    }
+
+    function closeModal(modalElement) {
+        modalElement.style.display = 'none';
+    }
+
+    elements.modalCloseButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = button.closest('.modal');
+            closeModal(modal);
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target);
+        }
+    });
+
+    // Config template selection
+    elements.configTemplates.forEach(template => {
+        template.addEventListener('click', async () => {
+            elements.configTemplates.forEach(t => t.classList.remove('active'));
+            template.classList.add('active');
+
+            const templateName = template.getAttribute('data-template');
+
+            if (templateName === 'custom') {
+                resetConfig();
                 return;
             }
 
-            // Initialize variables
-            let videoProfiles = [];
-            let imageThumbnailSizes = [];
-            let imageProfiles = [];
-            let imageThumbnailProfiles = [];
-
-            // Add video profile
-            document.getElementById('add-video-profile').addEventListener('click', function () {
-                addVideoProfile();
-                updatePreviewProfiles();
-                updateJsonPreview();
-            });
-
-            // Add thumbnail size
-            document.getElementById('add-thumbnail-size').addEventListener('click', function () {
-                addThumbnailSize();
-                updateJsonPreview();
-            });
-
-            // Add image profile
-            document.getElementById('add-image-profile').addEventListener('click', function () {
-                addImageProfile();
-                updateJsonPreview();
-            });
-
-            // Add image thumbnail profile
-            document.getElementById('add-image-thumbnail-profile').addEventListener('click', function () {
-                addImageThumbnailProfile();
-                updateJsonPreview();
-            });
-
-            // Add timestamp
-            document.getElementById('add-timestamp').addEventListener('click', function () {
-                addTimestamp();
-                updateJsonPreview();
-            });
-
-            // Copy JSON
-            document.getElementById('copy-json-btn').addEventListener('click', function () {
-                const jsonText = document.getElementById('json-preview').textContent;
-                navigator.clipboard.writeText(jsonText)
-                    .then(() => {
-                        alert('JSON copied to clipboard');
-                    })
-                    .catch(err => {
-                        console.error('Failed to copy JSON:', err);
-                        alert('Failed to copy JSON');
-                    });
-            });
-
-            // Save configuration
-            document.getElementById('save-config-btn').addEventListener('click', function () {
-                // Validate form
-                if (!validateForm()) {
-                    return;
-                }
-
-                // Show save confirmation modal
-                const saveModal = new bootstrap.Modal(document.getElementById('save-config-modal'));
-                saveModal.show();
-            });
-
-            // Confirm save configuration
-            document.getElementById('confirm-save-config').addEventListener('click', function () {
-                saveConfiguration();
-            });
-
-            // Event delegation for dynamic elements
-            document.addEventListener('click', function (e) {
-                // Remove video profile
-                if (e.target.classList.contains('remove-profile')) {
-                    const profileItem = e.target.closest('.profile-item');
-                    if (profileItem) {
-                        if (profileItem.classList.contains('video-profile')) {
-                            const container = document.getElementById('video-profiles-container');
-                            container.removeChild(profileItem);
-                            updatePreviewProfiles();
-                        } else if (profileItem.classList.contains('image-profile')) {
-                            const container = document.getElementById('image-profiles-container');
-                            container.removeChild(profileItem);
-                        } else if (profileItem.classList.contains('image-thumbnail-profile')) {
-                            const container = document.getElementById('image-thumbnail-profiles-container');
-                            container.removeChild(profileItem);
-                        }
-                        updateJsonPreview();
-                    }
-                }
-
-                // Remove thumbnail size
-                if (e.target.classList.contains('remove-thumbnail-size') || e.target.closest('.remove-thumbnail-size')) {
-                    const sizeItem = e.target.closest('.thumbnail-size-item');
-                    if (sizeItem) {
-                        const container = document.getElementById('thumbnail-sizes-container');
-                        container.removeChild(sizeItem);
-                        updateJsonPreview();
-                    }
-                }
-
-                // Remove timestamp
-                if (e.target.classList.contains('remove-timestamp') || e.target.closest('.remove-timestamp')) {
-                    const timestampItem = e.target.closest('.col-md-3');
-                    if (timestampItem && document.querySelectorAll('.timestamp-input').length > 1) {
-                        const container = document.getElementById('timestamp-container');
-                        container.removeChild(timestampItem);
-                        updateJsonPreview();
-                    }
-                }
-            });
-
-            // Event listener for input changes
-            document.addEventListener('input', function (e) {
-                // Update JSON preview on any form change
-                updateJsonPreview();
-            });
-
-            // Event listener for checkbox changes
-            document.addEventListener('change', function (e) {
-                // Update JSON preview on any form change
-                updateJsonPreview();
-            });
-
-            // Tab change event to update JSON preview
-            const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
-            tabEls.forEach(tabEl => {
-                tabEl.addEventListener('shown.bs.tab', function (event) {
-                    updateJsonPreview();
-                });
-            });
-
-            // Add some default items on load
-            addVideoProfile();
-            addThumbnailSize();
-            addImageProfile();
-            addImageThumbnailProfile();
-            updatePreviewProfiles();
-            updateJsonPreview();
-
-            /**
-             * Add a video profile to the UI
-             */
-            function addVideoProfile() {
-                const container = document.getElementById('video-profiles-container');
-                const template = document.getElementById('video-profile-template');
-                const profileItem = template.content.cloneNode(true);
-                container.appendChild(profileItem);
-            }
-
-            /**
-             * Add a thumbnail size to the UI
-             */
-            function addThumbnailSize() {
-                const container = document.getElementById('thumbnail-sizes-container');
-                const template = document.getElementById('thumbnail-size-template');
-                const sizeItem = template.content.cloneNode(true);
-                container.appendChild(sizeItem);
-            }
-
-            /**
-             * Add an image profile to the UI
-             */
-            function addImageProfile() {
-                const container = document.getElementById('image-profiles-container');
-                const template = document.getElementById('image-profile-template');
-                const profileItem = template.content.cloneNode(true);
-                container.appendChild(profileItem);
-            }
-
-            /**
-             * Add an image thumbnail profile to the UI
-             */
-            function addImageThumbnailProfile() {
-                const container = document.getElementById('image-thumbnail-profiles-container');
-                const template = document.getElementById('image-thumbnail-template');
-                const profileItem = template.content.cloneNode(true);
-                container.appendChild(profileItem);
-            }
-
-            /**
-             * Add a timestamp to the UI
-             */
-            function addTimestamp() {
-                const container = document.getElementById('timestamp-container');
-                const html = `
-                <div class="col-md-3 mb-2">
-                    <div class="input-group">
-                        <input type="text" class="form-control timestamp-input" value="00:00:05" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}">
-                        <button class="btn btn-outline-danger remove-timestamp" type="button">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                container.appendChild(tempDiv.firstElementChild);
-            }
-
-            /**
-             * Update preview profiles checkboxes
-             */
-            function updatePreviewProfiles() {
-                const container = document.getElementById('preview-profiles-container');
-                container.innerHTML = '';
-
-                const videoProfiles = document.querySelectorAll('.video-profile');
-                if (videoProfiles.length === 0) {
-                    container.innerHTML = '<p class="text-muted fst-italic">Add video profiles first to enable preview generation.</p>';
-                    return;
-                }
-
-                videoProfiles.forEach((profile, index) => {
-                    const nameInput = profile.querySelector('.profile-name');
-                    const name = nameInput.value || `Profile ${index + 1}`;
-
-                    const template = document.getElementById('preview-profile-checkbox-template');
-                    const checkboxItem = template.content.cloneNode(true);
-
-                    const checkbox = checkboxItem.querySelector('.preview-profile-checkbox');
-                    const label = checkboxItem.querySelector('.form-check-label');
-
-                    checkbox.id = `preview-profile-${index}`;
-                    checkbox.dataset.profileName = name;
-                    checkbox.checked = index < 2; // Check first two by default
-
-                    label.setAttribute('for', `preview-profile-${index}`);
-                    label.textContent = name;
-
-                    container.appendChild(checkboxItem);
-                });
-            }
-
-            /**
-             * Generate and update the JSON preview
-             */
-            function updateJsonPreview() {
-                try {
-                    const config = buildConfigObject();
-                    const jsonString = JSON.stringify(config, null, 2);
-                    document.getElementById('json-preview').textContent = jsonString;
-                } catch (error) {
-                    console.error('Error generating JSON preview:', error);
-                    document.getElementById('json-preview').textContent = '// Error generating JSON preview';
-                }
-            }
-
-            /**
-             * Build the configuration object from form inputs
-             */
-            function buildConfigObject() {
-                const config = {
-                    config_name: document.getElementById('config-name').value || 'New Configuration',
-                    description: document.getElementById('config-description').value || '',
-                    created_at: new Date().toISOString(),
-                    video_settings: {
-                        transcode_profiles: getVideoProfiles(),
-                        preview_settings: getPreviewSettings(),
-                        thumbnail_settings: getThumbnailSettings()
-                    },
-                    image_settings: {
-                        transcode_profiles: getImageProfiles(),
-                        thumbnail_profiles: getImageThumbnailProfiles()
-                    },
-                    output_settings: getOutputSettings()
-                };
-
-                return config;
-            }
-
-            /**
-             * Get video profiles from the form
-             */
-            function getVideoProfiles() {
-                const profiles = [];
-                const profileItems = document.querySelectorAll('.video-profile');
-
-                profileItems.forEach((item, index) => {
-                    const nameInput = item.querySelector('.profile-name');
-                    const widthInput = item.querySelector('.profile-width');
-                    const heightInput = item.querySelector('.profile-height');
-                    const codecSelect = item.querySelector('.profile-codec');
-                    const presetSelect = item.querySelector('.profile-preset');
-                    const crfInput = item.querySelector('.profile-crf');
-                    const formatSelect = item.querySelector('.profile-format');
-                    const audioCodecSelect = item.querySelector('.profile-audio-codec');
-                    const audioBitrateInput = item.querySelector('.profile-audio-bitrate');
-                    const useGpuCheckbox = item.querySelector('.profile-use-gpu');
-
-                    const profile = {
-                        name: nameInput.value || `profile_${index + 1}`,
-                        width: parseInt(widthInput.value) || 1280,
-                        height: parseInt(heightInput.value) || 720,
-                        codec: codecSelect.value,
-                        preset: presetSelect.value,
-                        crf: parseInt(crfInput.value) || 23,
-                        format: formatSelect.value,
-                        audio_codec: audioCodecSelect.value,
-                        audio_bitrate: audioBitrateInput.value,
-                        use_gpu: useGpuCheckbox.checked
-                    };
-
-                    if (useGpuCheckbox.checked) {
-                        profile.gpu_options = {
-                            hardware_encoder: codecSelect.value === 'libx264' ? 'h264_nvenc' :
-                                (codecSelect.value === 'libx265' ? 'hevc_nvenc' : null),
-                            preset: 'p4',
-                            rc: 'vbr'
-                        };
-                    }
-
-                    profiles.push(profile);
-                });
-
-                return profiles;
-            }
-
-            /**
-             * Get preview settings from the form
-             */
-            function getPreviewSettings() {
-                const durationInput = document.getElementById('preview-duration');
-                const profileCheckboxes = document.querySelectorAll('.preview-profile-checkbox:checked');
-
-                const useProfiles = [];
-                profileCheckboxes.forEach(checkbox => {
-                    useProfiles.push(checkbox.dataset.profileName);
-                });
-
-                return {
-                    duration_seconds: parseInt(durationInput.value) || 30,
-                    use_profiles: useProfiles
-                };
-            }
-
-            /**
-             * Get thumbnail settings from the form
-             */
-            function getThumbnailSettings() {
-                const formatSelect = document.getElementById('thumbnail-format');
-                const qualityInput = document.getElementById('thumbnail-quality');
-
-                const timestamps = [];
-                const timestampInputs = document.querySelectorAll('.timestamp-input');
-                timestampInputs.forEach(input => {
-                    timestamps.push(input.value);
-                });
-
-                const sizes = [];
-                const sizeItems = document.querySelectorAll('.thumbnail-size-item');
-                sizeItems.forEach((item, index) => {
-                    const nameInput = item.querySelector('.thumbnail-size-name');
-                    const widthInput = item.querySelector('.thumbnail-size-width');
-                    const heightInput = item.querySelector('.thumbnail-size-height');
-
-                    sizes.push({
-                        name: nameInput.value || `size_${index + 1}`,
-                        width: parseInt(widthInput.value) || 320,
-                        height: parseInt(heightInput.value) || 180
-                    });
-                });
-
-                return {
-                    timestamps: timestamps,
-                    sizes: sizes,
-                    format: formatSelect.value,
-                    quality: parseInt(qualityInput.value) || 90
-                };
-            }
-
-            /**
-             * Get image profiles from the form
-             */
-            function getImageProfiles() {
-                const profiles = [];
-                const profileItems = document.querySelectorAll('.image-profile');
-
-                profileItems.forEach((item, index) => {
-                    const nameInput = item.querySelector('.profile-name');
-                    const formatSelect = item.querySelector('.profile-format');
-                    const qualityInput = item.querySelector('.profile-quality');
-                    const resizeCheckbox = item.querySelector('.profile-resize');
-
-                    profiles.push({
-                        name: nameInput.value || `image_profile_${index + 1}`,
-                        format: formatSelect.value,
-                        quality: parseInt(qualityInput.value) || 90,
-                        resize: resizeCheckbox.checked
-                    });
-                });
-
-                return profiles;
-            }
-
-            /**
-             * Get image thumbnail profiles from the form
-             */
-            function getImageThumbnailProfiles() {
-                const profiles = [];
-                const profileItems = document.querySelectorAll('.image-thumbnail-profile');
-
-                profileItems.forEach((item, index) => {
-                    const nameInput = item.querySelector('.profile-name');
-                    const widthInput = item.querySelector('.profile-width');
-                    const heightInput = item.querySelector('.profile-height');
-                    const formatSelect = item.querySelector('.profile-format');
-                    const qualityInput = item.querySelector('.profile-quality');
-                    const maintainAspectCheckbox = item.querySelector('.profile-maintain-aspect');
-
-                    profiles.push({
-                        name: nameInput.value || `thumb_${index + 1}`,
-                        width: parseInt(widthInput.value) || 320,
-                        height: parseInt(heightInput.value) || 240,
-                        maintain_aspect_ratio: maintainAspectCheckbox.checked,
-                        format: formatSelect.value,
-                        quality: parseInt(qualityInput.value) || 85
-                    });
-                });
-
-                return profiles;
-            }
-
-            /**
-             * Get output settings from the form
-             */
-            function getOutputSettings() {
-                const s3BucketInput = document.getElementById('s3-bucket');
-                const folderStructureInput = document.getElementById('folder-structure');
-                const generateUniqueFilenamesCheckbox = document.getElementById('generate-unique-filenames');
-                const preserveOriginalFilenameCheckbox = document.getElementById('preserve-original-filename');
-                const useTempStorageCheckbox = document.getElementById('use-temp-storage');
-                const tempStoragePathInput = document.getElementById('temp-storage-path');
-                const deleteAfterUploadCheckbox = document.getElementById('delete-after-upload');
-
-                return {
-                    s3_bucket: s3BucketInput.value || 'media-transcode-bucket',
-                    folder_structure: folderStructureInput.value,
-                    generate_unique_filenames: generateUniqueFilenamesCheckbox.checked,
-                    preserve_original_filename: preserveOriginalFilenameCheckbox.checked,
-                    use_temporary_local_storage: useTempStorageCheckbox.checked,
-                    local_storage_path: tempStoragePathInput.value,
-                    delete_local_after_upload: deleteAfterUploadCheckbox.checked
-                };
-            }
-
-            /**
-             * Validate the form
-             */
-            function validateForm() {
-                const configName = document.getElementById('config-name').value;
-                if (!configName) {
-                    alert('Please enter a configuration name');
-                    document.getElementById('config-name').focus();
-                    return false;
-                }
-
-                // Check if at least one video profile exists
-                const videoProfiles = document.querySelectorAll('.video-profile');
-                if (videoProfiles.length === 0) {
-                    alert('Please add at least one video profile');
-                    return false;
-                }
-
-                // Check if at least one image profile exists
-                const imageProfiles = document.querySelectorAll('.image-profile');
-                if (imageProfiles.length === 0) {
-                    alert('Please add at least one image profile');
-                    return false;
-                }
-
-                return true;
-            }
-
-            /**
-             * Save the configuration to the server
-             */
-            function saveConfiguration() {
-                const config = buildConfigObject();
-                const configData = {
-                    name: config.config_name,
-                    description: config.description,
-                    config_json: JSON.stringify(config),
-                    is_default: document.getElementById('config-default').checked
-                };
-
-                const token = localStorage.getItem('token');
-
-                // Clear previous alerts
-                document.getElementById('save-config-alerts').innerHTML = '';
-
-                // Show loading
-                const loadingAlert = createAlert('Saving configuration...', 'info');
-                document.getElementById('save-config-alerts').appendChild(loadingAlert);
-
-                // Save configuration
-                fetch('/api/configs', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(configData)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Remove loading alert
-                        loadingAlert.remove();
-
-                        if (data.message === 'Config created successfully') {
-                            // Show success alert
-                            const successAlert = createAlert('Configuration saved successfully!', 'success');
-                            document.getElementById('save-config-alerts').appendChild(successAlert);
-
-                            // Redirect after a delay
-                            setTimeout(() => {
-                                window.location.href = '/configs';
-                            }, 1500);
-                        } else {
-                            // Show error alert
-                            const errorAlert = createAlert(data.message || 'Failed to save configuration', 'danger');
-                            document.getElementById('save-config-alerts').appendChild(errorAlert);
-                        }
-                    })
-                    .catch(error => {
-                        // Remove loading alert
-                        loadingAlert.remove();
-
-                        // Show error alert
-                        const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
-                        document.getElementById('save-config-alerts').appendChild(errorAlert);
-
-                        console.error('Error saving configuration:', error);
-                    });
-            }
-
-            /**
-             * Helper function to create alerts
-             */
-            function createAlert(message, type) {
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
-                alert.textContent = message;
-                return alert;
+            // Load the selected template
+            elements.loading.style.display = 'flex';
+            try {
+                // Load the template from the predefined data
+                const templateFile = configTemplates[templateName];
+                await loadTemplateConfig(templateFile);
+            } catch (error) {
+                console.error('Error loading template:', error);
+                showAlert('Error loading template configuration', 'danger');
+            } finally {
+                elements.loading.style.display = 'none';
             }
         });
-    </script>
+    });
+
+    function saveConfig(config) {
+
+        // Save configuration
+        const token = localStorage.getItem('token');
+
+        fetch('/api/configs', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: config.config_name,
+                description: config.description,
+                config_json: config
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to save configuration');
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error saving configuration:', error);
+                showAlert('Failed to save configuration. Please try again.', 'error');
+            })
+            .finally(() => {
+                // Re-enable button
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save Configuration';
+            });
+    }
+
+    // Function to simulate API calls (for demonstration)
+    function simulateApiCall(delay = 500) {
+        return saveConfig()
+    }
+
+    // API call to load a template configuration
+    async function loadTemplateConfig(templateFile) {
+        try {
+            // In a real application, this would fetch from your API
+            // For this demo, we'll simulate loading from a predefined object
+            const urlTemplate = `/static/js/templates/${templateFile}`
+            {#alert(urlTemplate)#}
+            console.log("templateFile", templateFile)
+            console.log("urlTemplate", urlTemplate)
+            const response = await fetch(urlTemplate);
+            if (!response.ok) {
+                throw new Error(`Failed to load template: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            config = data;
+
+            // Update UI with the loaded config
+            updateUiFromConfig();
+            updateJsonPreview();
+            showAlert('Template configuration loaded successfully', 'success');
+        } catch (error) {
+            console.error('Error loading template config:', error);
+            showAlert('Error loading template configuration', 'danger');
+        }
+    }
+
+    // Button event listeners
+    elements.addVideoProfileBtn.addEventListener('click', () => {
+        currentEditingIndex = null;
+        currentProfileType = 'video';
+        resetVideoProfileForm();
+        openModal(elements.videoProfileModal);
+    });
+
+    elements.addPreviewProfileBtn.addEventListener('click', () => {
+        currentEditingIndex = null;
+        resetPreviewProfileForm();
+        openModal(elements.previewProfileModal);
+    });
+
+    elements.addVideoThumbnailProfileBtn.addEventListener('click', () => {
+        currentEditingIndex = null;
+        resetVideoThumbnailProfileForm();
+        openModal(elements.videoThumbnailProfileModal);
+    });
+
+    elements.addImageProfileBtn.addEventListener('click', () => {
+        currentEditingIndex = null;
+        currentProfileType = 'image';
+        resetImageProfileForm();
+        openModal(elements.imageProfileModal);
+    });
+
+    elements.addImageThumbnailProfileBtn.addEventListener('click', () => {
+        currentEditingIndex = null;
+        resetImageThumbnailProfileForm();
+        openModal(elements.imageThumbnailProfileModal);
+    });
+
+    elements.loadConfigBtn.addEventListener('click', () => {
+        openModal(elements.loadConfigModal);
+    });
+
+    elements.loadConfigConfirmBtn.addEventListener('click', () => {
+        const jsonText = elements.loadConfigInput.value.trim();
+        if (!jsonText) {
+            showAlert('Please paste a valid JSON configuration', 'warning');
+            return;
+        }
+
+        try {
+            const loadedConfig = JSON.parse(jsonText);
+            config = loadedConfig;
+            updateUiFromConfig();
+            closeModal(elements.loadConfigModal);
+            elements.configTemplates.forEach(t => t.classList.remove('active'));
+            document.querySelector('.config-template[data-template="custom"]').classList.add('active');
+            showAlert('Configuration loaded successfully', 'success');
+            updateJsonPreview();
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            showAlert('Invalid JSON configuration', 'danger');
+        }
+    });
+
+    elements.loadConfigCancelBtn.addEventListener('click', () => {
+        closeModal(elements.loadConfigModal);
+    });
+
+    elements.saveConfigBtn.addEventListener('click', async () => {
+        updateConfigFromUi();
+
+        // Validate config before saving
+        if (!config.config_name) {
+            showAlert('Please enter a configuration name', 'warning');
+            return;
+        }
+
+        elements.loading.style.display = 'flex';
+        try {
+            // Simulate API call to save config
+            // In a real app, this would be an actual fetch to your backend
+            await saveConfig(config)
+
+            // In a real application, you would send the config to your server
+            console.log('Configuration saved:', config);
+            showAlert('Configuration saved successfully', 'success');
+        } catch (error) {
+            console.error('Error saving configuration:', error);
+            showAlert('Error saving configuration', 'danger');
+        } finally {
+            elements.loading.style.display = 'none';
+        }
+    });
+
+    elements.copyJsonBtn.addEventListener('click', () => {
+        updateConfigFromUi();
+        updateJsonPreview();
+
+        const jsonText = elements.jsonOutput.textContent;
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(jsonText)
+                .then(() => {
+                    showAlert('JSON copied to clipboard', 'success');
+                })
+                .catch(() => {
+                    showAlert('Failed to copy JSON to clipboard', 'danger');
+                });
+        } else {
+            // Fallback for browsers without clipboard API
+            const textarea = document.createElement('textarea');
+            textarea.value = jsonText;
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                showAlert('JSON copied to clipboard', 'success');
+            } catch (err) {
+                showAlert('Failed to copy JSON to clipboard', 'danger');
+            }
+
+            document.body.removeChild(textarea);
+        }
+    });
+
+    // Setting toggle handlers
+    elements.enableVideoSettings.addEventListener('change', function () {
+        const videoSettingsCards = document.querySelectorAll('#video-settings .card:not(:first-child)');
+        videoSettingsCards.forEach(card => {
+            card.style.opacity = this.checked ? '1' : '0.5';
+            card.style.pointerEvents = this.checked ? 'auto' : 'none';
+        });
+    });
+
+    elements.enableImageSettings.addEventListener('change', function () {
+        const imageSettingsCards = document.querySelectorAll('#image-settings .card');
+        imageSettingsCards.forEach(card => {
+            card.style.opacity = this.checked ? '1' : '0.5';
+            card.style.pointerEvents = this.checked ? 'auto' : 'none';
+        });
+    });
+
+    elements.enableFaceDetection.addEventListener('change', function () {
+        elements.faceDetectionSettings.style.opacity = this.checked ? '1' : '0.5';
+        elements.faceDetectionSettings.style.pointerEvents = this.checked ? 'auto' : 'none';
+        elements.ignoreFrames.parentNode.style.opacity = this.checked ? '1' : '0.5';
+        elements.ignoreFrames.parentNode.style.pointerEvents = this.checked ? 'auto' : 'none';
+        elements.ignoreRanges.parentNode.style.opacity = this.checked ? '1' : '0.5';
+        elements.ignoreRanges.parentNode.style.pointerEvents = this.checked ? 'auto' : 'none';
+    });
+
+    elements.videoProfileUseGpu.addEventListener('change', function () {
+        elements.gpuOptionsContainer.style.display = this.checked ? 'block' : 'none';
+    });
+
+    elements.imageProfileResize.addEventListener('change', function () {
+        elements.imageResizeOptions.style.display = this.checked ? 'block' : 'none';
+    });
+
+    elements.imageProfileFormat.addEventListener('change', function () {
+        const format = this.value;
+        if (format === 'png') {
+            elements.imageQualityContainer.classList.add('hidden');
+            elements.imageCompressionContainer.classList.remove('hidden');
+        } else {
+            elements.imageQualityContainer.classList.remove('hidden');
+            elements.imageCompressionContainer.classList.add('hidden');
+        }
+    });
+
+    // Save profile functions
+    elements.videoProfileSaveBtn.addEventListener('click', () => {
+        saveVideoProfile();
+        closeModal(elements.videoProfileModal);
+    });
+
+    elements.previewProfileSaveBtn.addEventListener('click', () => {
+        savePreviewProfile();
+        closeModal(elements.previewProfileModal);
+    });
+
+    elements.videoThumbnailProfileSaveBtn.addEventListener('click', () => {
+        saveVideoThumbnailProfile();
+        closeModal(elements.videoThumbnailProfileModal);
+    });
+
+    elements.imageProfileSaveBtn.addEventListener('click', () => {
+        saveImageProfile();
+        closeModal(elements.imageProfileModal);
+    });
+
+    elements.imageThumbnailProfileSaveBtn.addEventListener('click', () => {
+        saveImageThumbnailProfile();
+        closeModal(elements.imageThumbnailProfileModal);
+    });
+
+    elements.videoProfileCancelBtn.addEventListener('click', () => {
+        closeModal(elements.videoProfileModal);
+    });
+
+    elements.previewProfileCancelBtn.addEventListener('click', () => {
+        closeModal(elements.previewProfileModal);
+    });
+
+    elements.videoThumbnailProfileCancelBtn.addEventListener('click', () => {
+        closeModal(elements.videoThumbnailProfileModal);
+    });
+
+    elements.imageProfileCancelBtn.addEventListener('click', () => {
+        closeModal(elements.imageProfileModal);
+    });
+
+    elements.imageThumbnailProfileCancelBtn.addEventListener('click', () => {
+        closeModal(elements.imageThumbnailProfileModal);
+    });
+
+    // Function to save video profile from form
+    function saveVideoProfile() {
+        const profile = {
+            name: document.getElementById('video-profile-name').value,
+            width: parseInt(document.getElementById('video-profile-width').value),
+            height: parseInt(document.getElementById('video-profile-height').value),
+            codec: document.getElementById('video-profile-codec').value,
+            preset: document.getElementById('video-profile-preset').value,
+            crf: parseInt(document.getElementById('video-profile-crf').value),
+            format: document.getElementById('video-profile-format').value,
+            audio_codec: document.getElementById('video-profile-audio-codec').value,
+            audio_bitrate: document.getElementById('video-profile-audio-bitrate').value,
+            use_gpu: document.getElementById('video-profile-use-gpu').checked
+        };
+
+        // Add start/end times if provided
+        const startTime = document.getElementById('video-profile-start').value;
+        const endTime = document.getElementById('video-profile-end').value;
+
+        if (startTime) {
+            profile.start = parseInt(startTime);
+        }
+
+        if (endTime) {
+            profile.end = parseInt(endTime);
+        }
+
+        // Add GPU options if enabled
+        if (profile.use_gpu) {
+            profile.gpu_options = {
+                hardware_encoder: document.getElementById('video-profile-gpu-encoder').value,
+                preset: document.getElementById('video-profile-gpu-preset').value,
+                rc: document.getElementById('video-profile-gpu-rc').value
+            };
+        }
+
+        if (currentEditingIndex !== null) {
+            // Edit existing profile
+            config.video_settings.transcode_profiles[currentEditingIndex] = profile;
+        } else {
+            // Add new profile
+            config.video_settings.transcode_profiles.push(profile);
+        }
+
+        renderVideoProfiles();
+        updateJsonPreview();
+    }
+
+    // Function to save preview profile from form
+    function savePreviewProfile() {
+        const profile = {
+            name: document.getElementById('preview-profile-name').value,
+            start: parseInt(document.getElementById('preview-profile-start').value),
+            end: parseInt(document.getElementById('preview-profile-end').value),
+            fps: parseInt(document.getElementById('preview-profile-fps').value),
+            width: parseInt(document.getElementById('preview-profile-width').value),
+            height: parseInt(document.getElementById('preview-profile-height').value),
+            quality: parseInt(document.getElementById('preview-profile-quality').value)
+        };
+
+        if (currentEditingIndex !== null) {
+            // Edit existing profile
+            config.video_settings.preview_settings.profiles[currentEditingIndex] = profile;
+        } else {
+            // Add new profile
+            config.video_settings.preview_settings.profiles.push(profile);
+        }
+
+        renderPreviewProfiles();
+        updateJsonPreview();
+    }
+
+    // Function to save video thumbnail profile from form
+    function saveVideoThumbnailProfile() {
+        const profile = {
+            name: document.getElementById('video-thumbnail-profile-name').value,
+            width: parseInt(document.getElementById('video-thumbnail-profile-width').value),
+            height: parseInt(document.getElementById('video-thumbnail-profile-height').value),
+            format: document.getElementById('video-thumbnail-profile-format').value,
+            quality: parseInt(document.getElementById('video-thumbnail-profile-quality').value)
+        };
+
+        if (currentEditingIndex !== null) {
+            // Edit existing profile
+            config.video_settings.thumbnail_settings.profiles[currentEditingIndex] = profile;
+        } else {
+            // Add new profile
+            config.video_settings.thumbnail_settings.profiles.push(profile);
+        }
+
+        renderVideoThumbnailProfiles();
+        updateJsonPreview();
+    }
+
+    // Function to save image profile from form
+    function saveImageProfile() {
+        const profile = {
+            name: document.getElementById('image-profile-name').value,
+            format: document.getElementById('image-profile-format').value,
+            resize: document.getElementById('image-profile-resize').checked
+        };
+
+        // Add quality or compression based on format
+        if (profile.format === 'png') {
+            profile.compression_level = parseInt(document.getElementById('image-profile-compression').value);
+        } else {
+            profile.quality = parseInt(document.getElementById('image-profile-quality').value);
+        }
+
+        // Add resize options if enabled
+        if (profile.resize) {
+            profile.width = parseInt(document.getElementById('image-profile-width').value);
+            profile.height = parseInt(document.getElementById('image-profile-height').value);
+            profile.maintain_aspect_ratio = document.getElementById('image-profile-maintain-aspect').checked;
+        }
+
+        if (currentEditingIndex !== null) {
+            // Edit existing profile
+            config.image_settings.transcode_profiles[currentEditingIndex] = profile;
+        } else {
+            // Add new profile
+            config.image_settings.transcode_profiles.push(profile);
+        }
+
+        renderImageProfiles();
+        updateJsonPreview();
+    }
+
+    // Function to save image thumbnail profile from form
+    function saveImageThumbnailProfile() {
+        const profile = {
+            name: document.getElementById('image-thumbnail-profile-name').value,
+            width: parseInt(document.getElementById('image-thumbnail-profile-width').value),
+            height: parseInt(document.getElementById('image-thumbnail-profile-height').value),
+            maintain_aspect_ratio: document.getElementById('image-thumbnail-profile-maintain-aspect').checked,
+            format: document.getElementById('image-thumbnail-profile-format').value,
+            quality: parseInt(document.getElementById('image-thumbnail-profile-quality').value)
+        };
+
+        if (currentEditingIndex !== null) {
+            // Edit existing profile
+            config.image_settings.thumbnail_profiles[currentEditingIndex] = profile;
+        } else {
+            // Add new profile
+            config.image_settings.thumbnail_profiles.push(profile);
+        }
+
+        renderImageThumbnailProfiles();
+        updateJsonPreview();
+    }
+
+    // Reset form functions
+    function resetVideoProfileForm() {
+        document.getElementById('video-profile-name').value = '';
+        document.getElementById('video-profile-width').value = '1280';
+        document.getElementById('video-profile-height').value = '720';
+        document.getElementById('video-profile-codec').value = 'libx264';
+        document.getElementById('video-profile-preset').value = 'medium';
+        document.getElementById('video-profile-crf').value = '23';
+        document.getElementById('video-profile-format').value = 'mp4';
+        document.getElementById('video-profile-audio-codec').value = 'aac';
+        document.getElementById('video-profile-audio-bitrate').value = '128k';
+        document.getElementById('video-profile-use-gpu').checked = true;
+        document.getElementById('video-profile-gpu-encoder').value = 'h264_nvenc';
+        document.getElementById('video-profile-gpu-preset').value = 'p4';
+        document.getElementById('video-profile-gpu-rc').value = 'vbr';
+        document.getElementById('video-profile-start').value = '';
+        document.getElementById('video-profile-end').value = '';
+        elements.gpuOptionsContainer.style.display = 'block';
+    }
+
+    function resetPreviewProfileForm() {
+        document.getElementById('preview-profile-name').value = '';
+        document.getElementById('preview-profile-start').value = '0';
+        document.getElementById('preview-profile-end').value = '5';
+        document.getElementById('preview-profile-fps').value = '10';
+        document.getElementById('preview-profile-width').value = '320';
+        document.getElementById('preview-profile-height').value = '180';
+        document.getElementById('preview-profile-quality').value = '80';
+    }
+
+    function resetVideoThumbnailProfileForm() {
+        document.getElementById('video-thumbnail-profile-name').value = '';
+        document.getElementById('video-thumbnail-profile-width').value = '320';
+        document.getElementById('video-thumbnail-profile-height').value = '180';
+        document.getElementById('video-thumbnail-profile-format').value = 'jpg';
+        document.getElementById('video-thumbnail-profile-quality').value = '90';
+    }
+
+    function resetImageProfileForm() {
+        document.getElementById('image-profile-name').value = '';
+        document.getElementById('image-profile-format').value = 'webp';
+        document.getElementById('image-profile-quality').value = '90';
+        document.getElementById('image-profile-compression').value = '6';
+        document.getElementById('image-profile-resize').checked = false;
+        document.getElementById('image-profile-width').value = '2048';
+        document.getElementById('image-profile-height').value = '2048';
+        document.getElementById('image-profile-maintain-aspect').checked = true;
+        elements.imageResizeOptions.style.display = 'none';
+        elements.imageQualityContainer.classList.remove('hidden');
+        elements.imageCompressionContainer.classList.add('hidden');
+    }
+
+    function resetImageThumbnailProfileForm() {
+        document.getElementById('image-thumbnail-profile-name').value = '';
+        document.getElementById('image-thumbnail-profile-width').value = '320';
+        document.getElementById('image-thumbnail-profile-height').value = '240';
+        document.getElementById('image-thumbnail-profile-maintain-aspect').checked = true;
+        document.getElementById('image-thumbnail-profile-format').value = 'webp';
+        document.getElementById('image-thumbnail-profile-quality').value = '85';
+    }
+
+    // Populate form with profile data for editing
+    function populateVideoProfileForm(profile) {
+        document.getElementById('video-profile-name').value = profile.name || '';
+        document.getElementById('video-profile-width').value = profile.width || 1280;
+        document.getElementById('video-profile-height').value = profile.height || 720;
+        document.getElementById('video-profile-codec').value = profile.codec || 'libx264';
+        document.getElementById('video-profile-preset').value = profile.preset || 'medium';
+        document.getElementById('video-profile-crf').value = profile.crf || 23;
+        document.getElementById('video-profile-format').value = profile.format || 'mp4';
+        document.getElementById('video-profile-audio-codec').value = profile.audio_codec || 'aac';
+        document.getElementById('video-profile-audio-bitrate').value = profile.audio_bitrate || '128k';
+        document.getElementById('video-profile-use-gpu').checked = profile.use_gpu !== undefined ? profile.use_gpu : true;
+
+        if (profile.start !== undefined) {
+            document.getElementById('video-profile-start').value = profile.start;
+        } else {
+            document.getElementById('video-profile-start').value = '';
+        }
+
+        if (profile.end !== undefined) {
+            document.getElementById('video-profile-end').value = profile.end;
+        } else {
+            document.getElementById('video-profile-end').value = '';
+        }
+
+        elements.gpuOptionsContainer.style.display = profile.use_gpu ? 'block' : 'none';
+
+        if (profile.gpu_options) {
+            document.getElementById('video-profile-gpu-encoder').value = profile.gpu_options.hardware_encoder || 'h264_nvenc';
+            document.getElementById('video-profile-gpu-preset').value = profile.gpu_options.preset || 'p4';
+            document.getElementById('video-profile-gpu-rc').value = profile.gpu_options.rc || 'vbr';
+        }
+    }
+
+    function populatePreviewProfileForm(profile) {
+        document.getElementById('preview-profile-name').value = profile.name || '';
+        document.getElementById('preview-profile-start').value = profile.start || 0;
+        document.getElementById('preview-profile-end').value = profile.end || 5;
+        document.getElementById('preview-profile-fps').value = profile.fps || 10;
+        document.getElementById('preview-profile-width').value = profile.width || 320;
+        document.getElementById('preview-profile-height').value = profile.height || 180;
+        document.getElementById('preview-profile-quality').value = profile.quality || 80;
+    }
+
+    function populateVideoThumbnailProfileForm(profile) {
+        document.getElementById('video-thumbnail-profile-name').value = profile.name || '';
+        document.getElementById('video-thumbnail-profile-width').value = profile.width || 320;
+        document.getElementById('video-thumbnail-profile-height').value = profile.height || 180;
+        document.getElementById('video-thumbnail-profile-format').value = profile.format || 'jpg';
+        document.getElementById('video-thumbnail-profile-quality').value = profile.quality || 90;
+    }
+
+    function populateImageProfileForm(profile) {
+        document.getElementById('image-profile-name').value = profile.name || '';
+        document.getElementById('image-profile-format').value = profile.format || 'webp';
+
+        if (profile.format === 'png') {
+            document.getElementById('image-profile-compression').value = profile.compression_level || 6;
+            elements.imageQualityContainer.classList.add('hidden');
+            elements.imageCompressionContainer.classList.remove('hidden');
+        } else {
+            document.getElementById('image-profile-quality').value = profile.quality || 90;
+            elements.imageQualityContainer.classList.remove('hidden');
+            elements.imageCompressionContainer.classList.add('hidden');
+        }
+
+        const resize = profile.resize || false;
+        document.getElementById('image-profile-resize').checked = resize;
+        elements.imageResizeOptions.style.display = resize ? 'block' : 'none';
+
+        if (resize) {
+            document.getElementById('image-profile-width').value = profile.width || 2048;
+            document.getElementById('image-profile-height').value = profile.height || 2048;
+            document.getElementById('image-profile-maintain-aspect').checked = profile.maintain_aspect_ratio !== undefined ? profile.maintain_aspect_ratio : true;
+        }
+    }
+
+    function populateImageThumbnailProfileForm(profile) {
+        document.getElementById('image-thumbnail-profile-name').value = profile.name || '';
+        document.getElementById('image-thumbnail-profile-width').value = profile.width || 320;
+        document.getElementById('image-thumbnail-profile-height').value = profile.height || 240;
+        document.getElementById('image-thumbnail-profile-maintain-aspect').checked = profile.maintain_aspect_ratio !== undefined ? profile.maintain_aspect_ratio : true;
+        document.getElementById('image-thumbnail-profile-format').value = profile.format || 'webp';
+        document.getElementById('image-thumbnail-profile-quality').value = profile.quality || 85;
+    }
+
+    // Render profile lists
+    function renderVideoProfiles() {
+        elements.videoProfilesContainer.innerHTML = '';
+
+        if (!config.video_settings.transcode_profiles.length) {
+            elements.videoProfilesContainer.innerHTML = '<p>No video transcode profiles defined.</p>';
+            return;
+        }
+
+        config.video_settings.transcode_profiles.forEach((profile, index) => {
+            const profileItem = document.createElement('div');
+            profileItem.className = 'profile-item';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${profile.name} (${profile.width}x${profile.height}, ${profile.codec})`;
+            profileItem.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'profile-item-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary btn-sm';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                currentEditingIndex = index;
+                currentProfileType = 'video';
+                populateVideoProfileForm(profile);
+                openModal(elements.videoProfileModal);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this profile?')) {
+                    config.video_settings.transcode_profiles.splice(index, 1);
+                    renderVideoProfiles();
+                    updateJsonPreview();
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            profileItem.appendChild(actionsDiv);
+            elements.videoProfilesContainer.appendChild(profileItem);
+        });
+    }
+
+    function renderPreviewProfiles() {
+        elements.previewProfilesContainer.innerHTML = '';
+
+        if (!config.video_settings.preview_settings.profiles.length) {
+            elements.previewProfilesContainer.innerHTML = '<p>No preview profiles defined.</p>';
+            return;
+        }
+
+        config.video_settings.preview_settings.profiles.forEach((profile, index) => {
+            const profileItem = document.createElement('div');
+            profileItem.className = 'profile-item';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${profile.name} (${profile.width}x${profile.height}, ${profile.start}s-${profile.end}s at ${profile.fps}fps)`;
+            profileItem.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'profile-item-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary btn-sm';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                currentEditingIndex = index;
+                populatePreviewProfileForm(profile);
+                openModal(elements.previewProfileModal);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this profile?')) {
+                    config.video_settings.preview_settings.profiles.splice(index, 1);
+                    renderPreviewProfiles();
+                    updateJsonPreview();
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            profileItem.appendChild(actionsDiv);
+            elements.previewProfilesContainer.appendChild(profileItem);
+        });
+    }
+
+    function renderVideoThumbnailProfiles() {
+        elements.videoThumbnailProfilesContainer.innerHTML = '';
+
+        if (!config.video_settings.thumbnail_settings.profiles.length) {
+            elements.videoThumbnailProfilesContainer.innerHTML = '<p>No video thumbnail profiles defined.</p>';
+            return;
+        }
+
+        config.video_settings.thumbnail_settings.profiles.forEach((profile, index) => {
+            const profileItem = document.createElement('div');
+            profileItem.className = 'profile-item';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${profile.name} (${profile.width}x${profile.height}, ${profile.format})`;
+            profileItem.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'profile-item-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary btn-sm';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                currentEditingIndex = index;
+                populateVideoThumbnailProfileForm(profile);
+                openModal(elements.videoThumbnailProfileModal);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this profile?')) {
+                    config.video_settings.thumbnail_settings.profiles.splice(index, 1);
+                    renderVideoThumbnailProfiles();
+                    updateJsonPreview();
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            profileItem.appendChild(actionsDiv);
+            elements.videoThumbnailProfilesContainer.appendChild(profileItem);
+        });
+    }
+
+    function renderImageProfiles() {
+        elements.imageProfilesContainer.innerHTML = '';
+
+        if (!config.image_settings.transcode_profiles.length) {
+            elements.imageProfilesContainer.innerHTML = '<p>No image transcode profiles defined.</p>';
+            return;
+        }
+
+        config.image_settings.transcode_profiles.forEach((profile, index) => {
+            const profileItem = document.createElement('div');
+            profileItem.className = 'profile-item';
+
+            const nameSpan = document.createElement('span');
+            let qualityInfo = '';
+            if (profile.format === 'png') {
+                qualityInfo = `, compression: ${profile.compression_level || 6}`;
+            } else {
+                qualityInfo = `, quality: ${profile.quality || 90}`;
+            }
+
+            let resizeInfo = '';
+            if (profile.resize) {
+                resizeInfo = `, resize: ${profile.width || 2048}x${profile.height || 2048}`;
+                if (profile.maintain_aspect_ratio) {
+                    resizeInfo += ' (maintain aspect)';
+                }
+            }
+
+            nameSpan.textContent = `${profile.name} (${profile.format}${qualityInfo}${resizeInfo})`;
+            profileItem.appendChild(nameSpan);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'profile-item-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary btn-sm';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                currentEditingIndex = index;
+                currentProfileType = 'image';
+                populateImageProfileForm(profile);
+                openModal(elements.imageProfileModal);
+            });
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this profile?')) {
+                    config.image_settings.transcode_profiles.splice(index, 1);
+                    renderImageProfiles();
+                    updateJsonPreview();
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
+
+            profileItem.appendChild(actionsDiv);
+            elements.imageProfilesContainer.appendChild(profileItem);
+        });
+    }
+
+
+</script>
 {% endblock %}
-<script src="{{ url_for('static', filename='js/load_config.js') }}"></script>
-<script>
-    // Check if we're in edit mode
-    document.addEventListener('DOMContentLoaded', function () {
-        const urlParts = window.location.pathname.split('/');
-        if (urlParts.includes('edit')) {
-            const configId = urlParts[urlParts.length - 1];
-            if (configId) {
-                // We're in edit mode, load the configuration
-                document.querySelector('h1').textContent = 'Edit Configuration';
-                loadConfigForEdit(configId);
-
-                // Update save function to handle edit
-                document.getElementById('confirm-save-config').addEventListener('click', function () {
-                    saveConfigurationEdit(configId);
-                }, {once: true});
-            }
-        }
-    });
-
-    /**
-     * Save the configuration (edit mode)
-     */
-    function saveConfigurationEdit(configId) {
-        const config = buildConfigObject();
-        const configData = {
-            name: config.config_name,
-            description: config.description,
-            config_json: JSON.stringify(config),
-            is_default: document.getElementById('config-default').checked
-        };
-
-        const token = localStorage.getItem('token');
-
-        // Clear previous alerts
-        document.getElementById('save-config-alerts').innerHTML = '';
-
-        // Show loading
-        const loadingAlert = createAlert('Updating configuration...', 'info');
-        document.getElementById('save-config-alerts').appendChild(loadingAlert);
-
-        // Update configuration
-        fetch(`/api/configs/${configId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(configData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Remove loading alert
-                loadingAlert.remove();
-
-                if (data.message === 'Config updated successfully') {
-                    // Show success alert
-                    const successAlert = createAlert('Configuration updated successfully!', 'success');
-                    document.getElementById('save-config-alerts').appendChild(successAlert);
-
-                    // Redirect after a delay
-                    setTimeout(() => {
-                        window.location.href = '/configs';
-                    }, 1500);
-                } else {
-                    // Show error alert
-                    const errorAlert = createAlert(data.message || 'Failed to update configuration', 'danger');
-                    document.getElementById('save-config-alerts').appendChild(errorAlert);
-                }
-            })
-            .catch(error => {
-                // Remove loading alert
-                loadingAlert.remove();
-
-                // Show error alert
-                const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
-                document.getElementById('save-config-alerts').appendChild(errorAlert);
-
-                console.error('Error updating configuration:', error);
-            });
-    }
-</script>
-<script>
-    // Check if we're in edit mode
-    document.addEventListener('DOMContentLoaded', function () {
-        const urlParts = window.location.pathname.split('/');
-        if (urlParts.includes('edit')) {
-            const configId = urlParts[urlParts.length - 1];
-            if (configId) {
-                // We're in edit mode, load the configuration
-                document.querySelector('h1').textContent = 'Edit Configuration';
-                loadConfigForEdit(configId);
-
-                // Update save function to handle edit
-                document.getElementById('confirm-save-config').addEventListener('click', function () {
-                    saveConfigurationEdit(configId);
-                }, {once: true});
-            }
-        }
-    });
-
-    /**
-     * Save the configuration (edit mode)
-     */
-    function saveConfigurationEdit(configId) {
-        const config = buildConfigObject();
-        const configData = {
-            name: config.config_name,
-            description: config.description,
-            config_json: JSON.stringify(config),
-            is_default: document.getElementById('config-default').checked
-        };
-
-        const token = localStorage.getItem('token');
-
-        // Clear previous alerts
-        document.getElementById('save-config-alerts').innerHTML = '';
-
-        // Show loading
-        const loadingAlert = createAlert('Updating configuration...', 'info');
-        document.getElementById('save-config-alerts').appendChild(loadingAlert);
-
-        // Update configuration
-        fetch(`/api/configs/${configId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(configData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Remove loading alert
-                loadingAlert.remove();
-
-                if (data.message === 'Config updated successfully') {
-                    // Show success alert
-                    const successAlert = createAlert('Configuration updated successfully!', 'success');
-                    document.getElementById('save-config-alerts').appendChild(successAlert);
-
-                    // Redirect after a delay
-                    setTimeout(() => {
-                        window.location.href = '/configs';
-                    }, 1500);
-                } else {
-                    // Show error alert
-                    const errorAlert = createAlert(data.message || 'Failed to update configuration', 'danger');
-                    document.getElementById('save-config-alerts').appendChild(errorAlert);
-                }
-            })
-            .catch(error => {
-                // Remove loading alert
-                loadingAlert.remove();
-
-                // Show error alert
-                const errorAlert = createAlert('An error occurred. Please try again.', 'danger');
-                document.getElementById('save-config-alerts').appendChild(errorAlert);
-
-                console.error('Error updating configuration:', error);
-            });
-    }
-</script>

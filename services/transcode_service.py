@@ -1,18 +1,16 @@
-import os
 import json
-import uuid
 import logging
-import time
+import os
 import shutil
-from typing import Dict, List, Any, Tuple, Optional, Union
 from datetime import datetime
-from pathlib import Path
+from typing import Dict, List
 
+from database.models import (
+    db, Config, Job, Media, TranscodeTask, TranscodeOutput
+)
+from services.face_detect_service import FaceProcessor
 from services.ffmpeg_service import FFmpegService
 from services.s3_service import S3Service
-from database.models import (
-    db, User, Config, Job, Media, TranscodeTask, TranscodeOutput
-)
 
 logger = logging.getLogger(__name__)
 
@@ -126,32 +124,37 @@ class TranscodeService:
                 )
                 tasks.append(task)
 
-            # Create preview tasks if enabled
+            # Create preview tasks if enabled (now GIF creation)
             if 'preview_settings' in config['video_settings']:
-                preview_profiles = config['video_settings']['preview_settings'].get('use_profiles', [])
-                for profile_name in preview_profiles:
-                    # Find matching profile
-                    profile = next((p for p in config['video_settings']['transcode_profiles']
-                                    if p['name'] == profile_name), None)
-                    if profile:
-                        task = TranscodeTask(
-                            media_id=media.id,
-                            task_type='preview',
-                            profile_name=profile_name,
-                            status='pending'
-                        )
-                        tasks.append(task)
-
-            # Create thumbnail tasks if enabled
-            if 'thumbnail_settings' in config['video_settings']:
-                for size in config['video_settings']['thumbnail_settings']['sizes']:
+                for profile in config['video_settings']['preview_settings']['profiles']:
                     task = TranscodeTask(
                         media_id=media.id,
-                        task_type='thumbnail',
-                        profile_name=size['name'],
+                        task_type='preview',
+                        profile_name=profile['name'],
                         status='pending'
                     )
                     tasks.append(task)
+
+            # Create thumbnail tasks if enabled
+            if 'thumbnail_settings' in config['video_settings']:
+                for profile in config['video_settings']['thumbnail_settings']['profiles']:
+                    task = TranscodeTask(
+                        media_id=media.id,
+                        task_type='thumbnail',
+                        profile_name=profile['name'],
+                        status='pending'
+                    )
+                    tasks.append(task)
+
+            # Create face detection task if enabled
+            if config.get('face_detection', {}).get('enabled', False):
+                task = TranscodeTask(
+                    media_id=media.id,
+                    task_type='face_detection',
+                    profile_name='default',
+                    status='pending'
+                )
+                tasks.append(task)
 
         elif media.file_type == 'image':
             # Create image transcode tasks
@@ -170,6 +173,16 @@ class TranscodeService:
                     media_id=media.id,
                     task_type='thumbnail',
                     profile_name=profile['name'],
+                    status='pending'
+                )
+                tasks.append(task)
+
+            # Create face detection task if enabled
+            if config.get('face_detection', {}).get('enabled', False):
+                task = TranscodeTask(
+                    media_id=media.id,
+                    task_type='face_detection',
+                    profile_name='default',
                     status='pending'
                 )
                 tasks.append(task)
@@ -219,20 +232,43 @@ class TranscodeService:
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, output_filename)
 
+            # Check if we need to trim the video (new feature)
+            start_time = profile.get('start')
+            end_time = profile.get('end')
+
             # Execute transcode
-            success = self.ffmpeg_service.transcode_video(
-                input_path=media.local_path,
-                output_path=output_path,
-                width=profile['width'],
-                height=profile['height'],
-                codec=profile['codec'],
-                preset=profile['preset'],
-                crf=profile['crf'],
-                format=profile['format'],
-                audio_codec=profile['audio_codec'],
-                audio_bitrate=profile['audio_bitrate'],
-                use_gpu=profile.get('use_gpu', True)
-            )
+            if start_time is not None and end_time is not None:
+                # Trim and transcode the video
+                success = self.ffmpeg_service.transcode_video_segment(
+                    input_path=media.local_path,
+                    output_path=output_path,
+                    start_time=start_time,
+                    end_time=end_time,
+                    width=profile['width'],
+                    height=profile['height'],
+                    codec=profile['codec'],
+                    preset=profile['preset'],
+                    crf=profile['crf'],
+                    format=profile['format'],
+                    audio_codec=profile['audio_codec'],
+                    audio_bitrate=profile['audio_bitrate'],
+                    use_gpu=profile.get('use_gpu', True)
+                )
+            else:
+                # Regular transcode (full video)
+                success = self.ffmpeg_service.transcode_video(
+                    input_path=media.local_path,
+                    output_path=output_path,
+                    width=profile['width'],
+                    height=profile['height'],
+                    codec=profile['codec'],
+                    preset=profile['preset'],
+                    crf=profile['crf'],
+                    format=profile['format'],
+                    audio_codec=profile['audio_codec'],
+                    audio_bitrate=profile['audio_bitrate'],
+                    use_gpu=profile.get('use_gpu', True)
+                )
 
             if not success:
                 raise Exception("Transcode failed")
@@ -288,7 +324,7 @@ class TranscodeService:
             return False
 
     def process_video_preview(self, task_id: int) -> bool:
-        """Process a video preview task."""
+        """Process a video preview task (now creates GIF instead of video)."""
         task = TranscodeTask.query.get(task_id)
         if not task:
             raise ValueError(f"Task with ID {task_id} not found")
@@ -304,43 +340,45 @@ class TranscodeService:
             job = Job.query.get(media.job_id)
             config = self.get_job_config(job.id)
 
-            # Get profile and preview settings
-            profile = next((p for p in config['video_settings']['transcode_profiles']
+            # Get profile from the preview settings
+            preview_settings = config['video_settings']['preview_settings']
+            profile = next((p for p in preview_settings['profiles']
                             if p['name'] == task.profile_name), None)
 
             if not profile:
-                raise ValueError(f"Profile {task.profile_name} not found in config")
+                raise ValueError(f"Preview profile {task.profile_name} not found in config")
 
-            preview_settings = config['video_settings']['preview_settings']
-            duration = preview_settings.get('duration_seconds', 30)
+            # Extract parameters for GIF creation
+            start = profile.get('start', 0)
+            end = profile.get('end', 5)  # Default is 0-5 seconds
+            fps = profile.get('fps', 10)
+            width = profile.get('width', 320)
+            height = profile.get('height', 180)
+            quality = profile.get('quality', 75)
 
             # Create output filename
             filename, ext = os.path.splitext(os.path.basename(media.original_filename))
-            output_filename = f"{filename}_{profile['name']}_preview.{profile['format']}"
+            output_filename = f"{filename}_{profile['name']}_preview.gif"
 
             # Create output directory
             output_dir = os.path.join(self.temp_dir, f'job_{job.id}', f'media_{media.id}')
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, output_filename)
 
-            # Execute preview creation
-            success = self.ffmpeg_service.create_video_preview(
+            # Execute GIF creation
+            success = self.ffmpeg_service.create_gif_from_video(
                 input_path=media.local_path,
                 output_path=output_path,
-                duration=duration,
-                width=profile['width'],
-                height=profile['height'],
-                codec=profile['codec'],
-                preset=profile['preset'],
-                crf=profile['crf'],
-                format=profile['format'],
-                audio_codec=profile['audio_codec'],
-                audio_bitrate=profile['audio_bitrate'],
-                use_gpu=profile.get('use_gpu', True)
+                start=start,
+                end=end,
+                fps=fps,
+                width=width,
+                height=height,
+                quality=quality
             )
 
             if not success:
-                raise Exception("Preview creation failed")
+                raise Exception("GIF creation failed")
 
             # Upload to S3
             folder_structure = config['output_settings']['folder_structure']
@@ -361,9 +399,6 @@ class TranscodeService:
             if not success:
                 raise Exception(f"S3 upload failed: {url}")
 
-            # Get output file metadata
-            output_info = self.ffmpeg_service.get_media_info(output_path)
-
             # Create output record
             output = TranscodeOutput(
                 task_id=task.id,
@@ -371,10 +406,10 @@ class TranscodeService:
                 s3_url=url,
                 local_path=output_path,
                 file_size=os.path.getsize(output_path),
-                width=output_info.get('width'),
-                height=output_info.get('height'),
-                duration=output_info.get('duration'),
-                format=profile['format']
+                width=width,
+                height=height,
+                duration=end - start,
+                format='gif'
             )
             db.session.add(output)
 
@@ -386,14 +421,14 @@ class TranscodeService:
             return True
 
         except Exception as e:
-            logger.error(f"Error processing video preview: {str(e)}")
+            logger.error(f"Error processing video preview (GIF): {str(e)}")
             task.status = 'failed'
             task.error_message = str(e)
             db.session.commit()
             return False
 
     def process_video_thumbnail(self, task_id: int) -> bool:
-        """Process a video thumbnail task."""
+        """Process a video thumbnail task (modified to take one frame)."""
         task = TranscodeTask.query.get(task_id)
         if not task:
             raise ValueError(f"Task with ID {task_id} not found")
@@ -411,76 +446,86 @@ class TranscodeService:
 
             # Get thumbnail settings
             thumbnail_settings = config['video_settings']['thumbnail_settings']
-            size_profile = next((s for s in thumbnail_settings['sizes']
-                                 if s['name'] == task.profile_name), None)
+            profile = next((s for s in thumbnail_settings['profiles']
+                            if s['name'] == task.profile_name), None)
 
-            if not size_profile:
-                raise ValueError(f"Thumbnail size profile {task.profile_name} not found in config")
+            if not profile:
+                raise ValueError(f"Thumbnail profile {task.profile_name} not found in config")
 
-            timestamps = thumbnail_settings.get('timestamps', ['00:00:05'])
-            format = thumbnail_settings.get('format', 'jpg')
-            quality = thumbnail_settings.get('quality', 90)
+            # Get timestamp to extract frame
+            timestamp = thumbnail_settings.get('timestamp')
+            # If timestamp is not specified, choose a frame from the middle or use a default
+            if timestamp is None:
+                if media.duration and media.duration > 0:
+                    # Take frame from middle of video
+                    timestamp_seconds = media.duration / 2
+                else:
+                    # Default to 5 seconds if duration is unknown
+                    timestamp_seconds = 5
+            else:
+                timestamp_seconds = timestamp
 
-            outputs = []
+            # Format timestamp for ffmpeg
+            timestamp_str = self._format_timestamp(timestamp_seconds)
+
+            # Get output format and quality
+            format = profile.get('format', 'jpg')
+            quality = profile.get('quality', 90)
+
+            # Create output filename
+            filename, ext = os.path.splitext(os.path.basename(media.original_filename))
+            output_filename = f"{filename}_{task.profile_name}_thumb.{format}"
 
             # Create output directory
             output_dir = os.path.join(self.temp_dir, f'job_{job.id}', f'media_{media.id}')
             os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, output_filename)
 
-            # Process each timestamp
-            for ts in timestamps:
-                # Create output filename
-                filename, ext = os.path.splitext(os.path.basename(media.original_filename))
-                ts_formatted = ts.replace(':', '_')
-                output_filename = f"{filename}_{task.profile_name}_thumb_{ts_formatted}.{format}"
-                output_path = os.path.join(output_dir, output_filename)
+            # Execute thumbnail extraction
+            success = self.ffmpeg_service.extract_video_thumbnail(
+                input_path=media.local_path,
+                output_path=output_path,
+                timestamp=timestamp_str,
+                width=profile['width'],
+                height=profile['height'],
+                format=format,
+                quality=quality
+            )
 
-                # Execute thumbnail extraction
-                success = self.ffmpeg_service.extract_video_thumbnail(
-                    input_path=media.local_path,
-                    output_path=output_path,
-                    timestamp=ts,
-                    width=size_profile['width'],
-                    height=size_profile['height'],
-                    format=format,
-                    quality=quality
-                )
+            if not success:
+                raise Exception(f"Thumbnail extraction failed for timestamp {timestamp_str}")
 
-                if not success:
-                    raise Exception(f"Thumbnail extraction failed for timestamp {ts}")
+            # Upload to S3
+            folder_structure = config['output_settings']['folder_structure']
+            s3_key = folder_structure.format(
+                user_id=job.user_id,
+                job_id=job.id,
+                type='thumbnail',
+                profile_name=task.profile_name
+            )
+            s3_key = os.path.join(s3_key, output_filename)
 
-                # Upload to S3
-                folder_structure = config['output_settings']['folder_structure']
-                s3_key = folder_structure.format(
-                    user_id=job.user_id,
-                    job_id=job.id,
-                    type='thumbnail',
-                    profile_name=task.profile_name
-                )
-                s3_key = os.path.join(s3_key, output_filename)
+            success, url = self.s3_service.upload_file(
+                file_path=output_path,
+                s3_key=s3_key,
+                public=True
+            )
 
-                success, url = self.s3_service.upload_file(
-                    file_path=output_path,
-                    s3_key=s3_key,
-                    public=True
-                )
+            if not success:
+                raise Exception(f"S3 upload failed: {url}")
 
-                if not success:
-                    raise Exception(f"S3 upload failed: {url}")
-
-                # Create output record
-                output = TranscodeOutput(
-                    task_id=task.id,
-                    output_filename=output_filename,
-                    s3_url=url,
-                    local_path=output_path,
-                    file_size=os.path.getsize(output_path),
-                    width=size_profile['width'],
-                    height=size_profile['height'],
-                    format=format
-                )
-                db.session.add(output)
-                outputs.append(output)
+            # Create output record
+            output = TranscodeOutput(
+                task_id=task.id,
+                output_filename=output_filename,
+                s3_url=url,
+                local_path=output_path,
+                file_size=os.path.getsize(output_path),
+                width=profile['width'],
+                height=profile['height'],
+                format=format
+            )
+            db.session.add(output)
 
             # Update task status
             task.status = 'completed'
@@ -683,70 +728,142 @@ class TranscodeService:
             db.session.commit()
             return False
 
-    def process_task(self, task_id: int) -> bool:
-        """Process a transcode task based on its type."""
+    def _format_timestamp(self, seconds: float) -> str:
+        """Convert seconds to ffmpeg timestamp format (HH:MM:SS.mmm)."""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        seconds = seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{seconds:06.3f}"
+
+    def process_face_detection(self, task_id: int) -> bool:
+        """Process face detection task for video or image."""
         task = TranscodeTask.query.get(task_id)
         if not task:
             raise ValueError(f"Task with ID {task_id} not found")
 
-        media = Media.query.get(task.media_id)
-        if not media:
-            raise ValueError(f"Media with ID {task.media_id} not found")
-
-        # Process based on media type and task type
-        if media.file_type == 'video':
-            if task.task_type == 'transcode':
-                return self.process_video_transcode(task.id)
-            elif task.task_type == 'preview':
-                return self.process_video_preview(task.id)
-            elif task.task_type == 'thumbnail':
-                return self.process_video_thumbnail(task.id)
-        elif media.file_type == 'image':
-            if task.task_type == 'transcode':
-                return self.process_image_transcode(task.id)
-            elif task.task_type == 'thumbnail':
-                return self.process_image_thumbnail(task.id)
-
-        return False
-
-    def process_all_tasks(self, job_id: int) -> Dict[str, int]:
-        """Process all tasks for a job."""
-        job = Job.query.get(job_id)
-        if not job:
-            raise ValueError(f"Job with ID {job_id} not found")
-
-        # Get all media for this job
-        media_list = Media.query.filter_by(job_id=job.id).all()
-
-        results = {
-            'total': 0,
-            'success': 0,
-            'failed': 0
-        }
-
-        for media in media_list:
-            # Get all tasks for this media
-            tasks = TranscodeTask.query.filter_by(media_id=media.id).all()
-
-            for task in tasks:
-                results['total'] += 1
-                if self.process_task(task.id):
-                    results['success'] += 1
-                else:
-                    results['failed'] += 1
-
-        # Update job status
-        if results['failed'] == 0:
-            job.status = 'completed'
-        elif results['success'] == 0:
-            job.status = 'failed'
-        else:
-            job.status = 'partial'
-
-        job.updated_at = datetime.utcnow()
+        # Update task status
+        task.status = 'processing'
+        task.started_at = datetime.utcnow()
         db.session.commit()
 
-        return results
+        try:
+            # Get required data
+            media = Media.query.get(task.media_id)
+            job = Job.query.get(media.job_id)
+            config = self.get_job_config(job.id)
+
+            # Get face detection configuration
+            face_config = config.get('face_detection', {}).get('config', {})
+
+            # Create face processor with provided configuration
+            face_processor = FaceProcessor(face_config)
+
+            # Create output directory
+            output_dir = os.path.join(self.temp_dir, f'job_{job.id}', f'media_{media.id}', 'faces')
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Set custom output path in face processor config
+            face_processor.output_path = output_dir
+
+            # Process media based on its type
+            if media.file_type == 'video':
+                result = face_processor.process_video(media.local_path)
+            else:  # image
+                result = face_processor.process_image(media.local_path)
+
+            # Save results as JSON file
+            result_file = os.path.join(output_dir, 'faces_result.json')
+            with open(result_file, 'w') as f:
+                json.dump(result, f, cls=face_processor.__class__.__module__.NumpyJSONEncoder)
+
+            # Upload results to S3
+            folder_structure = config['output_settings']['folder_structure']
+            base_s3_key = folder_structure.format(
+                user_id=job.user_id,
+                job_id=job.id,
+                type='faces',
+                profile_name=task.profile_name
+            )
+
+            # Upload JSON result file
+            result_filename = f"{os.path.splitext(media.original_filename)[0]}_faces_result.json"
+            result_s3_key = os.path.join(base_s3_key, result_filename)
+
+            success, url = self.s3_service.upload_file(
+                file_path=result_file,
+                s3_key=result_s3_key,
+                public=True
+            )
+
+            if not success:
+                raise Exception(f"S3 upload of result file failed: {url}")
+
+            # Create output record for the result JSON
+            output = TranscodeOutput(
+                task_id=task.id,
+                output_filename=result_filename,
+                s3_url=url,
+                local_path=result_file,
+                file_size=os.path.getsize(result_file),
+                format='json'
+            )
+            db.session.add(output)
+
+            # Upload face avatars if any faces were detected
+            for i, face in enumerate(result.get('faces', [])):
+                if 'avatar' in face:
+                    # The avatar is already in base64 format in the result
+                    # We need to create a file for it to upload to S3
+
+                    # Get face data
+                    face_name = face.get('name', f"face_{i}")
+                    avatar_file = os.path.join(output_dir, f"{face_name}.jpg")
+
+                    # Save base64 content to file
+                    import base64
+                    img_data = base64.b64decode(face['avatar'])
+                    with open(avatar_file, 'wb') as f:
+                        f.write(img_data)
+
+                    # Upload to S3
+                    avatar_s3_key = os.path.join(base_s3_key, f"{face_name}.jpg")
+                    success, avatar_url = self.s3_service.upload_file(
+                        file_path=avatar_file,
+                        s3_key=avatar_s3_key,
+                        public=True
+                    )
+
+                    if not success:
+                        logger.warning(f"Failed to upload face avatar {i}: {avatar_url}")
+                        continue
+
+                    # Create output record for each face avatar
+                    avatar_output = TranscodeOutput(
+                        task_id=task.id,
+                        output_filename=f"{face_name}.jpg",
+                        s3_url=avatar_url,
+                        local_path=avatar_file,
+                        file_size=os.path.getsize(avatar_file),
+                        format='jpg'
+                    )
+                    db.session.add(avatar_output)
+
+            # Commit all avatar outputs to database
+            db.session.commit()
+
+            # Update task status
+            task.status = 'completed'
+            task.completed_at = datetime.utcnow()
+            db.session.commit()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error processing face detection: {str(e)}")
+            task.status = 'failed'
+            task.error_message = str(e)
+            db.session.commit()
+            return False
 
     def cleanup_job(self, job_id: int, delete_local: bool = True) -> bool:
         """Clean up temporary files for a job."""

@@ -1,21 +1,24 @@
-flask==2.3.3
-flask-sqlalchemy==3.1.1
-flask-migrate==4.0.5
-flask-wtf==1.2.1
-flask-login==0.6.3
-flask-cors==4.0.0
-celery==5.3.4
-redis==5.0.1
-boto3==1.34.1
-python-dotenv==1.0.0
-gunicorn==21.2.0
-pillow==10.1.0
-ffmpeg-python==0.2.0
-psutil==5.9.6
-werkzeug==2.3.7
-pydantic==2.5.2
-marshmallow==3.20.1
-python-magic==0.4.27
-watchdog==3.0.0
-PyJWT==2.8.0
-flower==2.0.1
+# Core libraries
+numpy>=1.20.0
+opencv-python>=4.5.5
+onnxruntime>=1.10.0
+scikit-learn>=1.0.2
+
+# Utility libraries
+requests>=2.27.1
+tqdm>=4.64.0  # Optional for progress bars
+matplotlib>=3.5.1  # Optional for visualization
+
+# Deep learning and vision utils
+pillow>=9.0.1  # For image operations
+scipy>=1.8.0  # For scientific computing
+
+# Logging and debugging
+colorlog>=6.7.0  # Optional for colored logs
+
+# For multiprocessing
+dill>=0.3.5  # Optional for complex object serialization
+
+# For development
+pytest>=7.0.0  # Optional for testing
+pylint>=2.13.0  # Optional for code quality

@@ -1,7 +1,7 @@
 {
   "config_name": "Minimal Configuration",
   "description": "Cấu hình tối thiểu cho xử lý video và hình ảnh",
-  "created_at": "2025-05-08T10:00:00Z",
+  "created_at": "2025-05-10T10:00:00Z",
   "video_settings": {
     "transcode_profiles": [
       {
@@ -23,20 +23,29 @@
       }
     ],
     "preview_settings": {
-      "duration_seconds": 30,
-      "use_profiles": ["720p"]
+      "profiles": [
+        {
+          "name": "small_gif",
+          "start": 0,
+          "end": 5,
+          "fps": 10,
+          "width": 320,
+          "height": 180,
+          "quality": 80
+        }
+      ]
     },
     "thumbnail_settings": {
-      "timestamps": ["00:00:05"],
-      "sizes": [
+      "timestamp": 5,
+      "profiles": [
         {
           "name": "small",
           "width": 320,
-          "height": 180
+          "height": 180,
+          "format": "jpg",
+          "quality": 90
         }
-      ],
-      "format": "jpg",
-      "quality": 90
+      ]
     }
   },
   "image_settings": {
@@ -58,6 +67,20 @@
         "quality": 85
       }
     ]
+  },
+  "face_detection": {
+    "enabled": false,
+    "config": {
+      "similarity_threshold": 0.6,
+      "min_faces_in_group": 3,
+      "sample_interval": 5,
+      "face_detector_size": "640x640",
+      "face_detector_score_threshold": 0.6,
+      "min_appearance_ratio": 0.15,
+      "avatar_size": 256,
+      "avatar_quality": 90,
+      "max_workers": 2
+    }
   },
   "output_settings": {
     "s3_bucket": "media-transcode-bucket",

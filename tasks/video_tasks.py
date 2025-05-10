@@ -1,9 +1,10 @@
 import logging
-from .celery_config import celery_app
-from services.transcode_service import TranscodeService
+
+from config import get_config
 from services.ffmpeg_service import FFmpegService
 from services.s3_service import S3Service
-from config import get_config
+from services.transcode_service import TranscodeService
+from .celery_config import celery_app
 
 # Get configuration
 config = get_config()
@@ -41,7 +42,7 @@ def transcode_video(task_id):
 
 @celery_app.task(name='tasks.video_tasks.create_video_preview')
 def create_video_preview(task_id):
-    """Process a video preview task."""
+    """Process a video preview task (now GIF creation)."""
     logger.info(f"Processing video preview task {task_id}")
     return transcode_service.process_video_preview(task_id)
 
@@ -51,6 +52,13 @@ def create_video_thumbnail(task_id):
     """Process a video thumbnail task."""
     logger.info(f"Processing video thumbnail task {task_id}")
     return transcode_service.process_video_thumbnail(task_id)
+
+
+@celery_app.task(name='tasks.video_tasks.detect_faces')
+def detect_faces(task_id):
+    """Process face detection task for video."""
+    logger.info(f"Processing face detection task {task_id}")
+    return transcode_service.process_face_detection(task_id)
 
 
 @celery_app.task(name='tasks.video_tasks.process_all_video_tasks')
