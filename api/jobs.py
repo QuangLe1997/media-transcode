@@ -1,22 +1,19 @@
 from flask import Blueprint, request, jsonify, g
+
+from config import get_config
 from database.models import db, Job, Media, TranscodeTask, TranscodeOutput
 from services.auth_service import AuthService
-from services.transcode_service import TranscodeService
-from services.ffmpeg_service import FFmpegService
+from services.ffmpeg_service import get_ffmpeg_service
 from services.s3_service import S3Service
-from tasks.video_tasks import process_all_video_tasks
+from services.transcode_service import TranscodeService
 from tasks.image_tasks import process_all_image_tasks, cleanup_job
-from config import get_config
+from tasks.video_tasks import process_all_video_tasks
 
 jobs_bp = Blueprint('jobs', __name__)
 
 # Initialize services
 config = get_config()
-ffmpeg_service = FFmpegService(
-    ffmpeg_path=config.FFMPEG_PATH,
-    ffprobe_path=config.FFPROBE_PATH,
-    gpu_enabled=config.GPU_ENABLED,
-    gpu_type=config.GPU_TYPE
+ffmpeg_service = get_ffmpeg_service(
 )
 
 s3_service = S3Service(

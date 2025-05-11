@@ -1,25 +1,23 @@
 import os
 import uuid
-from flask import Blueprint, request, jsonify, g, current_app
-from werkzeug.utils import secure_filename
+
 import magic
+from flask import Blueprint, request, jsonify, g
+from werkzeug.utils import secure_filename
+
+from config import get_config
 from database.models import db, Job, Media
 from services.auth_service import AuthService
-from services.transcode_service import TranscodeService
-from services.ffmpeg_service import FFmpegService
+from services.ffmpeg_service import get_ffmpeg_service
 from services.s3_service import S3Service
-from config import get_config
+from services.transcode_service import TranscodeService
 
 media_bp = Blueprint('media', __name__)
 
 # Initialize services
 config = get_config()
-ffmpeg_service = FFmpegService(
-    ffmpeg_path=config.FFMPEG_PATH,
-    ffprobe_path=config.FFPROBE_PATH,
-    gpu_enabled=config.GPU_ENABLED,
-    gpu_type=config.GPU_TYPE
-)
+
+ffmpeg_service = get_ffmpeg_service()
 
 s3_service = S3Service(
     aws_access_key_id=config.AWS_ACCESS_KEY_ID,

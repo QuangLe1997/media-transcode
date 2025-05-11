@@ -88,7 +88,7 @@ class TranscodeTask(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     media_id = db.Column(db.Integer, db.ForeignKey('media.id'), nullable=False)
-    task_type = db.Column(db.String(20), nullable=False)  # 'transcode', 'preview', 'thumbnail'
+    task_type = db.Column(db.String(20), nullable=False)  # 'transcode', 'preview', 'thumbnail', 'face_detection'
     profile_name = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='pending')  # pending, processing, completed, failed
     error_message = db.Column(db.Text, nullable=True)

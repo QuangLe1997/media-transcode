@@ -5,6 +5,8 @@ import shutil
 from datetime import datetime
 from typing import Dict, List
 
+import numpy as np
+
 from database.models import (
     db, Config, Job, Media, TranscodeTask, TranscodeOutput
 )
@@ -13,6 +15,16 @@ from services.ffmpeg_service import FFmpegService
 from services.s3_service import S3Service
 
 logger = logging.getLogger(__name__)
+
+class NumpyJSONEncoder(json.JSONEncoder):
+    """JSON encoder for NumPy types"""
+
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.float32):
+            return float(obj)
+        return super().default(obj)
 
 
 class TranscodeService:
@@ -674,7 +686,6 @@ class TranscodeService:
                 resize=True,
                 width=profile['width'],
                 height=profile['height'],
-                maintain_aspect_ratio=profile.get('maintain_aspect_ratio', True),
                 format=profile['format'],
                 quality=profile['quality']
             )
@@ -735,6 +746,36 @@ class TranscodeService:
         seconds = seconds % 60
         return f"{hours:02d}:{minutes:02d}:{seconds:06.3f}"
 
+    def process_task(self, task_id: int) -> bool:
+        """Process a transcode task based on its type."""
+        task = TranscodeTask.query.get(task_id)
+        if not task:
+            raise ValueError(f"Task with ID {task_id} not found")
+
+        media = Media.query.get(task.media_id)
+        if not media:
+            raise ValueError(f"Media with ID {task.media_id} not found")
+
+        # Process based on media type and task type
+        if media.file_type == 'video':
+            if task.task_type == 'transcode':
+                return self.process_video_transcode(task.id)
+            elif task.task_type == 'preview':
+                return self.process_video_preview(task.id)
+            elif task.task_type == 'thumbnail':
+                return self.process_video_thumbnail(task.id)
+            elif task.task_type == 'face_detection':
+                return self.process_face_detection(task.id)
+        elif media.file_type == 'image':
+            if task.task_type == 'transcode':
+                return self.process_image_transcode(task.id)
+            elif task.task_type == 'thumbnail':
+                return self.process_image_thumbnail(task.id)
+            elif task.task_type == 'face_detection':
+                return self.process_face_detection(task.id)
+
+        return False
+
     def process_face_detection(self, task_id: int) -> bool:
         """Process face detection task for video or image."""
         task = TranscodeTask.query.get(task_id)
@@ -774,7 +815,7 @@ class TranscodeService:
             # Save results as JSON file
             result_file = os.path.join(output_dir, 'faces_result.json')
             with open(result_file, 'w') as f:
-                json.dump(result, f, cls=face_processor.__class__.__module__.NumpyJSONEncoder)
+                json.dump(result, f, cls=NumpyJSONEncoder)
 
             # Upload results to S3
             folder_structure = config['output_settings']['folder_structure']

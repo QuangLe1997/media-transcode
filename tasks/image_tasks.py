@@ -1,7 +1,7 @@
 import logging
 
 from config import get_config
-from services.ffmpeg_service import FFmpegService
+from services.ffmpeg_service import FFmpegService, get_ffmpeg_service
 from services.s3_service import S3Service
 from services.transcode_service import TranscodeService
 from .celery_config import celery_app
@@ -10,11 +10,7 @@ from .celery_config import celery_app
 config = get_config()
 
 # Setup services
-ffmpeg_service = FFmpegService(
-    ffmpeg_path=config.FFMPEG_PATH,
-    ffprobe_path=config.FFPROBE_PATH,
-    gpu_enabled=config.GPU_ENABLED,
-    gpu_type=config.GPU_TYPE
+ffmpeg_service = get_ffmpeg_service(
 )
 
 s3_service = S3Service(
@@ -60,28 +56,53 @@ def process_all_image_tasks(job_id):
     logger.info(f"Processing all image tasks for job {job_id}")
 
     from database.models import Media, TranscodeTask
+    # Thêm đường dẫn dự án vào sys.path
+    import sys
+    import os
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if project_dir not in sys.path:
+        sys.path.insert(0, project_dir)
 
-    # Get all image media for this job
-    media_list = Media.query.filter_by(job_id=job_id, file_type='image').all()
+    # Tạo Flask app và app context
+    # Điều chỉnh import dựa trên cấu trúc dự án
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("app", os.path.join(project_dir, "app.py"))
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
 
-    results = {
-        'total': 0,
-        'success': 0,
-        'failed': 0
-    }
+    # Lấy hàm create_app (nếu có)
+    create_app = getattr(app_module, "create_app", None)
+    # Hoặc lấy app instance trực tiếp (nếu có)
+    app = getattr(app_module, "app", None)
 
-    for media in media_list:
-        # Get all tasks for this media
-        tasks = TranscodeTask.query.filter_by(media_id=media.id).all()
+    if create_app:
+        app = create_app()
 
-        for task in tasks:
-            results['total'] += 1
-            if transcode_service.process_task(task.id):
-                results['success'] += 1
-            else:
-                results['failed'] += 1
+    if not app:
+        raise RuntimeError("Could not find Flask app")
 
-    return results
+    with app.app_context():
+        # Get all image media for this job
+        media_list = Media.query.filter_by(job_id=job_id, file_type='image').all()
+
+        results = {
+            'total': 0,
+            'success': 0,
+            'failed': 0
+        }
+
+        for media in media_list:
+            # Get all tasks for this media
+            tasks = TranscodeTask.query.filter_by(media_id=media.id).all()
+
+            for task in tasks:
+                results['total'] += 1
+                if transcode_service.process_task(task.id):
+                    results['success'] += 1
+                else:
+                    results['failed'] += 1
+
+        return results
 
 
 @celery_app.task(name='tasks.image_tasks.cleanup_job')

@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 from typing import Optional, Dict, Any, Tuple
 import mimetypes
 
+from flask import  current_app
 logger = logging.getLogger(__name__)
 
 
@@ -97,12 +98,12 @@ class S3Service:
 
             # Generate URL
             if public:
-                url = f"https://{self.bucket_name}.s3.amazonaws.com/{s3_key}"
+                url = f"{current_app.config['AWS_ENDPOINT_URL']}/{self.bucket_name}/{s3_key}"
             else:
                 url = self.s3_client.generate_presigned_url(
                     'get_object',
                     Params={'Bucket': self.bucket_name, 'Key': s3_key},
-                    ExpiresIn=3600  # URL valid for 1 hour
+                    ExpiresIn=3600*24  # URL valid for 1 hour
                 )
 
             return True, url
@@ -218,7 +219,7 @@ class S3Service:
         """
         try:
             if public:
-                return f"https://{self.bucket_name}.s3.amazonaws.com/{s3_key}"
+                return f"{current_app.config['AWS_ENDPOINT_URL']}/{self.bucket_name}/{s3_key}"
             else:
                 return self.s3_client.generate_presigned_url(
                     'get_object',

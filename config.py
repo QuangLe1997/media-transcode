@@ -25,6 +25,7 @@ class Config:
     # AWS S3
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_ENDPOINT_URL = os.environ.get('AWS_ENDPOINT_URL')
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
     S3_BUCKET = os.environ.get('S3_BUCKET')
 

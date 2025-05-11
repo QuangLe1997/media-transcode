@@ -1,5 +1,4 @@
 import concurrent.futures
-import json
 import os
 import statistics
 from base64 import b64encode
@@ -9,8 +8,6 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 from tqdm import tqdm
-import json
-import os
 
 # Constants for face landmarks and face analysis
 WARP_TEMPLATES = {
@@ -66,7 +63,8 @@ BoundingBox = np.ndarray
 Matrix = np.ndarray
 Score = float
 Embedding = np.ndarray
-
+# Global variable để lưu trữ face analyser instance
+_face_analyser_instance = None
 
 class Face:
     def __init__(self,
@@ -200,36 +198,112 @@ def prepare_detect_frame(temp_vision_frame: VisionFrame, face_detector_size: str
     return detect_vision_frame
 
 
+# Global variable để lưu trữ face analyser instance
+_face_analyser_instance = None
+
+
 def get_face_analyser():
     """
-    Get or initialize face analysis models
+    Get or initialize face analysis models (singleton pattern)
 
     Returns:
         Dictionary containing face detection, recognition, and analysis models
     """
-    # In a real implementation, this would initialize and return face analysis models
-    # Here's a simplified version that returns mocked models
-    import onnxruntime
+    global _face_analyser_instance
 
-    # Create a session with a dummy model or mock the session
+    # Nếu đã load rồi, trả về instance đã có
+    if _face_analyser_instance is not None:
+        return _face_analyser_instance
+
+    import onnxruntime
+    import os
+    import numpy as np
+    from pathlib import Path
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Lấy đường dẫn gốc của dự án
+    project_root = Path(__file__).parent.parent.absolute()
+    models_dir = os.path.join(project_root, "models")
+
+    # Đảm bảo thư mục tồn tại
+    if not os.path.exists(models_dir):
+        logger.warning(f"Models directory not found: {models_dir}")
+
+    # Đường dẫn đầy đủ tới các tệp model
+    yoloface_path = os.path.join(models_dir, "yoloface.onnx")
+    arcface_path = os.path.join(models_dir, "arcface_w600k_r50.onnx")
+    landmarker_68_path = os.path.join(models_dir, "face_landmarker_68.onnx")
+    landmarker_68_5_path = os.path.join(models_dir, "face_landmarker_68_5.onnx")
+    gender_age_path = os.path.join(models_dir, "gender_age.onnx")
+
+    logger.debug(f"Loading models from: {models_dir}")
+
+    # Kiểm tra tệp tồn tại
+    files_to_check = [
+        (yoloface_path, "YoloFace"),
+        (arcface_path, "ArcFace"),
+        (landmarker_68_path, "Landmarker 68"),
+        (landmarker_68_5_path, "Landmarker 68.5"),
+        (gender_age_path, "Gender Age")
+    ]
+
+    missing_files = []
+    for file_path, model_name in files_to_check:
+        if not os.path.exists(file_path):
+            missing_files.append(f"{model_name} ({file_path})")
+
+    if missing_files:
+        logger.warning(f"Missing model files: {', '.join(missing_files)}")
+
+    # Cấu hình ONNX Runtime
+    options = onnxruntime.SessionOptions()
+    options.intra_op_num_threads = 1  # Giới hạn thread để cải thiện ổn định
+    options.inter_op_num_threads = 1
+    providers = ['CPUExecutionProvider']  # Sử dụng CPU để tránh vấn đề với GPU
+
     try:
-        # If the model exists, load it
-        face_detector = onnxruntime.InferenceSession("../models/yoloface.onnx")
-        face_recognizer = onnxruntime.InferenceSession("../models/arcface_w600k_r50.onnx")
-        face_landmarker_68 = onnxruntime.InferenceSession("../models/face_landmarker_68.onnx")
-        face_landmarker_68_5 = onnxruntime.InferenceSession("../models/face_landmarker_68_5.onnx")
-        gender_age = onnxruntime.InferenceSession("../models/gender_age.onnx")
+        # Nếu model tồn tại, load nó
+        face_detector = onnxruntime.InferenceSession(
+            yoloface_path,
+            providers=providers,
+            sess_options=options
+        )
+        face_recognizer = onnxruntime.InferenceSession(
+            arcface_path,
+            providers=providers,
+            sess_options=options
+        )
+        face_landmarker_68 = onnxruntime.InferenceSession(
+            landmarker_68_path,
+            providers=providers,
+            sess_options=options
+        )
+        face_landmarker_68_5 = onnxruntime.InferenceSession(
+            landmarker_68_5_path,
+            providers=providers,
+            sess_options=options
+        )
+        gender_age = onnxruntime.InferenceSession(
+            gender_age_path,
+            providers=providers,
+            sess_options=options
+        )
+
+        logger.info("Successfully loaded all face analysis models")
     except Exception as e:
-        logger.error(f"Error loading models: {e}. Using mock models.")
-        # If models don't exist, create mock objects
+        logger.error(f"Error loading models: {e}. Using mock models instead.")
+        # Sử dụng mock objects khi không thể load model
         from unittest.mock import MagicMock
+
         face_detector = MagicMock()
         face_recognizer = MagicMock()
         face_landmarker_68 = MagicMock()
         face_landmarker_68_5 = MagicMock()
         gender_age = MagicMock()
 
-        # Configure mock behavior
+        # Cấu hình mock behavior
         face_detector.get_inputs.return_value = [MagicMock(name='input')]
         face_detector.run.return_value = [np.zeros((1, 17640, 16))]
 
@@ -245,7 +319,8 @@ def get_face_analyser():
         gender_age.get_inputs.return_value = [MagicMock(name='input')]
         gender_age.run.return_value = [np.array([[0.3, 0.7, 0.35]])]  # [male_prob, female_prob, age_factor]
 
-    face_analyser = {
+    # Tạo và lưu trữ face analyser
+    _face_analyser_instance = {
         'face_detectors': {'yoloface': face_detector},
         'face_recognizer': face_recognizer,
         'face_landmarkers': {
@@ -255,8 +330,7 @@ def get_face_analyser():
         'gender_age': gender_age
     }
 
-    return face_analyser
-
+    return _face_analyser_instance
 
 def create_faces(vision_frame: VisionFrame,
                  bounding_box_list: List[BoundingBox],
@@ -1408,67 +1482,56 @@ class FaceProcessor:
             logger.error(f"Error calculating GLCM features: {e}")
             return {'contrast': 0, 'energy': 0, 'homogeneity': 0}
 
-
-class NumpyJSONEncoder(json.JSONEncoder):
-    """JSON encoder for NumPy types"""
-
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, np.float32):
-            return float(obj)
-        return super().default(obj)
-
-
-def main():
-    """
-    Example demonstrating how to use the refactored FaceProcessor with custom configuration
-    """
-    # Define configuration with customized parameters
-    config = {
-        # Clustering parameters
-        "similarity_threshold": 0.6,  # Threshold for face clustering (lower = more groups)
-        "min_faces_in_group": 3,  # Minimum faces required to form a group
-        # Frame sampling parameters
-        "sample_interval": 5,  # Process every 5th frame for efficiency
-        "ignore_frames": [0, 1, 2],  # Skip first 3 frames (often contain transitions)
-        "ignore_ranges": [(500, 600)],  # Skip frames 500-600 (e.g., a section to ignore)
-        # Face detection parameters
-        "face_detector_size": "640x640",  # Size for face detector input
-        "face_detector_score_threshold": 0.6,  # Min confidence for face detection
-
-        # Group filtering parameters
-        "min_appearance_ratio": 0.15,  # Require faces to appear in at least 20% of frames
-        "min_frontality": 0.2,  # Require faces to be fairly frontal
-        # Avatar parameters
-        "avatar_size": 256,  # Higher resolution avatars
-        "avatar_padding": 0.1,  # More padding around faces
-        "avatar_quality": 90,  # Higher quality JPEG
-        "output_path": "./output/faces",  # Custom output directory
-        # Processing parameters
-        "max_workers": 4  # Control thread pool size
-    }
-
-    # Create processor with custom config
-    processor = FaceProcessor(config)
-
-    # Process a video
-    video_path = "/Users/quang/Documents/skl-workspace/transcode/media-transcode/uploads/input_3.mp4"
-    if os.path.exists(video_path):
-        print(f"Processing video: {video_path}")
-        result = processor.process_video(video_path)
-
-        # Save results to JSON
-        output_file = "face_groups.json"
-        os.makedirs("./output", exist_ok=True)
-        with open(f"./output/{output_file}", "w") as f:
-            json.dump(result, f, cls=NumpyJSONEncoder, indent=2)
-
-        print(f"Results saved to ./output/{output_file}")
-        print(f"Processed {len(result['faces'])} face groups")
-    else:
-        print(f"Video file not found: {video_path}")
-
-
-if __name__ == "__main__":
-    main()
+#
+# def main():
+#     """
+#     Example demonstrating how to use the refactored FaceProcessor with custom configuration
+#     """
+#     # Define configuration with customized parameters
+#     config = {
+#         # Clustering parameters
+#         "similarity_threshold": 0.6,  # Threshold for face clustering (lower = more groups)
+#         "min_faces_in_group": 3,  # Minimum faces required to form a group
+#         # Frame sampling parameters
+#         "sample_interval": 5,  # Process every 5th frame for efficiency
+#         "ignore_frames": [0, 1, 2],  # Skip first 3 frames (often contain transitions)
+#         "ignore_ranges": [(500, 600)],  # Skip frames 500-600 (e.g., a section to ignore)
+#         # Face detection parameters
+#         "face_detector_size": "640x640",  # Size for face detector input
+#         "face_detector_score_threshold": 0.6,  # Min confidence for face detection
+#
+#         # Group filtering parameters
+#         "min_appearance_ratio": 0.15,  # Require faces to appear in at least 20% of frames
+#         "min_frontality": 0.2,  # Require faces to be fairly frontal
+#         # Avatar parameters
+#         "avatar_size": 256,  # Higher resolution avatars
+#         "avatar_padding": 0.1,  # More padding around faces
+#         "avatar_quality": 90,  # Higher quality JPEG
+#         "output_path": "./output/faces",  # Custom output directory
+#         # Processing parameters
+#         "max_workers": 4  # Control thread pool size
+#     }
+#
+#     # Create processor with custom config
+#     processor = FaceProcessor(config)
+#
+#     # Process a video
+#     video_path = "/Users/quang/Documents/skl-workspace/transcode/media-transcode/uploads/input_3.mp4"
+#     if os.path.exists(video_path):
+#         print(f"Processing video: {video_path}")
+#         result = processor.process_video(video_path)
+#
+#         # Save results to JSON
+#         output_file = "face_groups.json"
+#         os.makedirs("./output", exist_ok=True)
+#         with open(f"./output/{output_file}", "w") as f:
+#             json.dump(result, f, cls=NumpyJSONEncoder, indent=2)
+#
+#         print(f"Results saved to ./output/{output_file}")
+#         print(f"Processed {len(result['faces'])} face groups")
+#     else:
+#         print(f"Video file not found: {video_path}")
+#
+#
+# if __name__ == "__main__":
+#     main()
