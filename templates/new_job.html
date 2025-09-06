@@ -2,683 +2,405 @@
 
 {% block title %}New Job - Media Transcode Service{% endblock %}
 
-{% block css %}
-<style>
-    .file-drop-area {
-        border: 2px dashed #ccc;
-        border-radius: 8px;
-        padding: 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .file-drop-area.drag-over {
-        background-color: rgba(0, 123, 255, 0.1);
-        border-color: #007bff;
-    }
-
-    .file-preview {
-        display: flex;
-        flex-wrap: wrap;
-        margin-top: 20px;
-    }
-
-    .file-item {
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 10px;
-        margin: 0 10px 10px 0;
-        display: flex;
-        align-items: center;
-        position: relative;
-    }
-
-    .file-item .file-icon {
-        font-size: 24px;
-        margin-right: 10px;
-    }
-
-    .file-item .file-name {
-        max-width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .file-item .file-remove {
-        margin-left: 10px;
-        cursor: pointer;
-        color: #dc3545;
-    }
-
-    .config-preview {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 mx-auto">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Create New Job</h1>
-            <a href="/jobs" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Jobs
-            </a>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Step 1: Select Configuration</h5>
-            </div>
-            <div class="card-body">
-                <div id="configs-container">
-                    <div class="d-flex justify-content-center py-3">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Create New Job</h2>
+                    <a href="/jobs" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
                 </div>
 
-                <div id="selected-config" class="mt-4" style="display: none;">
-                    <h6>Selected Configuration:</h6>
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0" id="config-name">Config Name</h6>
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#config-details">
-                                Show Details
-                            </button>
-                        </div>
-                        <div class="collapse" id="config-details">
-                            <div class="card-body">
-                                <pre class="config-preview" id="config-json"></pre>
+                <!-- Main Form -->
+                <div class="row">
+                    <!-- Config Selection -->
+                    <div class="col-md-4 mb-3">
+                        <label for="config-select" class="form-label fw-bold">Configuration</label>
+                        <select class="form-select" id="config-select" required>
+                            <option value="">Loading configurations...</option>
+                        </select>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div class="col-md-8">
+                        <div id="drop-zone" class="file-drop-zone">
+                            <div class="drop-content text-center">
+                                <i class="fas fa-cloud-upload-alt fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">Drag & Drop Files Here</h4>
+                                <p class="text-muted">or click to select files</p>
+                                <button type="button" class="btn btn-primary" id="file-select-btn">
+                                    <i class="fas fa-folder-open me-1"></i>Select Files
+                                </button>
+                                <input type="file" id="file-input" multiple accept="video/*,image/*"
+                                       style="display: none;">
+                            </div>
+
+                            <!-- File List -->
+                            <div id="file-list" class="file-list mt-3" style="display: none;">
+                                <h6>Selected Files:</h6>
+                                <div id="files-container"></div>
+
+                                <!-- Submit Button -->
+                                <div class="mt-3 text-center">
+                                    <button type="button" class="btn btn-success btn-lg" id="create-job-btn" disabled>
+                                        <i class="fas fa-play me-2"></i>Create Job & Start Processing
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="card mb-4" id="upload-section" style="display: none;">
-            <div class="card-header">
-                <h5 class="mb-0">Step 2: Upload Media Files</h5>
-            </div>
-            <div class="card-body">
-                <div class="file-drop-area" id="drop-area">
-                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-                    <h4>Drag & Drop Files Here</h4>
-                    <p>or</p>
-                    <button type="button" class="btn btn-primary" id="file-select-button">
-                        <i class="fas fa-folder-open me-2"></i>Select Files
-                    </button>
-                    <input type="file" id="file-input" multiple style="display: none;">
-                </div>
-
-                <div class="file-preview" id="file-preview"></div>
-
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <span>Supported formats:</span>
-                    <ul class="mb-0 mt-2">
-                        <li><strong>Video:</strong> MP4, MOV, AVI, MKV, WEBM, FLV, WMV</li>
-                        <li><strong>Image:</strong> PNG, JPG, JPEG, GIF, WEBP, TIFF, BMP</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="card mb-4" id="submit-section" style="display: none;">
-            <div class="card-header">
-                <h5 class="mb-0">Step 3: Process Files</h5>
-            </div>
-            <div class="card-body">
-                <p>You've selected <span id="selected-files-count">0</span> files with the "<span id="selected-config-name">Default</span>" configuration.</p>
-                <p>Click the button below to start processing your files.</p>
-
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-primary" id="submit-job">
-                        <i class="fas fa-cogs me-2"></i>Start Processing
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="job-result" style="display: none;"></div>
     </div>
-</div>
 
-<!-- Config Selection Template -->
-<template id="configs-template">
-    <div class="row" id="configs-list">
-        <!-- Configs will be added here dynamically -->
-    </div>
-</template>
-
-<!-- Config Card Template -->
-<template id="config-card-template">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="config-name">Config Name</h5>
-                <p class="config-description">Config Description</p>
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-outline-primary select-config">
-                        <i class="fas fa-check me-2"></i>Select
-                    </button>
+    <!-- Result Modal -->
+    <div class="modal fade" id="resultModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Job Status</h5>
                 </div>
-            </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Result content will be inserted here -->
+                </div>
+                <div class="modal-footer" id="modal-footer">
+                    <!-- Footer buttons will be inserted here -->
+                </div>
         </div>
     </div>
-</template>
-
-<!-- No Configs Template -->
-<template id="no-configs-template">
-    <div class="text-center py-4">
-        <i class="fas fa-exclamation-circle fa-3x mb-3 text-warning"></i>
-        <h4>No Configurations Found</h4>
-        <p>Please create a configuration first.</p>
-        <a href="/configs/new" class="btn btn-primary mt-2">
-            <i class="fas fa-plus me-2"></i>Create Configuration
-        </a>
     </div>
-</template>
 
-<!-- File Item Template -->
-<template id="file-item-template">
-    <div class="file-item">
-        <i class="file-icon"></i>
-        <div class="file-name"></div>
-        <div class="file-size"></div>
-        <i class="fas fa-times file-remove"></i>
-    </div>
-</template>
+    <style>
+        .file-drop-zone {
+            border: 3px dashed #dee2e6;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            min-height: 400px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
 
-<!-- Job Result Success Template -->
-<template id="job-success-template">
-    <div class="alert alert-success">
-        <h4 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Job Created Successfully!</h4>
-        <p>Your job is now being processed. You can view the progress on the job details page.</p>
-        <hr>
-        <div class="d-flex justify-content-between">
-            <a href="" class="btn btn-primary view-job-link">View Job</a>
-            <a href="/jobs" class="btn btn-outline-primary">Back to Jobs</a>
-        </div>
-    </div>
-</template>
+        .file-drop-zone:hover,
+        .file-drop-zone.drag-over {
+            border-color: #0d6efd;
+            background: rgba(13, 110, 253, 0.05);
+        }
 
-<!-- Job Result Error Template -->
-<template id="job-error-template">
-    <div class="alert alert-danger">
-        <h4 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Error</h4>
-        <p class="error-message">An error occurred while creating the job.</p>
-        <hr>
-        <button type="button" class="btn btn-outline-primary" id="try-again">Try Again</button>
-    </div>
-</template>
+        .drop-content {
+            pointer-events: none;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+            background: white;
+        }
+
+        .file-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .file-icon {
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .file-remove {
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+
+        .file-remove:hover {
+            background-color: #f8d7da;
+        }
+    </style>
 {% endblock %}
 
 {% block js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if user is authenticated
+    document.addEventListener('DOMContentLoaded', function () {
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = '/login';
             return;
         }
 
-        // Variables
-        let selectedConfig = null;
+        // Elements
+        const configSelect = document.getElementById('config-select');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileSelectBtn = document.getElementById('file-select-btn');
+        const fileList = document.getElementById('file-list');
+        const filesContainer = document.getElementById('files-container');
+        const createJobBtn = document.getElementById('create-job-btn');
+
+        // State
         let selectedFiles = [];
 
-        // Load configs
+        // Initialize
         loadConfigs();
-
-        // Event listeners
         setupFileUpload();
         setupFormSubmission();
 
-        // Event delegation for config selection
-        document.addEventListener('click', function(e) {
-            // Select config
-            if (e.target.classList.contains('select-config') || e.target.closest('.select-config')) {
-                const card = e.target.closest('.col-md-6');
-                const configId = card.dataset.configId;
-                const configName = card.querySelector('.config-name').textContent;
-
-                selectConfig(configId, configName);
-            }
-
-            // Try again button
-            if (e.target.id === 'try-again') {
-                document.getElementById('job-result').style.display = 'none';
-                document.getElementById('submit-section').style.display = '';
-            }
-        });
-
-        /**
-         * Load configs from API
-         */
         function loadConfigs() {
-            const configsContainer = document.getElementById('configs-container');
-
             fetch('/api/configs', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: {'Authorization': `Bearer ${token}`}
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load configs');
-                }
-                return response.json();
-            })
-            .then(data => {
-                renderConfigs(data.configs || []);
-            })
-            .catch(error => {
-                console.error('Error loading configs:', error);
-                configsContainer.innerHTML = `
-                    <div class="alert alert-danger">
-                        Failed to load configurations. Please try again.
-                    </div>
-                `;
-            });
-        }
-
-        /**
-         * Render configs
-         */
-        function renderConfigs(configs) {
-            const configsContainer = document.getElementById('configs-container');
-
+                .then(response => response.json())
+                .then(data => {
+                    const configs = data.configs || [];
+                    configSelect.innerHTML = '';
+            
             if (configs.length === 0) {
-                // No configs
-                const template = document.getElementById('no-configs-template');
-                const content = template.content.cloneNode(true);
-                configsContainer.innerHTML = '';
-                configsContainer.appendChild(content);
+                configSelect.innerHTML = '<option value="">No configurations available</option>';
                 return;
             }
 
-            // Has configs
-            const template = document.getElementById('configs-template');
-            const content = template.content.cloneNode(true);
-            configsContainer.innerHTML = '';
-            configsContainer.appendChild(content);
-
-            const configsList = document.getElementById('configs-list');
-
-            // Add each config
+                    configSelect.innerHTML = '<option value="">Select a configuration...</option>';
+            
             configs.forEach(config => {
-                const template = document.getElementById('config-card-template');
-                const card = template.content.cloneNode(true);
-
-                card.querySelector('.col-md-6').dataset.configId = config.id;
-                card.querySelector('.config-name').textContent = config.name;
-                card.querySelector('.config-description').textContent = config.description || 'No description';
-
-                // Mark as default if it is
-                if (config.is_default) {
-                    const button = card.querySelector('.select-config');
-                    button.classList.remove('btn-outline-primary');
-                    button.classList.add('btn-primary');
-                    button.innerHTML = '<i class="fas fa-star me-2"></i>Default';
-
-                    // Auto-select default config
-                    setTimeout(() => {
-                        selectConfig(config.id, config.name);
-                    }, 100);
-                }
-
-                configsList.appendChild(card);
+                const option = document.createElement('option');
+                option.value = config.id;
+                option.textContent = config.name + (config.is_default ? ' (Default)' : '');
+                if (config.is_default) option.selected = true;
+                configSelect.appendChild(option);
             });
+
+                    updateSubmitButton();
+                })
+                .catch(error => {
+                    console.error('Error loading configs:', error);
+                    configSelect.innerHTML = '<option value="">Error loading configurations</option>';
+                });
         }
 
-        /**
-         * Select a config
-         */
-        function selectConfig(configId, configName) {
-            selectedConfig = configId;
-
-            // Update UI
-            document.getElementById('selected-config').style.display = '';
-            document.getElementById('config-name').textContent = configName;
-            document.getElementById('selected-config-name').textContent = configName;
-            document.getElementById('upload-section').style.display = '';
-
-            // Show config details
-            fetch(`/api/configs/${configId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const configJson = document.getElementById('config-json');
-                configJson.textContent = JSON.stringify(data.config_json, null, 2);
-            })
-            .catch(error => {
-                console.error('Error loading config details:', error);
-            });
-
-            // Highlight selected config
-            const configCards = document.querySelectorAll('#configs-list .col-md-6');
-            configCards.forEach(card => {
-                const button = card.querySelector('.select-config');
-                if (card.dataset.configId === configId) {
-                    button.classList.remove('btn-outline-primary');
-                    button.classList.add('btn-primary');
-                    button.innerHTML = '<i class="fas fa-check me-2"></i>Selected';
-                } else if (!button.innerHTML.includes('Default')) {
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-outline-primary');
-                    button.innerHTML = '<i class="fas fa-check me-2"></i>Select';
-                }
-            });
-        }
-
-        /**
-         * Setup file upload functionality
-         */
         function setupFileUpload() {
-            const dropArea = document.getElementById('drop-area');
-            const fileInput = document.getElementById('file-input');
-            const fileSelectButton = document.getElementById('file-select-button');
-            const filePreview = document.getElementById('file-preview');
-
             // Prevent default drag behaviors
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, preventDefaults, false);
-                document.body.addEventListener(eventName, preventDefaults, false);
+                dropZone.addEventListener(eventName, preventDefaults, false);
             });
 
-            // Highlight drop area when dragging over it
+            // Highlight drop area
             ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, highlight, false);
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
             });
 
             ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, unhighlight, false);
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
             });
 
             // Handle dropped files
-            dropArea.addEventListener('drop', handleDrop, false);
-
-            // Handle selected files
-            fileInput.addEventListener('change', handleFiles, false);
-
-            // Handle click on select button
-            fileSelectButton.addEventListener('click', () => {
+            dropZone.addEventListener('drop', handleDrop, false);
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileSelectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 fileInput.click();
             });
 
-            // Handle click on file remove
-            filePreview.addEventListener('click', function(e) {
-                if (e.target.classList.contains('file-remove')) {
-                    const fileItem = e.target.closest('.file-item');
-                    const index = Array.from(filePreview.children).indexOf(fileItem);
+            // Handle selected files
+            fileInput.addEventListener('change', handleFiles);
 
-                    if (index !== -1) {
-                        selectedFiles.splice(index, 1);
-                        fileItem.remove();
-                        updateFilesCount();
-                    }
-                }
-            });
+            // Config change
+            configSelect.addEventListener('change', updateSubmitButton);
 
             function preventDefaults(e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
 
-            function highlight() {
-                dropArea.classList.add('drag-over');
-            }
-
-            function unhighlight() {
-                dropArea.classList.remove('drag-over');
-            }
-
             function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles({ target: { files } });
+                const files = e.dataTransfer.files;
+                addFiles(files);
             }
 
             function handleFiles(e) {
-                const files = e.target.files;
+                addFiles(e.target.files);
+            }
 
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-
-                    // Check file type
-                    const fileType = file.type;
-                    let isValid = false;
-                    let icon = '';
-
-                    if (fileType.startsWith('video/')) {
-                        isValid = true;
-                        icon = 'fas fa-film text-primary';
-                    } else if (fileType.startsWith('image/')) {
-                        isValid = true;
-                        icon = 'fas fa-image text-success';
-                    }
-
-                    if (isValid) {
-                        // Add to selected files
+            function addFiles(files) {
+                Array.from(files).forEach(file => {
+                    if (file.type.startsWith('video/') || file.type.startsWith('image/')) {
                         selectedFiles.push(file);
-
-                        // Create file item
-                        const template = document.getElementById('file-item-template');
-                        const fileItem = template.content.cloneNode(true);
-
-                        fileItem.querySelector('.file-icon').className = `file-icon ${icon}`;
-                        fileItem.querySelector('.file-name').textContent = file.name;
-
-                        // Format file size
-                        const fileSize = formatFileSize(file.size);
-                        fileItem.querySelector('.file-size').textContent = fileSize;
-
-                        filePreview.appendChild(fileItem);
                     }
+                });
+                renderFiles();
+                updateSubmitButton();
+            }
+
+            function renderFiles() {
+                if (selectedFiles.length === 0) {
+                    fileList.style.display = 'none';
+                    return;
                 }
 
-                updateFilesCount();
+                fileList.style.display = 'block';
+                filesContainer.innerHTML = '';
+
+                selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+
+                    const icon = file.type.startsWith('video/') ? 'fas fa-film text-primary' : 'fas fa-image text-success';
+
+                    fileItem.innerHTML = `
+                    <i class="file-icon ${icon}"></i>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <i class="file-remove fas fa-times" data-index="${index}"></i>
+                `;
+
+                    fileItem.querySelector('.file-remove').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectedFiles.splice(index, 1);
+                        renderFiles();
+                        updateSubmitButton();
+                    });
+
+                    filesContainer.appendChild(fileItem);
+                });
             }
 
             function formatFileSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
-
                 const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
-
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
-
-            function updateFilesCount() {
-                const count = selectedFiles.length;
-                document.getElementById('selected-files-count').textContent = count;
-
-                if (count > 0 && selectedConfig) {
-                    document.getElementById('submit-section').style.display = '';
-                } else {
-                    document.getElementById('submit-section').style.display = 'none';
-                }
-            }
         }
 
-        /**
-         * Setup form submission
-         */
-        function setupFormSubmission() {
-            const submitButton = document.getElementById('submit-job');
+        function updateSubmitButton() {
+            const hasConfig = configSelect.value !== '';
+            const hasFiles = selectedFiles.length > 0;
+            createJobBtn.disabled = !(hasConfig && hasFiles);
+        }
 
-            submitButton.addEventListener('click', function() {
-                if (!selectedConfig || selectedFiles.length === 0) {
-                    alert('Please select a configuration and at least one file.');
-                    return;
-                }
+        function setupFormSubmission() {
+            createJobBtn.addEventListener('click', async function () {
+                if (!configSelect.value || selectedFiles.length === 0) return;
 
                 // Disable button
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                createJobBtn.disabled = true;
+                createJobBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Job...';
 
+                try {
                 // Create job
-                createJob()
-                    .then(jobId => {
-                        // Upload files
-                        return uploadFiles(jobId);
-                    })
-                    .then(jobId => {
-                        // Start processing
-                        return startProcessing(jobId);
-                    })
-                    .then(jobId => {
-                        // Show success
-                        showJobResult(jobId, null);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        // Show error
-                        showJobResult(null, error.message || 'An error occurred.');
-                    })
-                    .finally(() => {
-                        // Re-enable button
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = '<i class="fas fa-cogs me-2"></i>Start Processing';
-                    });
-            });
-        }
-
-        /**
-         * Create a new job
-         */
-        function createJob() {
-            return new Promise((resolve, reject) => {
-                fetch('/api/jobs', {
+                    const jobResponse = await fetch('/api/jobs', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        config_id: selectedConfig
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to create job');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    resolve(data.id);
-                })
-                .catch(error => {
-                    console.error('Error creating job:', error);
-                    reject(new Error('Failed to create job'));
+                        body: JSON.stringify({config_id: parseInt(configSelect.value)})
                 });
-            });
-        }
 
-        /**
-         * Upload files to a job
-         */
-        function uploadFiles(jobId) {
-            return new Promise((resolve, reject) => {
+                    if (!jobResponse.ok) throw new Error('Failed to create job');
+                    const jobData = await jobResponse.json();
+                    const jobId = jobData.id;
+
+                    // Upload files
+                    createJobBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading Files...';
+                
                 const formData = new FormData();
+                    selectedFiles.forEach(file => formData.append('files[]', file));
 
-                // Add files to form data
-                selectedFiles.forEach(file => {
-                    formData.append('files[]', file);
-                });
-
-                fetch(`/api/media/upload/${jobId}`, {
+                    const uploadResponse = await fetch(`/api/media/upload/${jobId}`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
+                        headers: {'Authorization': `Bearer ${token}`},
                     body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to upload files');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    resolve(jobId);
-                })
-                .catch(error => {
-                    console.error('Error uploading files:', error);
-                    reject(new Error('Failed to upload files'));
                 });
-            });
-        }
 
-        /**
-         * Start processing a job
-         */
-        function startProcessing(jobId) {
-            return new Promise((resolve, reject) => {
-                fetch(`/api/jobs/${jobId}/process`, {
+                    if (!uploadResponse.ok) throw new Error('Failed to upload files');
+
+                    // Start processing
+                    createJobBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting Processing...';
+
+                    const processResponse = await fetch(`/api/jobs/${jobId}/process`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to start processing');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    resolve(jobId);
-                })
-                .catch(error => {
-                    console.error('Error starting processing:', error);
-                    reject(new Error('Failed to start processing'));
-                });
+                        headers: {'Authorization': `Bearer ${token}`}
+                    });
+
+                    if (!processResponse.ok) throw new Error('Failed to start processing');
+
+                    // Show success
+                    showResult(true, jobId);
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    showResult(false, null, error.message);
+                }
+
+                // Reset button
+                createJobBtn.disabled = false;
+                createJobBtn.innerHTML = '<i class="fas fa-play me-2"></i>Create Job & Start Processing';
             });
         }
 
-        /**
-         * Show job result
-         */
-        function showJobResult(jobId, error) {
-            const jobResult = document.getElementById('job-result');
+        function showResult(success, jobId, errorMessage) {
+            const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const modalBody = document.getElementById('modal-body');
+            const modalFooter = document.getElementById('modal-footer');
 
-            // Hide other sections
-            document.getElementById('submit-section').style.display = 'none';
-
-            if (jobId) {
-                // Success
-                const template = document.getElementById('job-success-template');
-                const content = template.content.cloneNode(true);
-
-                content.querySelector('.view-job-link').href = `/jobs/${jobId}`;
-
-                jobResult.innerHTML = '';
-                jobResult.appendChild(content);
+            if (success) {
+                modalBody.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <h4>Job Created Successfully!</h4>
+                    <p>Your job is now being processed. You can view the progress on the job details page.</p>
+                </div>
+            `;
+                modalFooter.innerHTML = `
+                <a href="/jobs/${jobId}" class="btn btn-primary">View Job</a>
+                <a href="/jobs" class="btn btn-outline-secondary">Back to Jobs</a>
+            `;
             } else {
-                // Error
-                const template = document.getElementById('job-error-template');
-                const content = template.content.cloneNode(true);
-
-                content.querySelector('.error-message').textContent = error;
-
-                jobResult.innerHTML = '';
-                jobResult.appendChild(content);
+                modalBody.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-circle fa-4x text-danger mb-3"></i>
+                    <h4>Error Creating Job</h4>
+                    <p>${errorMessage || 'An unexpected error occurred.'}</p>
+                </div>
+            `;
+                modalFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            `;
             }
 
-            jobResult.style.display = '';
+            modal.show();
         }
     });
 </script>

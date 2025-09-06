@@ -26,6 +26,7 @@ function checkAuth() {
     const navLogin = document.getElementById('nav-login');
     const navRegister = document.getElementById('nav-register');
     const navUser = document.getElementById('nav-user');
+    const navDashboard = document.getElementById('nav-dashboard');
     const navJobs = document.getElementById('nav-jobs');
     const navConfigs = document.getElementById('nav-configs');
     const username = document.getElementById('username');
@@ -38,6 +39,7 @@ function checkAuth() {
             navUser.style.display = '';
             if (username) username.textContent = user.username || 'User';
         }
+        if (navDashboard) navDashboard.style.display = '';
         if (navJobs) navJobs.style.display = '';
         if (navConfigs) navConfigs.style.display = '';
 
@@ -48,6 +50,7 @@ function checkAuth() {
         if (navLogin) navLogin.style.display = '';
         if (navRegister) navRegister.style.display = '';
         if (navUser) navUser.style.display = 'none';
+        if (navDashboard) navDashboard.style.display = 'none';
         if (navJobs) navJobs.style.display = 'none';
         if (navConfigs) navConfigs.style.display = 'none';
 

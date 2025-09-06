@@ -39,16 +39,20 @@ def get_jobs():
     # Get all jobs for this user
     jobs = Job.query.filter_by(user_id=user.id).order_by(Job.created_at.desc()).all()
 
-    return jsonify({
-        'jobs': [{
+    jobs_list = []
+    for job in jobs:
+        job_data = {
             'id': job.id,
             'status': job.status,
             'created_at': job.created_at.isoformat(),
             'updated_at': job.updated_at.isoformat(),
             'config_id': job.config_id,
+            'config_name': job.config.name if job.config else 'Deleted Configuration',
             'media_count': len(job.media)
-        } for job in jobs]
-    }), 200
+        }
+        jobs_list.append(job_data)
+
+    return jsonify({'jobs': jobs_list}), 200
 
 
 @jobs_bp.route('/<int:job_id>', methods=['GET'])
@@ -206,3 +210,197 @@ def delete_job(job_id):
     db.session.commit()
 
     return jsonify({'message': 'Job deleted successfully'}), 200
+
+
+@jobs_bp.route('/stats', methods=['GET'])
+@AuthService.token_required
+def get_job_stats():
+    """Get statistics for user's jobs."""
+    user = g.current_user
+
+    # Total jobs
+    total_jobs = Job.query.filter_by(user_id=user.id).count()
+
+    # Jobs by status
+    pending_jobs = Job.query.filter_by(user_id=user.id, status='pending').count()
+    processing_jobs = Job.query.filter_by(user_id=user.id, status='processing').count()
+    completed_jobs = Job.query.filter_by(user_id=user.id, status='completed').count()
+    failed_jobs = Job.query.filter_by(user_id=user.id, status='failed').count()
+
+    # Total media processed
+    total_media = db.session.query(Media).join(Job).filter(Job.user_id == user.id).count()
+
+    # Media by type
+    video_count = db.session.query(Media).join(Job).filter(
+        Job.user_id == user.id,
+        Media.file_type == 'video'
+    ).count()
+
+    image_count = db.session.query(Media).join(Job).filter(
+        Job.user_id == user.id,
+        Media.file_type == 'image'
+    ).count()
+
+    # Total outputs generated
+    total_outputs = db.session.query(TranscodeOutput).join(
+        TranscodeTask
+    ).join(Media).join(Job).filter(Job.user_id == user.id).count()
+
+    return jsonify({
+        'total_jobs': total_jobs,
+        'jobs_by_status': {
+            'pending': pending_jobs,
+            'processing': processing_jobs,
+            'completed': completed_jobs,
+            'failed': failed_jobs
+        },
+        'media': {
+            'total': total_media,
+            'videos': video_count,
+            'images': image_count
+        },
+        'outputs': total_outputs
+    }), 200
+
+
+@jobs_bp.route('/search', methods=['GET'])
+@AuthService.token_required
+def search_jobs():
+    """Search jobs with filters."""
+    user = g.current_user
+
+    # Get query parameters
+    status = request.args.get('status')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    config_id = request.args.get('config_id')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+
+    # Build query
+    query = Job.query.filter_by(user_id=user.id)
+
+    if status:
+        query = query.filter_by(status=status)
+
+    if config_id:
+        query = query.filter_by(config_id=config_id)
+
+    if date_from:
+        try:
+            from datetime import datetime
+            date_from_obj = datetime.fromisoformat(date_from)
+            query = query.filter(Job.created_at >= date_from_obj)
+        except:
+            pass
+
+    if date_to:
+        try:
+            from datetime import datetime
+            date_to_obj = datetime.fromisoformat(date_to)
+            query = query.filter(Job.created_at <= date_to_obj)
+        except:
+            pass
+
+    # Order by created date desc
+    query = query.order_by(Job.created_at.desc())
+
+    # Paginate
+    paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return jsonify({
+        'jobs': [{
+            'id': job.id,
+            'status': job.status,
+            'created_at': job.created_at.isoformat(),
+            'updated_at': job.updated_at.isoformat(),
+            'config_id': job.config_id,
+            'media_count': len(job.media)
+        } for job in paginated.items],
+        'pagination': {
+            'page': paginated.page,
+            'per_page': paginated.per_page,
+            'total': paginated.total,
+            'pages': paginated.pages,
+            'has_prev': paginated.has_prev,
+            'has_next': paginated.has_next
+        }
+    }), 200
+
+
+@jobs_bp.route('/batch/delete', methods=['POST'])
+@AuthService.token_required
+def batch_delete_jobs():
+    """Delete multiple jobs at once."""
+    user = g.current_user
+    data = request.get_json()
+
+    if not data or not data.get('job_ids'):
+        return jsonify({'message': 'Missing job IDs'}), 400
+
+    job_ids = data.get('job_ids', [])
+    deleted_count = 0
+
+    for job_id in job_ids:
+        job = Job.query.get(job_id)
+        if job and job.user_id == user.id:
+            # Clean up files
+            transcode_service.cleanup_job(job.id)
+            # Delete from database
+            db.session.delete(job)
+            deleted_count += 1
+
+    db.session.commit()
+
+    return jsonify({
+        'message': f'Successfully deleted {deleted_count} jobs',
+        'deleted_count': deleted_count
+    }), 200
+
+
+@jobs_bp.route('/<int:job_id>/retry', methods=['POST'])
+@AuthService.token_required
+def retry_job(job_id):
+    """Retry a failed job."""
+    user = g.current_user
+
+    # Find job
+    job = Job.query.get(job_id)
+
+    if not job:
+        return jsonify({'message': 'Job not found'}), 404
+
+    # Check ownership
+    if job.user_id != user.id:
+        return jsonify({'message': 'Access denied'}), 403
+
+    # Check if job can be retried
+    if job.status not in ['failed', 'partial']:
+        return jsonify({'message': 'Job cannot be retried in current status'}), 400
+
+    # Reset job status
+    job.status = 'pending'
+
+    # Reset failed tasks
+    failed_tasks = TranscodeTask.query.join(Media).filter(
+        Media.job_id == job.id,
+        TranscodeTask.status == 'failed'
+    ).all()
+
+    for task in failed_tasks:
+        task.status = 'pending'
+        task.error_message = None
+        task.started_at = None
+        task.completed_at = None
+
+    db.session.commit()
+
+    # Start processing again
+    video_task = process_all_video_tasks.delay(job.id)
+    image_task = process_all_image_tasks.delay(job.id)
+
+    return jsonify({
+        'message': 'Job retry started',
+        'video_task_id': video_task.id,
+        'image_task_id': image_task.id
+    }), 200

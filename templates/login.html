@@ -42,7 +42,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Redirect if already logged in
         if (localStorage.getItem('token')) {
-            window.location.href = '/';
+            window.location.href = '/dashboard';
         }
 
         // Handle login form submission
@@ -84,9 +84,9 @@
                     const successAlert = createAlert('Login successful! Redirecting...', 'success');
                     document.getElementById('login-alerts').appendChild(successAlert);
 
-                    // Redirect to home page
+                    // Redirect to dashboard
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/dashboard';
                     }, 1000);
                 } else {
                     // Login failed

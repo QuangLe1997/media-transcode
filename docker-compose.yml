@@ -1,91 +1,314 @@
-version: '3.8'
-
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: media-transcode-app
-    container_name: media-transcode-web
-    command: web
+  postgres:
+    image: postgres:15-alpine
+    container_name: transcode-postgres
     ports:
-      - "5000:5000"
-    volumes:
-      - ./uploads:/app/uploads
-      - transcode_tmp:/tmp/transcode-jobs
+      - "5433:5432"
     environment:
-      - FLASK_ENV=production
-      - SECRET_KEY=change-this-in-production
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - S3_BUCKET=your-bucket-name
-      - AWS_ACCESS_KEY_ID=your-key
-      - AWS_SECRET_ACCESS_KEY=your-secret
-      - DATABASE_URL=sqlite:////app/instance/media_transcode.db
-      - GPU_ENABLED=true
-    depends_on:
-      - redis
-    restart: unless-stopped
+      - POSTGRES_DB=transcode_db
+      - POSTGRES_USER=transcode_user
+      - POSTGRES_PASSWORD=transcode_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U transcode_user -d transcode_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
-  worker:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: media-transcode-app
-    container_name: media-transcode-worker
-    command: worker
-    volumes:
-      - ./uploads:/app/uploads
-      - transcode_tmp:/tmp/transcode-jobs
-    environment:
-      - FLASK_ENV=production
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - S3_BUCKET=your-bucket-name
-      - AWS_ACCESS_KEY_ID=your-key
-      - AWS_SECRET_ACCESS_KEY=your-secret
-      - DATABASE_URL=sqlite:////app/instance/media_transcode.db
-      - GPU_ENABLED=true
-      - GPU_TYPE=nvidia
+    container_name: transcode-api
+    ports:
+      - "8087:8087"
     depends_on:
-      - redis
-      - web
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8087
+
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER}
+      
+      # Google Cloud Pub/Sub Configuration
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC}
+      - TASKS_SUBSCRIPTION=${TASKS_SUBSCRIPTION}
+      - PUBSUB_RESULTS_TOPIC=${PUBSUB_RESULTS_TOPIC}
+      - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=./key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=./key.json
+      
+      # Face Detection Pub/Sub Configuration
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+    volumes:
+      - ./key.json:/app/key.json:ro
+      - ./logs:/app/logs
+      - /tmp/transcode:/tmp/transcode  # Shared temp directory
+    restart: always
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '1.0'
+    # Health check with longer timeout for GPU initialization
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8087/health" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: transcode-consumer
+    command: [ "python", "-m", "consumer.transcode_worker" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+
+      - FFMPEG_HWACCEL=auto
+      - FFMPEG_GPU_ENABLED=auto
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER}
+      
+      # Google Cloud Pub/Sub Configuration
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC}
+      - TASKS_SUBSCRIPTION=${TASKS_SUBSCRIPTION}
+      - PUBSUB_RESULTS_TOPIC=${PUBSUB_RESULTS_TOPIC}
+      - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=./key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=./key.json
+      
+      # Face Detection Pub/Sub Configuration
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+    volumes:
+      - ./key.json:/app/key.json:ro
+      - ./logs:/app/logs
+      - /tmp/transcode:/tmp/transcode  # Shared temp directory
+    restart: always
+    # GPU runtime (will be ignored if not available)
+    # GPU runtime for face detection
+    runtime: nvidia
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
-    restart: unless-stopped
+              capabilities: [ gpu ]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
 
-  flower:
+  face-detection-worker:
     build:
       context: .
       dockerfile: Dockerfile
-    image: media-transcode-app
-    container_name: media-transcode-flower
-    command: flower
-    ports:
-      - "5555:5555"
-    environment:
-      - FLASK_ENV=production
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    container_name: transcode-face-detection-worker
+    command: [ "python", "-m", "consumer.face_detect_worker" ]
     depends_on:
-      - redis
-      - worker
-    restart: unless-stopped
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # GPU Configuration for face detection
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
 
-  redis:
-    image: redis:7.0-alpine
-    container_name: media-transcode-redis
-    ports:
-      - "6379:6379"
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER}
+      
+      # Google Cloud Pub/Sub Configuration
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC}
+      - TASKS_SUBSCRIPTION=${TASKS_SUBSCRIPTION}
+      - PUBSUB_RESULTS_TOPIC=${PUBSUB_RESULTS_TOPIC}
+      - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=./key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=./key.json
+      
+      # Face Detection Pub/Sub Configuration
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+      
+      # Face Detection Configuration
+      - FACE_DETECTION_SUBSCRIPTION=${FACE_DETECTION_SUBSCRIPTION:-face-detection-worker-tasks-sub}
+      - ORT_LOGGING_LEVEL=4
     volumes:
-      - redis_data:/data
-    restart: unless-stopped
+      - ./key.json:/app/key.json:ro
+      - ./logs:/app/logs
+      - ./models_faces:/app/models_faces  # Mount face detection models (read-write for auto-download)
+      - /tmp/transcode:/tmp/transcode  # Shared temp directory
+    restart: always
+    # GPU runtime for face detection
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  task-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: transcode-task-listener
+    command: [ "python", "-m", "consumer.task_listener" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER}
+      
+      # Google Cloud Pub/Sub Configuration
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC}
+      - TASKS_SUBSCRIPTION=${TASKS_SUBSCRIPTION}
+      - PUBSUB_RESULTS_TOPIC=${PUBSUB_RESULTS_TOPIC}
+      - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=./key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=./key.json
+      
+      # Face Detection Pub/Sub Configuration
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+      
+      # Task Listener Configuration
+      - PUBSUB_TASK_SUBSCRIPTION=${PUBSUB_TASK_SUBSCRIPTION:-skl-transcode-cms-tasks-sub}
+      - PUBSUB_MAX_MESSAGES=${PUBSUB_MAX_MESSAGES:-10}
+    volumes:
+      - ./key.json:/app/key.json:ro
+      - ./logs:/app/logs
+    restart: always
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: transcode-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: always
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
 volumes:
-  redis_data:
-  transcode_tmp:
+  postgres_data:
+

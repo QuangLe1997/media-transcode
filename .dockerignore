@@ -1,37 +1,71 @@
-.git
-.gitignore
-.env
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-*.log
-.DS_Store
-.idea/
-.vscode/
-.pytest_cache/
-uploads/*
-!uploads/.gitkeep
-instance/
-node_modules/
+# Virtual environment
+.venv/
 venv/
-.python-version
-docker-compose*.yml
-Dockerfile*
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Database files
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
 README.md
+docs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Environment files
+.env.local
+.env.example
+.env.development
+.env.test
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/build/
+frontend/.env*
+node_modules/
+
+# Test files
+tests/
+test_*/
+*_test.py
+*.test.js
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Development tools
+.editorconfig
+.eslintrc*
+.prettierrc*
+deploy.sh

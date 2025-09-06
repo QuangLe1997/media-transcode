@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -50,7 +51,7 @@ class Job(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    config_id = db.Column(db.Integer, db.ForeignKey('configs.id'), nullable=False)
+    config_id = db.Column(db.Integer, db.ForeignKey('configs.id', ondelete='SET NULL'), nullable=True)
     status = db.Column(db.String(20), nullable=False, default='pending')  # pending, processing, completed, failed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

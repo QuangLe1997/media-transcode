@@ -1,24 +1,22 @@
-# Core libraries
-numpy>=1.20.0
-opencv-python>=4.5.5
-onnxruntime>=1.10.0
-scikit-learn>=1.0.2
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+boto3==1.29.7
+google-cloud-pubsub==2.18.4
+sqlalchemy==2.0.23
+aiosqlite==0.19.0
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+httpx==0.25.2
+aiofiles==23.2.1
+greenlet==3.0.1
 
-# Utility libraries
-requests>=2.27.1
-tqdm>=4.64.0  # Optional for progress bars
-matplotlib>=3.5.1  # Optional for visualization
-
-# Deep learning and vision utils
-pillow>=9.0.1  # For image operations
-scipy>=1.8.0  # For scientific computing
-
-# Logging and debugging
-colorlog>=6.7.0  # Optional for colored logs
-
-# For multiprocessing
-dill>=0.3.5  # Optional for complex object serialization
-
-# For development
-pytest>=7.0.0  # Optional for testing
-pylint>=2.13.0  # Optional for code quality
+# GIF processing libraries
+imageio==2.37.0
+pillow==10.1.0
+imageio-ffmpeg==0.6.0
+av==15.0.0
+numpy==2.2.5

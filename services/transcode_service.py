@@ -248,7 +248,7 @@ class TranscodeService:
             start_time = profile.get('start')
             end_time = profile.get('end')
 
-            # Execute transcode
+            # Execute transcode with enhanced parameters
             if start_time is not None and end_time is not None:
                 # Trim and transcode the video
                 success = self.ffmpeg_service.transcode_video_segment(
@@ -260,14 +260,24 @@ class TranscodeService:
                     height=profile['height'],
                     codec=profile['codec'],
                     preset=profile['preset'],
-                    crf=profile['crf'],
+                    crf=profile.get('crf', 23),
                     format=profile['format'],
-                    audio_codec=profile['audio_codec'],
-                    audio_bitrate=profile['audio_bitrate'],
-                    use_gpu=profile.get('use_gpu', True)
+                    audio_codec=profile.get('audio_codec', 'aac'),
+                    audio_bitrate=profile.get('audio_bitrate', '128k'),
+                    audio_channels=profile.get('audio_channels', 2),
+                    audio_sample_rate=profile.get('audio_sample_rate', 44100),
+                    bitrate=profile.get('bitrate'),
+                    max_bitrate=profile.get('max_bitrate'),
+                    buffer_size=profile.get('buffer_size'),
+                    fps=profile.get('fps'),
+                    keyframe_interval=profile.get('keyframe_interval'),
+                    use_gpu=profile.get('use_gpu', True),
+                    gpu_options=profile.get('gpu_options', {}),
+                    filters=profile.get('filters', {}) if isinstance(profile.get('filters', {}), dict) else {},
+                    advanced=profile.get('advanced', {})
                 )
             else:
-                # Regular transcode (full video)
+                # Regular transcode (full video) with enhanced parameters
                 success = self.ffmpeg_service.transcode_video(
                     input_path=media.local_path,
                     output_path=output_path,
@@ -275,25 +285,61 @@ class TranscodeService:
                     height=profile['height'],
                     codec=profile['codec'],
                     preset=profile['preset'],
-                    crf=profile['crf'],
+                    crf=profile.get('crf', 23),
                     format=profile['format'],
-                    audio_codec=profile['audio_codec'],
-                    audio_bitrate=profile['audio_bitrate'],
-                    use_gpu=profile.get('use_gpu', True)
+                    audio_codec=profile.get('audio_codec', 'aac'),
+                    audio_bitrate=profile.get('audio_bitrate', '128k'),
+                    audio_channels=profile.get('audio_channels', 2),
+                    audio_sample_rate=profile.get('audio_sample_rate', 44100),
+                    bitrate=profile.get('bitrate'),
+                    max_bitrate=profile.get('max_bitrate'),
+                    buffer_size=profile.get('buffer_size'),
+                    fps=profile.get('fps'),
+                    keyframe_interval=profile.get('keyframe_interval'),
+                    use_gpu=profile.get('use_gpu', True),
+                    gpu_options=profile.get('gpu_options', {}),
+                    filters=profile.get('filters', {}) if isinstance(profile.get('filters', {}), dict) else {},
+                    advanced=profile.get('advanced', {})
                 )
 
             if not success:
                 raise Exception("Transcode failed")
 
-            # Upload to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload to S3 with enhanced storage settings
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
+
+            # Generate filename based on template
+            filename_template = storage_settings.get('filename_template', '{timestamp}_{profile}_{original_name}')
+            import time
+
+            if storage_settings.get('generate_unique_filenames', True):
+                timestamp = str(int(time.time()))
+            else:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+            if storage_settings.get('preserve_original_filename', True):
+                original_name = os.path.splitext(media.original_filename)[0]
+            else:
+                original_name = 'media'
+
+            final_filename = filename_template.format(
+                timestamp=timestamp,
+                profile=profile['name'],
+                original_name=original_name
+            )
+            final_filename = f"{final_filename}.{profile['format']}"
+            
             s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,
                 type='video',
                 profile_name=profile['name']
             )
-            s3_key = os.path.join(s3_key, output_filename)
+            # Normalize path to avoid double slashes
+            s3_key = s3_key.replace('//', '/').strip('/')
+            s3_key = f"{s3_key}/{final_filename}"
 
             success, url = self.s3_service.upload_file(
                 file_path=output_path,
@@ -303,6 +349,13 @@ class TranscodeService:
 
             if not success:
                 raise Exception(f"S3 upload failed: {url}")
+
+            # Clean up local file if configured
+            if storage_settings.get('delete_local_after_upload', True):
+                try:
+                    os.remove(output_path)
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to cleanup local file {output_path}: {cleanup_error}")
 
             # Get output file metadata
             output_info = self.ffmpeg_service.get_media_info(output_path)
@@ -392,15 +445,19 @@ class TranscodeService:
             if not success:
                 raise Exception("GIF creation failed")
 
-            # Upload to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload to S3 with enhanced storage settings
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
             s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,
                 type='preview',
                 profile_name=profile['name']
             )
-            s3_key = os.path.join(s3_key, output_filename)
+            # Normalize path to avoid double slashes
+            s3_key = s3_key.replace('//', '/').strip('/')
+            s3_key = f"{s3_key}/{output_filename}"
 
             success, url = self.s3_service.upload_file(
                 file_path=output_path,
@@ -507,15 +564,19 @@ class TranscodeService:
             if not success:
                 raise Exception(f"Thumbnail extraction failed for timestamp {timestamp_str}")
 
-            # Upload to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload to S3 with enhanced storage settings
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
             s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,
                 type='thumbnail',
                 profile_name=task.profile_name
             )
-            s3_key = os.path.join(s3_key, output_filename)
+            # Normalize path to avoid double slashes
+            s3_key = s3_key.replace('//', '/').strip('/')
+            s3_key = f"{s3_key}/{output_filename}"
 
             success, url = self.s3_service.upload_file(
                 file_path=output_path,
@@ -586,29 +647,35 @@ class TranscodeService:
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, output_filename)
 
-            # Execute transcode
+            # Execute transcode with enhanced parameters from config
             success = self.ffmpeg_service.transcode_image(
                 input_path=media.local_path,
                 output_path=output_path,
                 resize=profile.get('resize', False),
-                width=media.width,  # Keep original dimensions if resize is False
-                height=media.height,
+                width=profile.get('width', media.width),
+                height=profile.get('height', media.height), 
                 format=profile['format'],
-                quality=profile['quality']
+                quality=profile.get('quality', 85),
+                compression_level=profile.get('compression_level', 6),
+                optimize=profile.get('optimize', True)
             )
 
             if not success:
                 raise Exception("Image transcode failed")
 
-            # Upload to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload to S3 with enhanced storage settings
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
             s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,
                 type='image',
                 profile_name=profile['name']
             )
-            s3_key = os.path.join(s3_key, output_filename)
+            # Normalize path to avoid double slashes
+            s3_key = s3_key.replace('//', '/').strip('/')
+            s3_key = f"{s3_key}/{output_filename}"
 
             success, url = self.s3_service.upload_file(
                 file_path=output_path,
@@ -693,15 +760,19 @@ class TranscodeService:
             if not success:
                 raise Exception("Image thumbnail creation failed")
 
-            # Upload to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload to S3 with enhanced storage settings  
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
             s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,
                 type='thumbnail',
                 profile_name=profile['name']
             )
-            s3_key = os.path.join(s3_key, output_filename)
+            # Normalize path to avoid double slashes
+            s3_key = s3_key.replace('//', '/').strip('/')
+            s3_key = f"{s3_key}/{output_filename}"
 
             success, url = self.s3_service.upload_file(
                 file_path=output_path,
@@ -817,8 +888,10 @@ class TranscodeService:
             with open(result_file, 'w') as f:
                 json.dump(result, f, cls=NumpyJSONEncoder)
 
-            # Upload results to S3
-            folder_structure = config['output_settings']['folder_structure']
+            # Upload results to S3 with enhanced storage settings
+            output_settings = config.get('output_settings', {})
+            storage_settings = output_settings.get('storage', {})
+            folder_structure = storage_settings.get('folder_structure', '{user_id}/{job_id}/{type}/{profile_name}/')
             base_s3_key = folder_structure.format(
                 user_id=job.user_id,
                 job_id=job.id,

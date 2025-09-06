@@ -1,4 +1,5 @@
-import concurrent.futures
+import gc
+import logging
 import os
 import statistics
 from base64 import b64encode
@@ -37,23 +38,7 @@ WARP_TEMPLATES = {
         ])
 }
 
-
-# Logger stub - implement your own logger as needed
-class Logger:
-    @staticmethod
-    def error(message, tag=""):
-        print(f"ERROR [{tag}]: {message}")
-
-    @staticmethod
-    def info(message, tag=""):
-        print(f"INFO [{tag}]: {message}")
-
-    @staticmethod
-    def debug(message, tag=""):
-        print(f"DEBUG [{tag}]: {message}")
-
-
-logger = Logger()
+logger = logging.getLogger(__name__)
 
 # Type definitions for better code understanding
 VisionFrame = np.ndarray
@@ -63,6 +48,7 @@ BoundingBox = np.ndarray
 Matrix = np.ndarray
 Score = float
 Embedding = np.ndarray
+
 # Global variable để lưu trữ face analyser instance
 _face_analyser_instance = None
 
@@ -173,7 +159,7 @@ def detect_with_yoloface(vision_frame: VisionFrame,
         return bounding_box_list, face_landmark_5_list, score_list
 
     except Exception as e:
-        logger.error(f"Error in detect_with_yoloface: {e}", "FACE")
+        logger.error(f"Error in detect_with_yoloface: {e}")
         return [], [], []
 
 
@@ -198,10 +184,6 @@ def prepare_detect_frame(temp_vision_frame: VisionFrame, face_detector_size: str
     return detect_vision_frame
 
 
-# Global variable để lưu trữ face analyser instance
-_face_analyser_instance = None
-
-
 def get_face_analyser():
     """
     Get or initialize face analysis models (singleton pattern)
@@ -219,17 +201,29 @@ def get_face_analyser():
     import os
     import numpy as np
     from pathlib import Path
-    import logging
 
-    logger = logging.getLogger(__name__)
+    # Suppress ONNX Runtime warnings about CUDA
+    onnxruntime.set_default_logger_severity(3)
 
     # Lấy đường dẫn gốc của dự án
     project_root = Path(__file__).parent.parent.absolute()
-    models_dir = os.path.join(project_root, "models")
+    models_dir = os.path.join(project_root, "models_faces")
 
     # Đảm bảo thư mục tồn tại
     if not os.path.exists(models_dir):
-        logger.warning(f"Models directory not found: {models_dir}")
+        logger.info(f"Creating models directory: {models_dir}")
+        os.makedirs(models_dir, exist_ok=True)
+
+    # Models should already be downloaded during worker initialization
+    # Just check if they exist
+    required_models = ["yoloface.onnx", "arcface_w600k_r50.onnx", "face_landmarker_68.onnx",
+                       "face_landmarker_68_5.onnx", "gender_age.onnx"]
+
+    for model_name in required_models:
+        model_path = os.path.join(models_dir, model_name)
+        if not os.path.exists(model_path) or os.path.getsize(model_path) == 0:
+            logger.error(f"Model not found or empty: {model_name}")
+            return _create_mock_face_analyser()
 
     # Đường dẫn đầy đủ tới các tệp model
     yoloface_path = os.path.join(models_dir, "yoloface.onnx")
@@ -240,7 +234,7 @@ def get_face_analyser():
 
     logger.debug(f"Loading models from: {models_dir}")
 
-    # Kiểm tra tệp tồn tại
+    # Kiểm tra tệp tồn tại (sau khi tải xuống)
     files_to_check = [
         (yoloface_path, "YoloFace"),
         (arcface_path, "ArcFace"),
@@ -255,13 +249,65 @@ def get_face_analyser():
             missing_files.append(f"{model_name} ({file_path})")
 
     if missing_files:
-        logger.warning(f"Missing model files: {', '.join(missing_files)}")
+        logger.warning(f"Missing model files after download attempt: {', '.join(missing_files)}")
+        return _create_mock_face_analyser()
 
     # Cấu hình ONNX Runtime
     options = onnxruntime.SessionOptions()
-    options.intra_op_num_threads = 1  # Giới hạn thread để cải thiện ổn định
-    options.inter_op_num_threads = 1
-    providers = ['CPUExecutionProvider']  # Sử dụng CPU để tránh vấn đề với GPU
+    # Thread settings optimized for GPU usage
+    options.intra_op_num_threads = 2  # Increase for better GPU utilization
+    options.inter_op_num_threads = 2
+
+    # Memory optimization settings
+    options.enable_cpu_mem_arena = False  # Disable memory arena to reduce fragmentation  
+    options.enable_mem_pattern = True  # Enable for better GPU memory pattern
+    options.enable_mem_reuse = True  # Enable memory reuse between runs
+
+    # GPU-specific optimizations
+    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL  # Better GPU utilization
+
+    # GPU configuration - test CUDA context first
+    providers = ['CPUExecutionProvider']  # Default to CPU
+
+    # Check if running in Docker with GPU support
+    if os.path.exists('/dev/nvidia0') or os.environ.get('NVIDIA_VISIBLE_DEVICES'):
+        try:
+            import subprocess
+            # Check nvidia-smi
+            result = subprocess.run(['nvidia-smi', '-L'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and 'GPU' in result.stdout:
+                # GPU detected, test CUDA context
+                # Test CUDA with explicit device configuration
+                if 'CUDAExecutionProvider' in onnxruntime.get_available_providers():
+                    try:
+                        # Optimized CUDA provider settings for better GPU utilization
+                        cuda_options = {
+                            'device_id': 0,
+                            'arena_extend_strategy': 'kSameAsRequested',  # Better memory management
+                            'gpu_mem_limit': 2147483648,  # 2GB limit to prevent OOM
+                            'cudnn_conv_algo_search': 'EXHAUSTIVE',  # Better performance
+                            'do_copy_in_default_stream': True,  # Better performance
+                        }
+                        providers = [('CUDAExecutionProvider', cuda_options), 'CPUExecutionProvider']
+                        logger.info("✅ GPU detected and CUDA provider available, using GPU for face detection")
+                        logger.info(f"🎯 Active providers: {providers}")
+                        logger.info(f"🚀 CUDA optimization enabled: arena_extend_strategy, memory limit 2GB")
+                    except Exception as cuda_error:
+                        logger.warning(f"CUDA provider failed with explicit config: {cuda_error}")
+                        providers = ['CPUExecutionProvider']
+                        logger.info(f"🎯 Active providers: {providers}")
+                else:
+                    logger.info("GPU detected but CUDA provider not available, using CPU")
+                    logger.info(f"🎯 Active providers: {providers}")
+            else:
+                logger.info("No GPU detected via nvidia-smi, using CPU for face detection")
+                logger.info(f"🎯 Active providers: {providers}")
+        except Exception as e:
+            logger.info(f"Could not detect GPU ({e}), using CPU for face detection")
+            logger.info(f"🎯 Active providers: {providers}")
+    else:
+        logger.info("Running without GPU support, using CPU for face detection")
+        logger.info(f"🎯 Active providers: {providers}")
 
     try:
         # Nếu model tồn tại, load nó
@@ -627,21 +673,64 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
     try:
         gender_age_model = get_face_analyser().get('gender_age')
 
+        # Validate inputs
+        if temp_vision_frame is None or bounding_box is None:
+            logger.warning("Invalid input: temp_vision_frame or bounding_box is None")
+            return 1, 30
+
+        if len(bounding_box) != 4:
+            logger.warning(f"Invalid bounding box shape: {bounding_box.shape}")
+            return 1, 30
+
+        # Validate frame dimensions
+        if temp_vision_frame.shape[0] <= 0 or temp_vision_frame.shape[1] <= 0:
+            logger.warning(f"Invalid frame dimensions: {temp_vision_frame.shape}")
+            return 1, 30
+
         # Reshape bounding box
         bounding_box = bounding_box.reshape(2, -1)
 
-        # Calculate scale and translation
-        scale = 64 / np.subtract(*bounding_box[::-1]).max()
+        # Calculate scale and translation with safety checks
+        bbox_diff = np.subtract(*bounding_box[::-1])
+        max_diff = bbox_diff.max()
+
+        if max_diff <= 0 or not np.isfinite(max_diff):
+            logger.warning(f"Invalid bounding box difference: {max_diff}")
+            return 1, 30
+
+        scale = 64 / max_diff
+
+        # Check for reasonable scale values (avoid extreme scaling)
+        if not np.isfinite(scale) or scale <= 0 or scale > 100:
+            logger.warning(f"Invalid scale value: {scale}")
+            return 1, 30
+            
         translation = 48 - bounding_box.sum(axis=0) * scale * 0.5
+
+        # Check translation values
+        if not np.isfinite(translation).all():
+            logger.warning(f"Invalid translation values: {translation}")
+            return 1, 30
 
         # Warp face
         crop_vision_frame, affine_matrix = warp_face_by_translation(
             temp_vision_frame, translation, scale, (96, 96)
         )
 
+        # Validate cropped frame
+        if crop_vision_frame is None or crop_vision_frame.shape != (96, 96, 3):
+            logger.warning(
+                f"Invalid cropped frame shape: {crop_vision_frame.shape if crop_vision_frame is not None else None}")
+            return 1, 30
+
         # Preprocess image
         crop_vision_frame = crop_vision_frame[:, :, ::-1].transpose(2, 0, 1).astype(np.float32)
         crop_vision_frame = np.expand_dims(crop_vision_frame, axis=0)
+
+        # Validate preprocessed frame
+        if crop_vision_frame.shape != (1, 3, 96, 96):
+            logger.warning(f"Invalid preprocessed frame shape: {crop_vision_frame.shape}")
+            return 1, 30
 
         # Run inference
         prediction = gender_age_model.run(None, {
@@ -652,10 +741,16 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         gender = int(np.argmax(prediction[:2]))
         age = int(np.round(prediction[2] * 100))
 
+        # Clean up memory
+        del crop_vision_frame, prediction
+        gc.collect()
+
         return gender, age
 
     except Exception as e:
         logger.error(f"Error in detect_gender_age: {e}")
+        # Clean up memory on error
+        gc.collect()
         # Return default values if detection fails
         return 1, 30  # Default to male, 30 years old
 
@@ -715,7 +810,7 @@ class FaceProcessor:
         default_config = {
             # Clustering parameters
             "similarity_threshold": 0.6,
-            "min_faces_in_group": 3,
+            "min_faces_in_group": 1,
 
             # Frame sampling parameters
             "sample_interval": 5,
@@ -826,25 +921,41 @@ class FaceProcessor:
         cap.release()
         progress_bar.close()
 
-        # Process frames in parallel
+        # Process frames in parallel with batch processing to avoid memory issues
         logger.info(f"Processing {len(frames_to_process)} frames with face detection")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            future_to_frame = {
-                executor.submit(self._process_single_frame, frame, idx): (frame, idx)
-                for idx, frame in zip(frame_indices, frames_to_process)
-            }
 
-            for i, future in enumerate(tqdm(concurrent.futures.as_completed(future_to_frame),
-                                            total=len(frames_to_process),
-                                            desc="Detecting faces")):
-                frame_faces = future.result()
+        # Calculate optimal batch size based on available memory
+        import psutil
+        available_memory = psutil.virtual_memory().available
+        # Conservative estimate: each frame processing needs ~100MB
+        memory_per_frame = 100 * 1024 * 1024  # 100MB
+        max_concurrent = min(
+            self.max_workers,
+            max(1, int(available_memory * 0.5 / memory_per_frame))  # Use only 50% of available memory
+        )
+
+        logger.info(f"Using {max_concurrent} concurrent workers based on available memory")
+
+        # Process frames sequentially for better GPU utilization
+        # GPU models work better with sequential batch processing than concurrent threading
+        logger.info("Processing frames sequentially for optimal GPU utilization")
+
+        for i, (frame, idx) in enumerate(tqdm(zip(frames_to_process, frame_indices),
+                                              total=len(frames_to_process),
+                                              desc="Detecting faces")):
+            try:
+                frame_faces = self._process_single_frame(frame, idx)
                 if frame_faces:
                     faces_with_metadata.extend(frame_faces)
 
-                # Log progress periodically
-                if i % 10 == 0:
-                    logger.info(
-                        f"Processed {i}/{len(frames_to_process)} frames ({i / len(frames_to_process) * 100:.1f}%)")
+                # Periodic garbage collection to prevent memory buildup
+                if (i + 1) % 50 == 0:
+                    import gc
+                    gc.collect()
+
+            except Exception as e:
+                logger.error(f"Error processing frame {idx}: {e}")
+                continue
 
         # Process detected faces
         processed_frames = len(set(f['frame_number'] for f in faces_with_metadata))
@@ -987,9 +1098,20 @@ class FaceProcessor:
                 frame,
                 face.bounding_box
             )
+
+            # Save face images to disk for upload
+            group_name = f"image_{index:02d}"
+            face_paths = self.save_face_images(
+                frame,
+                face.bounding_box,
+                group_name
+            )
+            
             data_faces.append({
-                "name": os.path.basename(image_path),
+                "name": group_name,
                 "avatar": avatar_base64,
+                "avatar_path": face_paths.get("avatar_path"),
+                "face_image_path": face_paths.get("face_image_path"),
                 "index": index,
                 "bounding_box": face.bounding_box.tolist(),
                 "detector": float(face.scores['detector']),
@@ -1150,34 +1272,28 @@ class FaceProcessor:
             return base64_image
 
         except Exception as e:
-            logger.error(f"Error generating avatar: {e}", "FACE GROUPS")
+            logger.error(f"Error generating avatar: {e}")
             return ""
 
-    def save_face_avatar(self, frame: np.ndarray, bbox, output_path: Optional[str] = None,
-                         size: Optional[int] = None, padding_percent: Optional[float] = None) -> Tuple[str, str]:
+    def save_face_images(self, frame: np.ndarray, bbox, group_name: str,
+                         save_avatar: bool = True, save_full: bool = True) -> Dict[str, str]:
         """
-        Extract face region as square, save to file and return both file path and base64
+        Save face avatar and full face image to disk
         Args:
             frame: Input frame
             bbox: Face bounding box
-            output_path: Path to save image (default from config + generated name)
-            size: Size to resize face image (default from config)
-            padding_percent: Percentage of padding to add around face (default from config)
+            group_name: Name for the face group (used in filename)
+            save_avatar: Whether to save 112x112 avatar
+            save_full: Whether to save 640x640 full face image
         Returns:
-            Tuple[str, str]: (file_path, base64_string)
+            Dict with paths: {"avatar_path": str, "face_image_path": str}
         """
-        # Use config values if not specified
-        size = size or self.avatar_size
-        padding_percent = padding_percent if padding_percent is not None else self.avatar_padding
-
+        paths = {}
+        
         try:
-            # Generate output path if not provided
-            if output_path is None:
-                os.makedirs(self.output_path, exist_ok=True)
-                output_path = os.path.join(self.output_path, f"{hash(str(bbox))}.jpg")
-            else:
-                os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
+            # Ensure output directory exists
+            os.makedirs(self.output_path, exist_ok=True)
+            
             # Convert bbox coordinates to integers
             x1, y1, x2, y2 = map(int, map(float, bbox))
 
@@ -1187,45 +1303,59 @@ class FaceProcessor:
             box_width = x2 - x1
             box_height = y2 - y1
 
-            # Calculate padding
-            padding_x = int(box_width * padding_percent)
-            padding_y = int(box_height * padding_percent)
+            if save_avatar:
+                # Save 112x112 avatar with padding
+                padding_percent = self.avatar_padding
+                padding_x = int(box_width * padding_percent)
+                padding_y = int(box_height * padding_percent)
 
-            # Make square by taking max dimension
-            half_size = max(box_width + padding_x, box_height + padding_y) // 2
+                # Make square by taking max dimension
+                half_size = max(box_width + padding_x, box_height + padding_y) // 2
 
-            # Calculate square bounds, centered on face center
-            sq_x1 = max(0, center_x - half_size)
-            sq_y1 = max(0, center_y - half_size)
-            sq_x2 = min(frame.shape[1], center_x + half_size)
-            sq_y2 = min(frame.shape[0], center_y + half_size)
+                # Calculate square bounds
+                sq_x1 = max(0, center_x - half_size)
+                sq_y1 = max(0, center_y - half_size)
+                sq_x2 = min(frame.shape[1], center_x + half_size)
+                sq_y2 = min(frame.shape[0], center_y + half_size)
 
-            # Extract square region
-            face_img = frame[sq_y1:sq_y2, sq_x1:sq_x2]
+                # Extract and resize
+                avatar_img = frame[sq_y1:sq_y2, sq_x1:sq_x2]
+                avatar_img = cv2.resize(avatar_img, (self.avatar_size, self.avatar_size))
 
-            # Handle cases where crop area goes outside frame
-            if face_img.shape[0] != face_img.shape[1]:
-                min_dim = min(face_img.shape[0], face_img.shape[1])
-                # Crop to square from center
-                start_y = (face_img.shape[0] - min_dim) // 2
-                start_x = (face_img.shape[1] - min_dim) // 2
-                face_img = face_img[start_y:start_y + min_dim, start_x:start_x + min_dim]
+                # Save avatar
+                avatar_path = os.path.join(self.output_path, f"{group_name}_avatar.jpg")
+                cv2.imwrite(avatar_path, avatar_img, [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality])
+                paths["avatar_path"] = avatar_path
 
-            # Resize to final size
-            face_img = cv2.resize(face_img, (size, size))
+            if save_full:
+                # Save 640x640 full face image for future detection/comparison
+                face_size = 640
+                padding_percent = 0.15  # More padding for detection
+                padding_x = int(box_width * padding_percent)
+                padding_y = int(box_height * padding_percent)
 
-            # Save image with compression
-            cv2.imwrite(output_path, face_img, [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality])
+                # Make square by taking max dimension
+                half_size = max(box_width + padding_x, box_height + padding_y) // 2
 
-            # Convert to base64 with compression
-            _, buffer = cv2.imencode('.jpg', face_img, [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality])
-            base64_image = b64encode(buffer).decode('utf-8')
+                # Calculate square bounds
+                sq_x1 = max(0, center_x - half_size)
+                sq_y1 = max(0, center_y - half_size)
+                sq_x2 = min(frame.shape[1], center_x + half_size)
+                sq_y2 = min(frame.shape[0], center_y + half_size)
 
-            return output_path, base64_image
+                # Extract and resize
+                face_img = frame[sq_y1:sq_y2, sq_x1:sq_x2]
+                face_img = cv2.resize(face_img, (face_size, face_size))
 
+                # Save full face image
+                face_path = os.path.join(self.output_path, f"{group_name}_face.jpg")
+                cv2.imwrite(face_path, face_img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+                paths["face_image_path"] = face_path
+                
         except Exception as e:
-            logger.error(f"Error saving face avatar: {e}")
-            return "", ""
+            logger.error(f"Error saving face images: {e}")
+
+        return paths
 
     def _create_result(
             self, video_path: str,
@@ -1258,19 +1388,21 @@ class FaceProcessor:
                 best_face_data['face'].bounding_box
             )
 
-            # Save face avatar to disk with path from config
-            output_path = os.path.join(self.output_path, f"{group_id}.jpg")
-            self.save_face_avatar(
-                frame=best_face_data['frame'],
-                bbox=best_face_data['face'].bounding_box,
-                output_path=output_path
+            # Save face images and get paths
+            group_name = f"{frame_num:06d}_{group_id:02d}"
+            face_paths = self.save_face_images(
+                best_face_data['frame'],
+                best_face_data['face'].bounding_box,
+                group_name
             )
 
             group_data = {
-                "name": f"{frame_num:06d}_{group_id:02d}",
+                "name": group_name,
                 "group_size": len(group),
                 "index": group_id,
                 "avatar": avatar_base64,
+                "avatar_path": face_paths.get("avatar_path"),
+                "face_image_path": face_paths.get("face_image_path"),
                 "bounding_box": best_face_data['face'].bounding_box.tolist(),
                 "detector": float(best_face_data['face'].scores['detector']),
                 "landmarker": float(best_face_data['face'].scores['landmarker']),
@@ -1287,7 +1419,7 @@ class FaceProcessor:
         )
 
         if len(groups_data_filtered) != len(groups_data):
-            logger.info(f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}", "FACE GROUPS")
+            logger.info(f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}")
             is_change_index = True
 
         return {
@@ -1441,97 +1573,45 @@ class FaceProcessor:
             return float(min(1.0, max(0.0, final_score)))
 
         except Exception as e:
-            logger.error(f"Error calculating pose quality score: {e}", "FACE GROUPS")
+            logger.error(f"Error calculating pose quality score: {e}")
             return 0.0
 
-    def _calculate_glcm_features(self, image: np.ndarray) -> Dict[str, float]:
-        """Calculate GLCM (Gray Level Co-occurrence Matrix) features"""
-        try:
-            glcm = np.zeros((256, 256), dtype=np.uint32)
-            rows, cols = image.shape
 
-            # Calculate GLCM
-            for i in range(rows - 1):
-                for j in range(cols - 1):
-                    i_val = image[i, j]
-                    j_val = image[i, j + 1]
-                    glcm[i_val, j_val] += 1
+def _create_mock_face_analyser():
+    """
+    Create a mock face analyser for testing/development when models are not available
+    
+    Returns:
+        Dictionary containing mock models that return empty results
+    """
+    logger.warning("Creating mock face analyser - face detection will not work properly!")
 
-            # Normalize GLCM
-            glcm = glcm / glcm.sum()
+    class MockSession:
+        def __init__(self, model_name):
+            self.model_name = model_name
 
-            # Calculate features
-            contrast = 0
-            correlation = 0
-            energy = 0
-            homogeneity = 0
+        def run(self, output_names, input_dict):
+            # Return empty/mock results based on model type
+            if "yolo" in self.model_name.lower():
+                # YoloFace mock - return empty detections
+                return [np.array([[]], dtype=np.float32)]
+            elif "arcface" in self.model_name.lower():
+                # ArcFace mock - return zero embedding
+                return [np.zeros((1, 512), dtype=np.float32)]
+            elif "landmarker" in self.model_name.lower():
+                # Landmarker mock - return zero landmarks
+                return [np.zeros((1, 68, 2), dtype=np.float32)]
+            elif "gender_age" in self.model_name.lower():
+                # Gender/Age mock - return neutral values
+                return [np.array([[0.5]], dtype=np.float32), np.array([[25.0]], dtype=np.float32)]
+            else:
+                # Generic mock
+                return [np.array([[]], dtype=np.float32)]
 
-            for i in range(256):
-                for j in range(256):
-                    contrast += glcm[i, j] * (i - j) ** 2
-                    energy += glcm[i, j] ** 2
-                    homogeneity += glcm[i, j] / (1 + abs(i - j))
-
-            return {
-                'contrast': contrast,
-                'energy': energy,
-                'homogeneity': homogeneity
-            }
-
-        except Exception as e:
-            logger.error(f"Error calculating GLCM features: {e}")
-            return {'contrast': 0, 'energy': 0, 'homogeneity': 0}
-
-#
-# def main():
-#     """
-#     Example demonstrating how to use the refactored FaceProcessor with custom configuration
-#     """
-#     # Define configuration with customized parameters
-#     config = {
-#         # Clustering parameters
-#         "similarity_threshold": 0.6,  # Threshold for face clustering (lower = more groups)
-#         "min_faces_in_group": 3,  # Minimum faces required to form a group
-#         # Frame sampling parameters
-#         "sample_interval": 5,  # Process every 5th frame for efficiency
-#         "ignore_frames": [0, 1, 2],  # Skip first 3 frames (often contain transitions)
-#         "ignore_ranges": [(500, 600)],  # Skip frames 500-600 (e.g., a section to ignore)
-#         # Face detection parameters
-#         "face_detector_size": "640x640",  # Size for face detector input
-#         "face_detector_score_threshold": 0.6,  # Min confidence for face detection
-#
-#         # Group filtering parameters
-#         "min_appearance_ratio": 0.15,  # Require faces to appear in at least 20% of frames
-#         "min_frontality": 0.2,  # Require faces to be fairly frontal
-#         # Avatar parameters
-#         "avatar_size": 256,  # Higher resolution avatars
-#         "avatar_padding": 0.1,  # More padding around faces
-#         "avatar_quality": 90,  # Higher quality JPEG
-#         "output_path": "./output/faces",  # Custom output directory
-#         # Processing parameters
-#         "max_workers": 4  # Control thread pool size
-#     }
-#
-#     # Create processor with custom config
-#     processor = FaceProcessor(config)
-#
-#     # Process a video
-#     video_path = "/Users/quang/Documents/skl-workspace/transcode/media-transcode/uploads/input_3.mp4"
-#     if os.path.exists(video_path):
-#         print(f"Processing video: {video_path}")
-#         result = processor.process_video(video_path)
-#
-#         # Save results to JSON
-#         output_file = "face_groups.json"
-#         os.makedirs("./output", exist_ok=True)
-#         with open(f"./output/{output_file}", "w") as f:
-#             json.dump(result, f, cls=NumpyJSONEncoder, indent=2)
-#
-#         print(f"Results saved to ./output/{output_file}")
-#         print(f"Processed {len(result['faces'])} face groups")
-#     else:
-#         print(f"Video file not found: {video_path}")
-#
-#
-# if __name__ == "__main__":
-#     main()
+    return {
+        'face_detector': MockSession('yoloface'),
+        'face_recognizer': MockSession('arcface'),
+        'face_landmarker_68': MockSession('landmarker_68'),
+        'face_landmarker_68_5': MockSession('landmarker_68_5'),
+        'gender_age': MockSession('gender_age')
+    }

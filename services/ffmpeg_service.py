@@ -631,9 +631,27 @@ class FFmpegService:
                         format: str = 'mp4',
                         audio_codec: str = 'aac',
                         audio_bitrate: str = '128k',
-                        use_gpu: bool = True) -> bool:
+                        audio_channels: int = 2,
+                        audio_sample_rate: int = 44100,
+                        bitrate: Optional[str] = None,
+                        max_bitrate: Optional[str] = None,
+                        buffer_size: Optional[str] = None,
+                        fps: Optional[int] = None,
+                        keyframe_interval: Optional[int] = None,
+                        use_gpu: bool = True,
+                        gpu_options: Optional[Dict] = None,
+                        filters: Optional[Dict] = None,
+                        advanced: Optional[Dict] = None) -> bool:
         """Chuyển đổi video với tự động phát hiện và điều chỉnh theo nền tảng."""
         try:
+            # Default empty dicts for optional parameters
+            if gpu_options is None:
+                gpu_options = {}
+            if filters is None or not isinstance(filters, dict):
+                filters = {}
+            if advanced is None or not isinstance(advanced, dict):
+                advanced = {}
+            
             # Kiểm tra file đầu vào
             if not os.path.exists(input_path):
                 logger.error(f"Input file does not exist: {input_path}")
@@ -665,13 +683,108 @@ class FFmpegService:
             # Thêm tùy chọn video encoder
             cmd.extend(['-c:v', video_encoder])
 
-            # Thêm tùy chọn scale
-            cmd.extend(['-vf', f'scale={width}:{height}'])
+            # Build filter chain
+            filter_chain = [f'scale={width}:{height}']
+
+            # Apply filters if specified
+            if filters and isinstance(filters, dict):
+                # Add denoise filter
+                denoise_settings = filters.get('denoise', {}) if isinstance(filters, dict) else {}
+                if isinstance(denoise_settings, dict) and denoise_settings.get('enabled'):
+                    denoise_type = denoise_settings.get('type', 'hqdn3d')
+                    if denoise_type == 'hqdn3d':
+                        strength = denoise_settings.get('strength', 2)
+                        filter_chain.append(f'hqdn3d={strength}')
+                    elif denoise_type == 'nlmeans':
+                        strength = denoise_settings.get('strength', 1.0)
+                        filter_chain.append(f'nlmeans={strength}')
+
+                # Add deinterlace filter
+                deinterlace_settings = filters.get('deinterlace', {}) if isinstance(filters, dict) else {}
+                if isinstance(deinterlace_settings, dict) and deinterlace_settings.get('enabled'):
+                    deinterlace_method = filters['deinterlace'].get('method', 'yadif')
+                    filter_chain.append(deinterlace_method)
+
+                # Add color correction filter
+                color_settings = filters.get('color_correction', {}) if isinstance(filters, dict) else {}
+                if isinstance(color_settings, dict) and color_settings.get('enabled'):
+                    brightness = filters['color_correction'].get('brightness', 0)
+                    contrast = filters['color_correction'].get('contrast', 1.0)
+                    saturation = filters['color_correction'].get('saturation', 1.0)
+                    if brightness != 0 or contrast != 1.0 or saturation != 1.0:
+                        filter_chain.append(f'eq=brightness={brightness}:contrast={contrast}:saturation={saturation}')
+
+                # Add custom filters
+                custom_filters = filters.get('custom_filters', []) if isinstance(filters, dict) else []
+                if custom_filters:
+                    filter_chain.extend(custom_filters)
+
+            # Thêm tùy chọn filter
+            cmd.extend(['-vf', ','.join(filter_chain)])
+
+            # Apply GPU-specific options to encoder_options
+            if gpu_options and use_gpu:
+                # Rate control mode
+                if gpu_options.get('rc'):
+                    encoder_options['rc'] = gpu_options['rc']
+
+                # Profile and level
+                if gpu_options.get('profile'):
+                    encoder_options['profile'] = gpu_options['profile']
+                if gpu_options.get('level'):
+                    encoder_options['level'] = gpu_options['level']
+
+                # B-frames and reference frames
+                if gpu_options.get('b_frames'):
+                    encoder_options['bf'] = str(gpu_options['b_frames'])
+                if gpu_options.get('refs'):
+                    encoder_options['refs'] = str(gpu_options['refs'])
+
+            # Apply advanced options to encoder_options
+            if advanced:
+                # Lookahead for NVENC
+                if isinstance(advanced, dict) and advanced.get('lookahead') and 'nvenc' in video_encoder:
+                    encoder_options['rc-lookahead'] = str(advanced['lookahead'])
+
+                # Adaptive quantization
+                if isinstance(advanced, dict) and advanced.get('adaptive_quantization'):
+                    if 'nvenc' in video_encoder:
+                        encoder_options['aq-strength'] = str(advanced['adaptive_quantization'])
+                    elif 'x264' in video_encoder or 'x265' in video_encoder:
+                        encoder_options['aq-mode'] = '1'
+
+                # Psycho-visual optimizations for x264
+                psycho_settings = advanced.get('psycho_visual', {}) if isinstance(advanced, dict) else {}
+                if isinstance(psycho_settings, dict) and psycho_settings.get('enabled') and 'x264' in video_encoder:
+                    psy_rd = psycho_settings.get('psy_rd', 1.0)
+                    encoder_options['psy-rd'] = str(psy_rd)
+
+                # Motion estimation for x264
+                if isinstance(advanced, dict) and advanced.get('motion_estimation') and 'x264' in video_encoder:
+                    me_method = advanced['motion_estimation']
+                    if me_method in ['hex', 'umh', 'esa', 'tesa']:
+                        encoder_options['me'] = me_method
 
             # Thêm các tùy chọn encoder
             for key, value in encoder_options.items():
                 if value is not None:  # Bỏ qua giá trị None
                     cmd.extend([f'-{key}', str(value)])
+
+            # Add video bitrate parameters if specified
+            if bitrate:
+                cmd.extend(['-b:v', bitrate])
+            if max_bitrate:
+                cmd.extend(['-maxrate', max_bitrate])
+            if buffer_size:
+                cmd.extend(['-bufsize', buffer_size])
+
+            # Add frame rate if specified
+            if fps:
+                cmd.extend(['-r', str(fps)])
+
+            # Add keyframe interval if specified
+            if keyframe_interval:
+                cmd.extend(['-g', str(keyframe_interval)])
 
             # Kiểm tra audio stream
             has_audio = True  # Giả định có audio
@@ -685,7 +798,9 @@ class FFmpegService:
             if has_audio:
                 cmd.extend([
                     '-c:a', audio_codec,
-                    '-b:a', audio_bitrate
+                    '-b:a', audio_bitrate,
+                    '-ac', str(audio_channels),
+                    '-ar', str(audio_sample_rate)
                 ])
             else:
                 cmd.extend(['-an'])  # No audio
@@ -921,15 +1036,50 @@ class FFmpegService:
                                 format: str = 'mp4',
                                 audio_codec: str = 'aac',
                                 audio_bitrate: str = '128k',
-                                use_gpu: bool = True) -> bool:
+                                audio_channels: int = 2,
+                                audio_sample_rate: int = 44100,
+                                bitrate: Optional[str] = None,
+                                max_bitrate: Optional[str] = None,
+                                buffer_size: Optional[str] = None,
+                                fps: Optional[int] = None,
+                                keyframe_interval: Optional[int] = None,
+                                use_gpu: bool = True,
+                                gpu_options: Optional[Dict] = None,
+                                filters: Optional[Dict] = None,
+                                advanced: Optional[Dict] = None) -> bool:
         """Chuyển đổi một đoạn cụ thể của video với tự động phát hiện và điều chỉnh theo nền tảng."""
         try:
+            # Default empty dicts for optional parameters
+            if gpu_options is None:
+                gpu_options = {}
+            if filters is None or not isinstance(filters, dict):
+                filters = {}
+            if advanced is None or not isinstance(advanced, dict):
+                advanced = {}
+
+            # Convert to float for calculation, handle empty strings
+            if isinstance(start_time, str):
+                try:
+                    start_float = float(start_time) if start_time.strip() else 0.0
+                except ValueError:
+                    start_float = 0.0
+            else:
+                start_float = start_time if start_time is not None else 0.0
+
+            if isinstance(end_time, str):
+                try:
+                    end_float = float(end_time) if end_time.strip() else 0.0
+                except ValueError:
+                    end_float = 0.0
+            else:
+                end_float = end_time if end_time is not None else 0.0
+            
             # Convert start and end time to string format (HH:MM:SS.mmm)
-            start_str = self._format_timestamp(start_time)
-            end_str = self._format_timestamp(end_time)
+            start_str = self._format_timestamp(start_float)
+            end_str = self._format_timestamp(end_float)
 
             # Calculate duration
-            duration = end_time - start_time
+            duration = end_float - start_float
             duration_str = self._format_timestamp(duration)
 
             # Kiểm tra file đầu vào
@@ -964,13 +1114,108 @@ class FFmpegService:
             # Thêm tùy chọn video encoder
             cmd.extend(['-c:v', video_encoder])
 
-            # Thêm tùy chọn scale
-            cmd.extend(['-vf', f'scale={width}:{height}'])
+            # Build filter chain (similar to main transcode_video)
+            filter_chain = [f'scale={width}:{height}']
+
+            # Apply filters if specified
+            if filters and isinstance(filters, dict):
+                # Add denoise filter
+                denoise_settings = filters.get('denoise', {}) if isinstance(filters, dict) else {}
+                if isinstance(denoise_settings, dict) and denoise_settings.get('enabled'):
+                    denoise_type = denoise_settings.get('type', 'hqdn3d')
+                    if denoise_type == 'hqdn3d':
+                        strength = denoise_settings.get('strength', 2)
+                        filter_chain.append(f'hqdn3d={strength}')
+                    elif denoise_type == 'nlmeans':
+                        strength = denoise_settings.get('strength', 1.0)
+                        filter_chain.append(f'nlmeans={strength}')
+
+                # Add deinterlace filter
+                deinterlace_settings = filters.get('deinterlace', {}) if isinstance(filters, dict) else {}
+                if isinstance(deinterlace_settings, dict) and deinterlace_settings.get('enabled'):
+                    deinterlace_method = filters['deinterlace'].get('method', 'yadif')
+                    filter_chain.append(deinterlace_method)
+
+                # Add color correction filter
+                color_settings = filters.get('color_correction', {}) if isinstance(filters, dict) else {}
+                if isinstance(color_settings, dict) and color_settings.get('enabled'):
+                    brightness = filters['color_correction'].get('brightness', 0)
+                    contrast = filters['color_correction'].get('contrast', 1.0)
+                    saturation = filters['color_correction'].get('saturation', 1.0)
+                    if brightness != 0 or contrast != 1.0 or saturation != 1.0:
+                        filter_chain.append(f'eq=brightness={brightness}:contrast={contrast}:saturation={saturation}')
+
+                # Add custom filters
+                custom_filters = filters.get('custom_filters', []) if isinstance(filters, dict) else []
+                if custom_filters:
+                    filter_chain.extend(custom_filters)
+
+            # Thêm tùy chọn filter
+            cmd.extend(['-vf', ','.join(filter_chain)])
+
+            # Apply GPU-specific options to encoder_options
+            if gpu_options and use_gpu:
+                # Rate control mode
+                if gpu_options.get('rc'):
+                    encoder_options['rc'] = gpu_options['rc']
+
+                # Profile and level
+                if gpu_options.get('profile'):
+                    encoder_options['profile'] = gpu_options['profile']
+                if gpu_options.get('level'):
+                    encoder_options['level'] = gpu_options['level']
+
+                # B-frames and reference frames
+                if gpu_options.get('b_frames'):
+                    encoder_options['bf'] = str(gpu_options['b_frames'])
+                if gpu_options.get('refs'):
+                    encoder_options['refs'] = str(gpu_options['refs'])
+
+            # Apply advanced options to encoder_options
+            if advanced:
+                # Lookahead for NVENC
+                if isinstance(advanced, dict) and advanced.get('lookahead') and 'nvenc' in video_encoder:
+                    encoder_options['rc-lookahead'] = str(advanced['lookahead'])
+
+                # Adaptive quantization
+                if isinstance(advanced, dict) and advanced.get('adaptive_quantization'):
+                    if 'nvenc' in video_encoder:
+                        encoder_options['aq-strength'] = str(advanced['adaptive_quantization'])
+                    elif 'x264' in video_encoder or 'x265' in video_encoder:
+                        encoder_options['aq-mode'] = '1'
+
+                # Psycho-visual optimizations for x264
+                psycho_settings = advanced.get('psycho_visual', {}) if isinstance(advanced, dict) else {}
+                if isinstance(psycho_settings, dict) and psycho_settings.get('enabled') and 'x264' in video_encoder:
+                    psy_rd = psycho_settings.get('psy_rd', 1.0)
+                    encoder_options['psy-rd'] = str(psy_rd)
+
+                # Motion estimation for x264
+                if isinstance(advanced, dict) and advanced.get('motion_estimation') and 'x264' in video_encoder:
+                    me_method = advanced['motion_estimation']
+                    if me_method in ['hex', 'umh', 'esa', 'tesa']:
+                        encoder_options['me'] = me_method
 
             # Thêm các tùy chọn encoder
             for key, value in encoder_options.items():
                 if value is not None:  # Bỏ qua giá trị None
                     cmd.extend([f'-{key}', str(value)])
+
+            # Add video bitrate parameters if specified
+            if bitrate:
+                cmd.extend(['-b:v', bitrate])
+            if max_bitrate:
+                cmd.extend(['-maxrate', max_bitrate])
+            if buffer_size:
+                cmd.extend(['-bufsize', buffer_size])
+
+            # Add frame rate if specified
+            if fps:
+                cmd.extend(['-r', str(fps)])
+
+            # Add keyframe interval if specified
+            if keyframe_interval:
+                cmd.extend(['-g', str(keyframe_interval)])
 
             # Kiểm tra audio stream
             has_audio = True  # Giả định có audio
@@ -984,7 +1229,9 @@ class FFmpegService:
             if has_audio:
                 cmd.extend([
                     '-c:a', audio_codec,
-                    '-b:a', audio_bitrate
+                    '-b:a', audio_bitrate,
+                    '-ac', str(audio_channels),
+                    '-ar', str(audio_sample_rate)
                 ])
             else:
                 cmd.extend(['-an'])  # No audio
@@ -1261,8 +1508,11 @@ class FFmpegService:
             # Thêm filter scale và vframes
             cmd.extend(['-vf', f'scale={target_width}:{target_height}', '-vframes', '1'])
 
-            # Quality options
+            # Quality options and format-specific fixes
             if format.lower() in ('jpg', 'jpeg'):
+                # Add compatibility for MJPEG encoding with YUV
+                cmd.extend(['-strict', 'unofficial'])
+                cmd.extend(['-pix_fmt', 'yuvj420p'])  # Use full-range YUV for JPEG
                 cmd.extend(['-q:v', str(min(31, 31 - (quality // 3)))])  # JPEG quality (1-31, lower is better)
             elif format.lower() == 'webp':
                 cmd.extend(['-quality', str(quality)])  # WebP quality
@@ -1511,7 +1761,9 @@ class FFmpegService:
                         width: Optional[int] = None,
                         height: Optional[int] = None,
                         format: str = 'webp',
-                        quality: int = 85) -> bool:
+                        quality: int = 85,
+                        compression_level: int = 6,
+                        optimize: bool = True) -> bool:
         """
         Chuyển đổi hình ảnh, tự động giữ tỉ lệ khung hình dựa vào định dạng khổ ngang/dọc của hình gốc.
 
@@ -1597,21 +1849,31 @@ class FFmpegService:
             # Chuẩn hóa format
             format = format.lower().strip()
 
-            # Đơn giản hóa việc xử lý tùy chọn định dạng
+            # Enhanced format-specific options
             if format == 'webp':
-                # WebP - Chỉ sử dụng quality
+                # WebP - Quality and compression level
                 cmd.extend(['-quality', str(quality)])
+                if compression_level is not None:
+                    cmd.extend(['-compression_level', str(compression_level)])
+                if optimize:
+                    cmd.extend(['-method', '6'])  # WebP compression method (0-6, 6 is best)
             elif format in ('jpg', 'jpeg'):
-                # JPEG - Sử dụng q:v
+                # JPEG - Quality and optimization
                 jpeg_quality = max(1, min(31, int(31 - quality / 3.33)))
                 cmd.extend(['-q:v', str(jpeg_quality)])
+                if optimize:
+                    cmd.extend(['-huffman', 'optimal'])
             elif format == 'png':
-                # PNG - KHÔNG sử dụng quality hoặc compression_level
-                # PNG trong FFmpeg thường không có tùy chọn chất lượng trực tiếp
-                pass
+                # PNG - Compression level
+                if compression_level is not None:
+                    png_compression = max(0, min(9, compression_level))
+                    cmd.extend(['-compression_level', str(png_compression)])
             elif format == 'avif':
-                # AVIF - Sử dụng crf cho chất lượng nếu được hỗ trợ
-                cmd.extend(['-crf', str(max(0, min(63, int(63 - quality / 1.58))))])
+                # AVIF - CRF quality and speed
+                avif_crf = max(0, min(63, int(63 - quality / 1.58)))
+                cmd.extend(['-crf', str(avif_crf)])
+                if optimize:
+                    cmd.extend(['-cpu-used', '4'])  # AVIF encoding speed (0-8, 4 is balanced)
 
             # Force overwrite
             cmd.extend(['-y'])
@@ -1690,8 +1952,20 @@ class FFmpegService:
             logger.error(f"Error transcoding image: {str(e)}", exc_info=True)
             return False
 
-    def _format_timestamp(self, seconds: float) -> str:
+    def _format_timestamp(self, seconds) -> str:
         """Convert seconds to ffmpeg timestamp format (HH:MM:SS.mmm)."""
+        # Convert to float if it's a string
+        if isinstance(seconds, str):
+            if seconds.strip() == '':  # Handle empty string
+                seconds = 0.0
+            else:
+                try:
+                    seconds = float(seconds)
+                except ValueError:
+                    seconds = 0.0
+        elif not isinstance(seconds, (int, float)):
+            seconds = 0.0
+            
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         seconds = seconds % 60

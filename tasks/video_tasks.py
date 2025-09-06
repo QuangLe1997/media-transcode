@@ -116,4 +116,48 @@ def process_all_video_tasks(job_id):
                 else:
                     results['failed'] += 1
 
+        # Update job status based on results
+        _update_job_status(job_id)
+
         return results
+
+
+def _update_job_status(job_id):
+    """Update job status based on task completion."""
+    from database.models import Job, Media, TranscodeTask, db
+
+    job = Job.query.get(job_id)
+    if not job:
+        return
+
+    # Get all tasks for this job
+    all_tasks = db.session.query(TranscodeTask).join(Media).filter(Media.job_id == job_id).all()
+
+    if not all_tasks:
+        job.status = 'completed'
+        db.session.commit()
+        return
+
+    # Count task statuses
+    pending_count = sum(1 for task in all_tasks if task.status == 'pending')
+    processing_count = sum(1 for task in all_tasks if task.status == 'processing')
+    completed_count = sum(1 for task in all_tasks if task.status == 'completed')
+    failed_count = sum(1 for task in all_tasks if task.status == 'failed')
+
+    total_count = len(all_tasks)
+
+    # Determine job status
+    if processing_count > 0 or pending_count > 0:
+        job.status = 'processing'
+    elif failed_count == total_count:
+        job.status = 'failed'
+    elif completed_count == total_count:
+        job.status = 'completed'
+    elif completed_count > 0:
+        job.status = 'partial'
+    else:
+        job.status = 'failed'
+
+    db.session.commit()
+    logger.info(
+        f"Updated job {job_id} status to {job.status} (completed: {completed_count}, failed: {failed_count}, total: {total_count})")

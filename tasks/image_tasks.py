@@ -1,7 +1,7 @@
 import logging
 
 from config import get_config
-from services.ffmpeg_service import FFmpegService, get_ffmpeg_service
+from services.ffmpeg_service import get_ffmpeg_service
 from services.s3_service import S3Service
 from services.transcode_service import TranscodeService
 from .celery_config import celery_app
@@ -101,6 +101,10 @@ def process_all_image_tasks(job_id):
                     results['success'] += 1
                 else:
                     results['failed'] += 1
+
+        # Update job status based on results (import from video_tasks)
+        from tasks.video_tasks import _update_job_status
+        _update_job_status(job_id)
 
         return results
 

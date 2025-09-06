@@ -1,2 +1,67 @@
-/uploads/
-/models/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp/
+tmp/
+uploads/
+
+# Docker
+docker-compose.override.yml
+
+# Media files (optional - uncomment if you don't want to track test media)
+# *.mp4
+# *.avi
+# *.mov
+# *.mkv
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif

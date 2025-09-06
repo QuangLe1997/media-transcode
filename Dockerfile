@@ -1,48 +1,71 @@
-FROM python:3.10-slim
+# Use NVIDIA CUDA base image for GPU support
+FROM registry.skylink.vn/nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 
-# Cài đặt các gói cần thiết và FFmpeg
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libmagic1 \
-    wget \
-    gnupg \
-    lsb-release \
-    && rm -rf /var/lib/apt/lists/*
+# Set environment variables
+ENV NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 
-# Cài đặt NVIDIA GPU drivers (bỏ comment nếu cần)
-# RUN wget -q -O - https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | apt-key add - && \
-#     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
-#     apt-get update && apt-get install -y --no-install-recommends \
-#     cuda-toolkit-11-8 \
-#     && rm -rf /var/lib/apt/lists/*
-
-# Tạo thư mục ứng dụng
+# Set working directory
 WORKDIR /app
 
-# Cài đặt dependencies
-COPY requirements.txt /app/
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy source code
-COPY . /app/
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    rm cuda-keyring_1.1-1_all.deb
 
-# Tạo thư mục uploads và tmp
-RUN mkdir -p /app/uploads /tmp/transcode-jobs
+# Install dependencies with explicit GnuTLS packages
+RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    git \
+    curl \
+    ffmpeg \
+    libunistring-dev \
+    nettle-dev \
+    pkg-config \
+    build-essential \
+    libcudnn9-cuda-12 \
+    cuda-libraries-12-2 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Mở port
-EXPOSE 5000
+# Create Python symlinks
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/bin/python3
 
-# Biến môi trường
-ENV PYTHONUNBUFFERED=1 \
-    FLASK_ENV=production \
-    UPLOAD_FOLDER=/app/uploads \
-    TEMP_STORAGE_PATH=/tmp/transcode-jobs
 
-# Entrypoint script
-COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# Copy requirements first for better caching
+COPY requirements.txt requirements-face-detection.txt ./
+
+RUN pip install -r requirements.txt && \
+    pip install -r requirements-face-detection.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p logs temp /tmp/transcode models_faces && \
+    chmod 755 logs temp /tmp/transcode && \
+    chmod 777 models_faces
+
+
+# FFmpeg configuration - using default ffmpeg from apt (no custom build)
+ENV FFMPEG_HWACCEL=auto
+ENV FFMPEG_GPU_ENABLED=auto
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV FFPROBE_PATH=/usr/bin/ffprobe
+
+# Expose port
+EXPOSE 8087
+
+# Optimized health check
+HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=2 \
+    CMD curl -f http://localhost:8087/health || exit 1
+
+# Use exec form for faster startup
+CMD ["python", "-O", "main.py"]

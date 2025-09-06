@@ -1,9 +1,11 @@
 import os
-from flask import Flask, render_template, send_from_directory, jsonify, request, g
+
+from flask import Flask, render_template, send_from_directory, jsonify, request
 from flask_cors import CORS
-from database.models import db
+
 from api.routes import api_bp
 from config import get_config
+from database.models import db
 
 
 def create_app(config_class=None):
@@ -47,6 +49,10 @@ def create_app(config_class=None):
     def profile():
         return render_template('profile.html')
 
+    @app.route('/dashboard')
+    def dashboard():
+        return render_template('dashboard.html')
+
     # Jobs routes
     @app.route('/jobs')
     def jobs():
@@ -71,26 +77,22 @@ def create_app(config_class=None):
 
     @app.route('/configs/edit/<config_id>')
     def edit_config(config_id):
-        return render_template('new_config.html')
-
+        return render_template('new_config.html', config_id=config_id)
+    
     # Static files routes
     @app.route('/uploads/<path:filename>')
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+    # Config samples route
+    @app.route('/config_samples/<path:filename>')
+    def config_samples(filename):
+        return send_from_directory('config_samples', filename)
+
     # Health check route
     @app.route('/health')
     def health_check():
         return jsonify({'status': 'ok'}), 200
-
-    # Thêm route này vào file app.py, sau các route khác của configs
-    @app.route('/configs/ui/new')
-    def new_config_ui():
-        return render_template('config_ui.html')
-
-    @app.route('/configs/ui/edit/<config_id>')
-    def edit_config_ui(config_id):
-        return render_template('config_ui.html', config_id=config_id)
 
     # Debug route (only in development)
     if app.config['DEBUG']:
@@ -126,4 +128,4 @@ def create_app(config_class=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
