@@ -6,10 +6,11 @@
       <paths name="4090">
         <serverdata>
           <mappings>
-            <mapping deploy="/transcode" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/media-transcode" local="$PROJECT_DIR$" web="/" />
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path=".venv" />
+            <excludedPath local="true" path="$PROJECT_DIR$/frontend/node_modules" />
           </excludedPaths>
         </serverdata>
       </paths>

@@ -202,7 +202,7 @@ class PubSubTaskListener:
                     
                     # Reset all task fields to initial state
                     from sqlalchemy import update
-                    from ..database.models import TranscodeTaskDB
+                    from ..core.db.models import TranscodeTaskDB
                     from datetime import datetime
                     
                     # Prepare update data
