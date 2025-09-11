@@ -6,12 +6,12 @@ import signal
 import sys
 from typing import Dict, Optional
 
-from db import init_db, get_db, TaskCRUD
-from logging_config import setup_logging
-from config import settings
-from models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth
-from services import pubsub_service
-from services.media_detection_service import media_detection_service
+from ..database import init_db, get_db, TaskCRUD
+from ..core.logging_config import setup_logging
+from ..core.config import settings
+from ..models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth
+from ..services import pubsub_service
+from ..services.media_detection_service import media_detection_service
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class PubSubTaskListener:
             logger.info(f"Detected media type: {detected_media_type}")
 
             # Create enhanced S3 config with fallbacks
-            from models.schemas import S3OutputConfig
+            from ..models.schemas import S3OutputConfig
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
             
             # 🔧 S3 CONFIG LOGGING: Show final enhanced config being used
@@ -177,7 +177,7 @@ class PubSubTaskListener:
                     if existing_task.outputs or existing_task.face_detection_results:
                         logger.info(f"Cleaning up all S3 files for task {task_id}")
                         try:
-                            from services.s3_service import S3Service
+                            from ..services.s3_service import S3Service
                             s3_service = S3Service()
                             
                             # Get S3 config to determine correct base_path for cleanup
@@ -199,7 +199,7 @@ class PubSubTaskListener:
                     
                     # Reset all task fields to initial state
                     from sqlalchemy import update
-                    from db.models import TranscodeTaskDB
+                    from ..database.models import TranscodeTaskDB
                     from datetime import datetime
                     
                     # Prepare update data
@@ -286,7 +286,7 @@ class PubSubTaskListener:
                 face_detection_published = False
                 if transcode_config.face_detection_config and transcode_config.face_detection_config.enabled:
                     try:
-                        from models.schemas import FaceDetectionMessage
+                        from ..models.schemas import FaceDetectionMessage
                         logger.info(f"Publishing face detection task for {task_id}")
 
                         await TaskCRUD.update_face_detection_status(db, task_id, TaskStatus.PROCESSING)

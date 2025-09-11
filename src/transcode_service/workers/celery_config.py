@@ -1,6 +1,6 @@
 import os
 from celery import Celery
-from config import get_config
+from ..core.config import get_config
 
 # Initialize configuration
 config = get_config()

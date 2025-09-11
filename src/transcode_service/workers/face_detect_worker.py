@@ -28,9 +28,9 @@ logging.basicConfig(
     handlers=handlers
 )
 
-from services import s3_service, pubsub_service
-from services.face_detect_service import FaceProcessor
-from models.schemas import FaceDetectionMessage, FaceDetectionResult
+from ..services import s3_service, pubsub_service
+from ..services.face_detect_service import FaceProcessor
+from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
 
 logger = logging.getLogger("face_detect_consumer")
 
@@ -46,7 +46,7 @@ class FaceDetectionWorker:
     def _ensure_models_ready(self):
         """Ensure all required models are available before starting worker"""
         try:
-            from services.model_downloader import ensure_face_detection_models
+            from ..services.model_downloader import ensure_face_detection_models
             from pathlib import Path
             
             # Get project root and models directory
@@ -82,7 +82,7 @@ class FaceDetectionWorker:
         
         try:
             # Check models availability
-            from services.model_downloader import get_model_downloader
+            from ..services.model_downloader import get_model_downloader
             from pathlib import Path
             
             project_root = Path(__file__).parent.parent.absolute()

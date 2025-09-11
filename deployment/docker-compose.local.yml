@@ -1,0 +1,317 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: transcode-postgres-local
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=transcode_db
+      - POSTGRES_USER=transcode_user
+      - POSTGRES_PASSWORD=transcode_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U transcode_user -d transcode_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: transcode-redis-local
+    ports:
+      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.local
+    container_name: transcode-api-local
+    ports:
+      - "8087:8087"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # Redis Configuration  
+      - REDIS_URL=redis://redis:6379/0
+      
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8087
+      - DEBUG=true
+
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # Local development - no GPU/cloud services
+      - FFMPEG_HWACCEL=none
+      - FFMPEG_GPU_ENABLED=false
+      
+      # AWS S3 Configuration (optional for local)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME:-}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
+      
+      # Disable Pub/Sub for local development (use Redis/Celery instead)
+      - PUBSUB_PROJECT_ID=
+      - PUBSUB_TASKS_TOPIC=
+      - TASKS_SUBSCRIPTION=
+      - PUBSUB_RESULTS_TOPIC=
+      - PUBSUB_RESULTS_SUBSCRIPTION=
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=
+      
+      # Face Detection Pub/Sub Configuration (disabled for local)
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=
+      
+    volumes:
+      - ./logs:/app/logs
+      - /tmp/transcode:/tmp/transcode
+    restart: always
+    # Health check
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8087/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  consumer:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.local
+    container_name: transcode-consumer-local
+    command: [ "python", "-m", "transcode_service.workers.transcode_worker" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # Redis Configuration
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Worker Configuration
+      - WORKER_CONCURRENCY=2
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      
+      # Local development - CPU only
+      - FFMPEG_HWACCEL=none
+      - FFMPEG_GPU_ENABLED=false
+      
+      # AWS S3 Configuration (optional for local)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME:-}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
+      
+      # Disable Pub/Sub for local development (use Redis instead)
+      - PUBSUB_PROJECT_ID=
+      - PUBSUB_TASKS_TOPIC=
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      
+    volumes:
+      - ./logs:/app/logs
+      - /tmp/transcode:/tmp/transcode
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+
+  face-detection-worker:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.local
+    container_name: transcode-face-detection-worker-local
+    command: [ "python", "-m", "transcode_service.workers.face_detect_worker" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # Redis Configuration
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration (optional for local)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME:-}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
+      
+      # Disable GPU and Pub/Sub for local development
+      - NVIDIA_VISIBLE_DEVICES=
+      - NVIDIA_DRIVER_CAPABILITIES=
+      - PUBSUB_PROJECT_ID=
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
+      - FACE_DETECTION_SUBSCRIPTION=
+      - ORT_LOGGING_LEVEL=4
+      
+    volumes:
+      - ./logs:/app/logs
+      - ./models_faces:/app/models_faces
+      - /tmp/transcode:/tmp/transcode
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  task-listener:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.local
+    container_name: transcode-task-listener-local
+    command: [ "python", "-m", "transcode_service.workers.task_listener" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      
+      # Redis Configuration
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONHASHSEED=random
+      
+      # AWS S3 Configuration (optional for local)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME:-}
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-}
+      - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
+      - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
+      
+      # Disable Pub/Sub for local development
+      - PUBSUB_PROJECT_ID=
+      - PUBSUB_TASKS_TOPIC=
+      - PUBSUB_RESULTS_TOPIC=
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
+      - PUBSUB_TASK_SUBSCRIPTION=
+      - PUBSUB_MAX_MESSAGES=5
+      
+    volumes:
+      - ./logs:/app/logs
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: transcode-frontend-local
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: always
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+
+volumes:
+  postgres_data_local:

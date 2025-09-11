@@ -63,13 +63,41 @@ transcode-face-worker
 
 ### Docker Deployment
 
+This project supports two deployment configurations:
+
+#### Local Development (No GPU/CUDA)
+For development on machines without GPU support:
 ```bash
-# Copy deployment files
 cd deployment/
 
-# Start services
+# Using convenience script
+./docker-local.sh build
+./docker-local.sh up
+
+# Or using docker-compose directly
+docker-compose -f docker-compose.local.yml build
+docker-compose -f docker-compose.local.yml up -d
+```
+
+#### Server Production (With GPU/CUDA)
+For production deployment on GPU-enabled servers:
+```bash
+cd deployment/
+
+# Using convenience script
+./docker-server.sh build
+./docker-server.sh up
+
+# Or using docker-compose directly  
+docker-compose build
 docker-compose up -d
 ```
+
+**Convenience Scripts:**
+- `./deployment/docker-local.sh` - Local development management
+- `./deployment/docker-server.sh` - Server production management
+
+See [deployment/README.md](deployment/README.md) for detailed deployment guide.
 
 ## Development
 

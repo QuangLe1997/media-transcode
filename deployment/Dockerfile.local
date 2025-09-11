@@ -1,0 +1,51 @@
+# Local development Dockerfile (no GPU/CUDA)
+FROM python:3.11-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    git \
+    ffmpeg \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY deployment/requirements-base.txt deployment/requirements-local.txt ./
+
+# Install Python dependencies (CPU-only)
+RUN pip install --no-cache-dir -r requirements-local.txt
+
+# Copy application code
+COPY . .
+
+# Install the package in development mode
+RUN pip install -e .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p logs temp /tmp/transcode models_faces && \
+    chmod 755 logs temp /tmp/transcode && \
+    chmod 777 models_faces
+
+# FFmpeg configuration - CPU only
+ENV FFMPEG_HWACCEL=none
+ENV FFMPEG_GPU_ENABLED=false
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV FFPROBE_PATH=/usr/bin/ffprobe
+
+# Expose port
+EXPOSE 8087
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=2 \
+    CMD curl -f http://localhost:8087/health || exit 1
+
+# Use exec form for faster startup
+CMD ["python", "-O", "-m", "transcode_service.app"]

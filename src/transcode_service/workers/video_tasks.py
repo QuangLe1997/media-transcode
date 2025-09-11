@@ -1,9 +1,9 @@
 import logging
 
-from config import get_config
-from services.ffmpeg_service import get_ffmpeg_service
-from services.s3_service import S3Service
-from services.transcode_service import TranscodeService
+from ..core.config import get_config
+from ..services.ffmpeg_service import get_ffmpeg_service
+from ..services.s3_service import S3Service
+from ..services.transcode_service import TranscodeService
 from .celery_config import celery_app
 
 # Get configuration
@@ -68,7 +68,7 @@ def process_all_video_tasks(job_id):
     """Process all video tasks for a job."""
     logger.info(f"Processing all video tasks for job {job_id}")
 
-    from database.models import Media, TranscodeTask
+    from ..database.models import Media, TranscodeTask
     # Thêm đường dẫn dự án vào sys.path
     import sys
     import os
@@ -124,7 +124,7 @@ def process_all_video_tasks(job_id):
 
 def _update_job_status(job_id):
     """Update job status based on task completion."""
-    from database.models import Job, Media, TranscodeTask, db
+    from ..database.models import Job, Media, TranscodeTask, db
 
     job = Job.query.get(job_id)
     if not job:

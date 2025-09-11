@@ -26,8 +26,8 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployment/Dockerfile.cuda
     container_name: transcode-api
     ports:
       - "8087:8087"
@@ -97,10 +97,10 @@ services:
 
   consumer:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployment/Dockerfile.cuda
     container_name: transcode-consumer
-    command: [ "python", "-m", "consumer.transcode_worker" ]
+    command: [ "python", "-m", "transcode_service.workers.transcode_worker" ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,10 +161,10 @@ services:
 
   face-detection-worker:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployment/Dockerfile.cuda
     container_name: transcode-face-detection-worker
-    command: [ "python", "-m", "consumer.face_detect_worker" ]
+    command: [ "python", "-m", "transcode_service.workers.face_detect_worker" ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -228,10 +228,10 @@ services:
 
   task-listener:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployment/Dockerfile.cuda
     container_name: transcode-task-listener
-    command: [ "python", "-m", "consumer.task_listener" ]
+    command: [ "python", "-m", "transcode_service.workers.task_listener" ]
     depends_on:
       postgres:
         condition: service_healthy

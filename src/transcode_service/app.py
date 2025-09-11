@@ -3,9 +3,9 @@ import os
 from flask import Flask, render_template, send_from_directory, jsonify, request
 from flask_cors import CORS
 
-from api.routes import api_bp
-from config import get_config
-from database.models import db
+from .api.routes import api_bp
+from .core.config import get_config
+from .database.models import db
 
 
 def create_app(config_class=None):
@@ -127,5 +127,14 @@ def create_app(config_class=None):
 # Create app instance
 app = create_app()
 
+def main():
+    """Main entry point for running the application"""
+    import os
+    host = os.getenv('API_HOST', '0.0.0.0')
+    port = int(os.getenv('API_PORT', '8087'))
+    debug = os.getenv('DEBUG', 'false').lower() == 'true'
+    app.run(debug=debug, host=host, port=port)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    main()

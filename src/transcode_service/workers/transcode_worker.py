@@ -29,9 +29,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=handlers
 )
-from services import s3_service, pubsub_service
-from models.schemas import TranscodeMessage, TranscodeResult, OutputType, MediaMetadata
-from mobile_profile_system import build_ffmpeg_args, ProfileConfig, ProfileType
+from ..services import s3_service, pubsub_service
+from ..models.schemas import TranscodeMessage, TranscodeResult, OutputType, MediaMetadata
+from ..core.mobile_profile_system import build_ffmpeg_args, ProfileConfig, ProfileType
 
 # Import GIF processing libraries
 try:
