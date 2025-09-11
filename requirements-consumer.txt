@@ -1,0 +1,6 @@
+# Additional requirements for GIF processing consumer
+imageio==2.37.0           # For video reading
+pillow==10.1.0            # For image processing and GIF creation
+imageio-ffmpeg==0.6.0     # FFmpeg plugin for imageio
+av==15.0.0                # PyAV for advanced video processing
+numpy==2.2.5              # For numerical operations

@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Media Transcode Service{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h1 class="mb-4">My Profile</h1>
+            
+            <!-- Profile Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <div id="profile-info">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Email Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Update Email</h5>
+                </div>
+                <div class="card-body">
+                    <form id="update-email-form">
+                        <div class="mb-3">
+                            <label for="new-email" class="form-label">New Email Address</label>
+                            <input type="email" class="form-control" id="new-email" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Email</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Change Password</h5>
+                </div>
+                <div class="card-body">
+                    <form id="change-password-form">
+                        <div class="mb-3">
+                            <label for="current-password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm-password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Actions Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Once you delete your account, there is no going back. Please be certain.</p>
+                    <button class="btn btn-danger" onclick="deleteAccount()">Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+    <div id="alert-container"></div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+
+    loadProfile();
+
+    // Update email form
+    document.getElementById('update-email-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateEmail();
+    });
+
+    // Change password form
+    document.getElementById('change-password-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        changePassword();
+    });
+});
+
+function loadProfile() {
+    const token = localStorage.getItem('token');
+    
+    fetch('/api/auth/profile', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to load profile');
+        return response.json();
+    })
+    .then(data => {
+        const profileInfo = document.getElementById('profile-info');
+        profileInfo.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="text-muted small">Username</label>
+                    <p class="mb-3"><strong>${data.username}</strong></p>
+                </div>
+                <div class="col-md-6">
+                    <label class="text-muted small">Email</label>
+                    <p class="mb-3"><strong>${data.email || 'Not set'}</strong></p>
+                </div>
+                <div class="col-md-6">
+                    <label class="text-muted small">User ID</label>
+                    <p class="mb-3"><strong>#${data.id}</strong></p>
+                </div>
+                <div class="col-md-6">
+                    <label class="text-muted small">Member Since</label>
+                    <p class="mb-3"><strong>${new Date(data.created_at).toLocaleDateString()}</strong></p>
+                </div>
+            </div>
+        `;
+        
+        // Update email field with current email
+        if (data.email) {
+            document.getElementById('new-email').value = data.email;
+        }
+    })
+    .catch(error => {
+        showAlert('Failed to load profile', 'danger');
+    });
+}
+
+function updateEmail() {
+    const token = localStorage.getItem('token');
+    const email = document.getElementById('new-email').value;
+    
+    fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to update email');
+        return response.json();
+    })
+    .then(data => {
+        showAlert('Email updated successfully', 'success');
+        // Update stored user data
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        user.email = email;
+        localStorage.setItem('user', JSON.stringify(user));
+        // Reload profile
+        loadProfile();
+    })
+    .catch(error => {
+        showAlert('Failed to update email', 'danger');
+    });
+}
+
+function changePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('New passwords do not match', 'danger');
+        return;
+    }
+    
+    const token = localStorage.getItem('token');
+    
+    fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+        })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to change password');
+        return response.json();
+    })
+    .then(data => {
+        showAlert('Password changed successfully', 'success');
+        // Clear form
+        document.getElementById('change-password-form').reset();
+    })
+    .catch(error => {
+        showAlert('Failed to change password. Please check your current password.', 'danger');
+    });
+}
+
+function deleteAccount() {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        return;
+    }
+    
+    const password = prompt('Please enter your password to confirm:');
+    if (!password) return;
+    
+    const token = localStorage.getItem('token');
+    
+    fetch('/api/auth/delete-account', {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to delete account');
+        return response.json();
+    })
+    .then(data => {
+        alert('Your account has been deleted.');
+        localStorage.clear();
+        window.location.href = '/';
+    })
+    .catch(error => {
+        showAlert('Failed to delete account. Please check your password.', 'danger');
+    });
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    alertContainer.appendChild(alert);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

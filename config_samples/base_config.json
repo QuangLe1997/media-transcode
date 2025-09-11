@@ -1,0 +1,259 @@
+{
+  "_schema_version": "1.0",
+  "_config_type": "media_transcode_profile",
+  "config_name": "",
+  "description": "",
+  "created_at": "",
+  "updated_at": "",
+  "version": "1.0.0",
+  "tags": [],
+
+  "video_settings": {
+    "_enabled": true,
+    "transcode_profiles": [
+      {
+        "_id": "",
+        "name": "",
+        "description": "",
+        "enabled": true,
+        "width": 1280,
+        "height": 720,
+        "codec": "libx264",
+        "preset": "medium",
+        "crf": 23,
+        "bitrate": "",
+        "max_bitrate": "",
+        "buffer_size": "",
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "audio_channels": 2,
+        "fps": "",
+        "keyframe_interval": "",
+        "use_gpu": true,
+        "start": "",
+        "end": "",
+        "gpu_options": {
+          "hardware_encoder": "auto_detect",
+          "preset": "p4",
+          "rc": "vbr",
+          "profile": "high",
+          "level": "4.1",
+          "b_frames": 3,
+          "refs": 3
+        },
+        "filters": {
+          "denoise": false,
+          "deinterlace": false,
+          "stabilization": false,
+          "color_correction": false,
+          "custom_filters": []
+        },
+        "advanced": {
+          "two_pass": false,
+          "lookahead": false,
+          "adaptive_quantization": true,
+          "psycho_visual": true,
+          "motion_estimation": "umh"
+        }
+      }
+    ],
+    "preview_settings": {
+      "_enabled": true,
+      "profiles": [
+        {
+          "_id": "",
+          "name": "",
+          "description": "",
+          "enabled": true,
+          "start": 0,
+          "end": 5,
+          "duration": "",
+          "fps": 12,
+          "width": 640,
+          "height": 360,
+          "quality": 80,
+          "format": "gif",
+          "codec": "",
+          "loop": true,
+          "optimize": true,
+          "dither": "sierra2_4a",
+          "palette_size": 256
+        }
+      ]
+    },
+    "thumbnail_settings": {
+      "_enabled": true,
+      "timestamp": 5,
+      "multiple_timestamps": [],
+      "profiles": [
+        {
+          "_id": "",
+          "name": "",
+          "description": "",
+          "enabled": true,
+          "width": 640,
+          "height": 360,
+          "format": "jpg",
+          "quality": 90,
+          "progressive": false,
+          "background_color": "#000000",
+          "maintain_aspect_ratio": true,
+          "crop_mode": "center"
+        }
+      ]
+    },
+    "advanced_settings": {
+      "scene_detection": {
+        "enabled": false,
+        "threshold": 0.3,
+        "min_scene_length": 1.0
+      },
+      "shot_boundary_detection": {
+        "enabled": false,
+        "method": "histogram_difference",
+        "threshold": 0.2
+      },
+      "motion_analysis": {
+        "enabled": false,
+        "optical_flow": false,
+        "activity_detection": false
+      }
+    }
+  },
+  
+  "image_settings": {
+    "_enabled": true,
+    "transcode_profiles": [
+      {
+        "_id": "",
+        "name": "",
+        "description": "",
+        "enabled": true,
+        "format": "webp",
+        "quality": 85,
+        "compression_level": 6,
+        "progressive": false,
+        "resize": false,
+        "width": "",
+        "height": "",
+        "maintain_aspect_ratio": true,
+        "crop_mode": "center",
+        "background_fill": "white",
+        "color_space": "srgb",
+        "strip_metadata": false,
+        "optimize": true,
+        "filters": {
+          "sharpen": false,
+          "blur": false,
+          "brightness": 0,
+          "contrast": 0,
+          "saturation": 0,
+          "auto_enhance": false
+        }
+      }
+    ],
+    "thumbnail_profiles": [
+      {
+        "_id": "",
+        "name": "",
+        "description": "",
+        "enabled": true,
+        "width": 320,
+        "height": 240,
+        "maintain_aspect_ratio": true,
+        "crop_mode": "center",
+        "format": "webp",
+        "quality": 85,
+        "background_fill": "white",
+        "upscale": false,
+        "smart_crop": false
+      }
+    ]
+  },
+  
+  "face_detection": {
+    "enabled": false,
+    "config": {
+      "model_version": "v2.0",
+      "similarity_threshold": 0.7,
+      "min_faces_in_group": 3,
+      "sample_interval": 5,
+      "ignore_frames": [],
+      "ignore_ranges": [],
+      "face_detector_size": "640x640",
+      "face_detector_score_threshold": 0.6,
+      "min_appearance_ratio": 0.15,
+      "min_frontality": 0.2,
+      "max_faces_per_frame": 20,
+      "avatar_size": 256,
+      "avatar_padding": 0.1,
+      "avatar_quality": 90,
+      "output_path": "./output/faces",
+      "max_workers": 4,
+      "batch_size": 8,
+      "generate_face_embeddings": true,
+      "save_face_crops": true,
+      "save_detection_metadata": true,
+      "detailed_analysis": {
+        "age_estimation": false,
+        "gender_classification": false,
+        "emotion_detection": false,
+        "facial_landmarks": false,
+        "face_quality_score": true,
+        "pose_estimation": false,
+        "gaze_direction": false
+      },
+      "clustering_options": {
+        "algorithm": "dbscan",
+        "eps": 0.35,
+        "min_samples": 2,
+        "enable_hierarchical": false,
+        "use_face_embeddings": true,
+        "clustering_method": "cosine_similarity"
+      },
+      "filtering": {
+        "min_face_size": 50,
+        "max_face_size": 1000,
+        "blur_threshold": 0.5,
+        "brightness_threshold": [0.2, 0.8],
+        "contrast_threshold": 0.3
+      },
+      "output_formats": {
+        "save_json_metadata": true,
+        "save_csv_summary": false,
+        "save_face_gallery": false,
+        "gallery_format": "html",
+        "export_embeddings": false,
+        "coco_format_annotations": false,
+        "yolo_format_annotations": false
+      }
+    }
+  },
+  
+  "output_settings": {
+    "storage": {
+      "s3_bucket": "",
+      "s3_region": "us-east-1",
+      "s3_endpoint": "",
+      "folder_structure": "{user_id}/{job_id}/{type}/{profile_name}/",
+      "generate_unique_filenames": true,
+      "preserve_original_filename": true,
+      "filename_template": "{timestamp}_{profile}_{original_name}",
+      "use_temporary_local_storage": true,
+      "local_storage_path": "/tmp/transcode-jobs/",
+      "delete_local_after_upload": true,
+      "compression": {
+        "enabled": false,
+        "format": "gzip",
+        "level": 6
+      }
+    },
+    "notifications": {
+      "webhook_url": "",
+      "email_notifications": [],
+      "include_processing_stats": true
+    }
+  }
+}

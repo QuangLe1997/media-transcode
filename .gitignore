@@ -65,3 +65,13 @@ docker-compose.override.yml
 # *.jpeg
 # *.png
 # *.gif
+
+# Model files (large binaries)
+*.onnx
+*.pth
+*.pt
+*.bin
+*.safetensors
+
+# Specific config files that contain sensitive info
+key.json

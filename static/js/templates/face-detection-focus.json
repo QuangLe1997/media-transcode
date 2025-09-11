@@ -1,0 +1,96 @@
+{
+  "config_name": "Face Detection Focus Configuration",
+  "description": "Tập trung vào face detection với độ chính xác cao và nhiều tùy chọn phân tích",
+  "created_at": "2025-06-03T22:00:00Z",
+  "video_settings": {
+    "transcode_profiles": [
+      {
+        "name": "720p_for_face_detection",
+        "width": 1280,
+        "height": 720,
+        "codec": "libx264",
+        "preset": "fast",
+        "crf": 25,
+        "format": "mp4",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "use_gpu": false
+      }
+    ],
+    "thumbnail_settings": {
+      "timestamp": 2,
+      "profiles": [
+        {
+          "name": "face_detection_thumb",
+          "width": 640,
+          "height": 360,
+          "format": "jpg",
+          "quality": 95
+        }
+      ]
+    }
+  },
+  "image_settings": {
+    "transcode_profiles": [
+      {
+        "name": "hd_for_face_detection",
+        "format": "jpg",
+        "quality": 95,
+        "resize": true,
+        "width": 1920,
+        "height": 1080,
+        "maintain_aspect_ratio": true
+      }
+    ]
+  },
+  "face_detection": {
+    "enabled": true,
+    "config": {
+      "similarity_threshold": 0.7,
+      "min_faces_in_group": 1,
+      "sample_interval": 1,
+      "ignore_frames": [],
+      "ignore_ranges": [],
+      "face_detector_size": "640x640",
+      "face_detector_score_threshold": 0.8,
+      "min_appearance_ratio": 0.05,
+      "min_frontality": 0.1,
+      "avatar_size": 512,
+      "avatar_padding": 0.2,
+      "avatar_quality": 95,
+      "output_path": "./output/faces/detailed",
+      "max_workers": 6,
+      "generate_face_embeddings": true,
+      "save_face_crops": true,
+      "save_detection_metadata": true,
+      "detailed_analysis": {
+        "age_estimation": true,
+        "gender_classification": true,
+        "emotion_detection": true,
+        "facial_landmarks": true,
+        "face_quality_score": true
+      },
+      "clustering_options": {
+        "algorithm": "dbscan",
+        "eps": 0.35,
+        "min_samples": 2,
+        "enable_hierarchical": true
+      },
+      "output_formats": {
+        "save_json_metadata": true,
+        "save_csv_summary": true,
+        "save_face_gallery": true,
+        "gallery_format": "html"
+      }
+    }
+  },
+  "output_settings": {
+    "s3_bucket": "face-detection-bucket",
+    "folder_structure": "faces/{job_id}/{type}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/face-jobs/",
+    "delete_local_after_upload": false
+  }
+}

@@ -1,0 +1,86 @@
+# Use NVIDIA CUDA base image for GPU support
+FROM registry.skylink.vn/nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
+
+# Set environment variables
+ENV NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # System tools
+    wget \
+    curl \
+    git \
+    software-properties-common \
+    # Build tools
+    build-essential \
+    pkg-config \
+    # Python and FFmpeg
+    python3-pip \
+    python3.11 \
+    python3.11-dev \
+    python3.11-venv \
+    python3.11-distutils \
+    ffmpeg \
+    # CUDA libraries
+    libcudnn9-cuda-12 \
+    cuda-libraries-12-2 \
+    # Additional libraries
+    libunistring-dev \
+    nettle-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for Python
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3
+
+# Install pip for Python 3.11
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+
+# Copy requirements first for better caching
+COPY requirements.txt requirements-face-detection.txt ./
+
+# Install Python dependencies
+RUN python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    python3.11 -m pip install --no-cache-dir -r requirements.txt && \
+    python3.11 -m pip install --no-cache-dir -r requirements-face-detection.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p logs temp /tmp/transcode models_faces && \
+    chmod 755 logs temp /tmp/transcode models_faces
+
+# Set environment variables for GPU support
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV CUDA_VISIBLE_DEVICES=all
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=${CUDA_HOME}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+
+# Python optimizations
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONIOENCODING=utf-8
+ENV PYTHONHASHSEED=random
+
+# FFmpeg configuration - using default ffmpeg from apt
+ENV FFMPEG_HWACCEL=auto
+ENV FFMPEG_GPU_ENABLED=auto
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV FFPROBE_PATH=/usr/bin/ffprobe
+
+# Expose port
+EXPOSE 8087
+
+# Optimized health check
+HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=2 \
+    CMD curl -f http://localhost:8087/health || exit 1
+
+# Use exec form for faster startup
+CMD ["python", "-O", "main.py"]

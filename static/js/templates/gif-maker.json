@@ -1,0 +1,121 @@
+{
+  "config_name": "GIF Maker Configuration",
+  "description": "Chuyên dụng tạo GIF từ video với nhiều quality levels và kích thước khác nhau",
+  "created_at": "2025-06-03T22:00:00Z",
+  "video_settings": {
+    "preview_settings": {
+      "profiles": [
+        {
+          "name": "tiny_gif",
+          "start": 0,
+          "end": 3,
+          "fps": 8,
+          "width": 240,
+          "height": 135,
+          "quality": 70,
+          "format": "gif"
+        },
+        {
+          "name": "small_gif",
+          "start": 0,
+          "end": 5,
+          "fps": 10,
+          "width": 320,
+          "height": 180,
+          "quality": 75,
+          "format": "gif"
+        },
+        {
+          "name": "medium_gif",
+          "start": 0,
+          "end": 8,
+          "fps": 12,
+          "width": 480,
+          "height": 270,
+          "quality": 80,
+          "format": "gif"
+        },
+        {
+          "name": "large_gif",
+          "start": 0,
+          "end": 10,
+          "fps": 15,
+          "width": 640,
+          "height": 360,
+          "quality": 85,
+          "format": "gif"
+        },
+        {
+          "name": "hq_gif",
+          "start": 0,
+          "end": 6,
+          "fps": 20,
+          "width": 800,
+          "height": 450,
+          "quality": 90,
+          "format": "gif"
+        },
+        {
+          "name": "loop_gif_3s",
+          "start": 5,
+          "end": 8,
+          "fps": 15,
+          "width": 480,
+          "height": 270,
+          "quality": 85,
+          "format": "gif",
+          "loop": true
+        },
+        {
+          "name": "custom_segment_gif",
+          "start": 10,
+          "end": 18,
+          "fps": 12,
+          "width": 540,
+          "height": 304,
+          "quality": 80,
+          "format": "gif"
+        },
+        {
+          "name": "fast_gif",
+          "start": 0,
+          "end": 5,
+          "fps": 25,
+          "width": 400,
+          "height": 225,
+          "quality": 75,
+          "format": "gif"
+        },
+        {
+          "name": "slow_gif",
+          "start": 0,
+          "end": 10,
+          "fps": 6,
+          "width": 480,
+          "height": 270,
+          "quality": 85,
+          "format": "gif"
+        },
+        {
+          "name": "square_gif",
+          "start": 0,
+          "end": 6,
+          "fps": 12,
+          "width": 320,
+          "height": 320,
+          "quality": 80,
+          "format": "gif"
+        }
+      ]
+    }
+  },
+  "output_settings": {
+    "s3_bucket": "gif-maker-bucket",
+    "folder_structure": "gifs/{job_id}/{profile_name}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/gif-jobs/",
+    "delete_local_after_upload": false
+  }
+}

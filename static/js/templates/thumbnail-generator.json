@@ -1,0 +1,295 @@
+{
+  "config_name": "Thumbnail Generator Configuration",
+  "description": "Chuyên tạo thumbnails cho video và image với nhiều kích thước và format",
+  "created_at": "2025-06-03T22:00:00Z",
+  "video_settings": {
+    "thumbnail_settings": {
+      "timestamp": 3,
+      "profiles": [
+        {
+          "name": "micro",
+          "width": 64,
+          "height": 36,
+          "format": "jpg",
+          "quality": 80
+        },
+        {
+          "name": "tiny",
+          "width": 120,
+          "height": 68,
+          "format": "jpg",
+          "quality": 85
+        },
+        {
+          "name": "small",
+          "width": 240,
+          "height": 135,
+          "format": "jpg",
+          "quality": 85
+        },
+        {
+          "name": "medium",
+          "width": 480,
+          "height": 270,
+          "format": "jpg",
+          "quality": 90
+        },
+        {
+          "name": "large",
+          "width": 640,
+          "height": 360,
+          "format": "jpg",
+          "quality": 95
+        },
+        {
+          "name": "xlarge",
+          "width": 1280,
+          "height": 720,
+          "format": "jpg",
+          "quality": 95
+        },
+        {
+          "name": "xxlarge",
+          "width": 1920,
+          "height": 1080,
+          "format": "jpg",
+          "quality": 100
+        },
+        {
+          "name": "webp_small",
+          "width": 240,
+          "height": 135,
+          "format": "webp",
+          "quality": 80
+        },
+        {
+          "name": "webp_medium",
+          "width": 480,
+          "height": 270,
+          "format": "webp",
+          "quality": 85
+        },
+        {
+          "name": "webp_large",
+          "width": 640,
+          "height": 360,
+          "format": "webp",
+          "quality": 90
+        },
+        {
+          "name": "png_high_quality",
+          "width": 640,
+          "height": 360,
+          "format": "png",
+          "quality": 100
+        },
+        {
+          "name": "square_small",
+          "width": 200,
+          "height": 200,
+          "format": "jpg",
+          "quality": 85
+        },
+        {
+          "name": "square_medium",
+          "width": 400,
+          "height": 400,
+          "format": "jpg",
+          "quality": 90
+        },
+        {
+          "name": "portrait",
+          "width": 480,
+          "height": 640,
+          "format": "jpg",
+          "quality": 90
+        }
+      ]
+    },
+    "multi_thumbnail_settings": {
+      "timestamps": [1, 3, 5, 10, 15, 20, 30, 45, 60],
+      "profile": {
+        "name": "timeline_thumbnails",
+        "width": 160,
+        "height": 90,
+        "format": "jpg",
+        "quality": 85
+      }
+    },
+    "smart_thumbnail_settings": {
+      "enabled": true,
+      "analysis_interval": 2,
+      "selection_criteria": {
+        "avoid_black_frames": true,
+        "prefer_faces": true,
+        "prefer_motion": true,
+        "avoid_blur": true
+      },
+      "profiles": [
+        {
+          "name": "smart_best",
+          "width": 640,
+          "height": 360,
+          "format": "jpg",
+          "quality": 95
+        },
+        {
+          "name": "smart_medium",
+          "width": 480,
+          "height": 270,
+          "format": "webp",
+          "quality": 85
+        }
+      ]
+    }
+  },
+  "image_settings": {
+    "thumbnail_profiles": [
+      {
+        "name": "micro",
+        "width": 64,
+        "height": 64,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 80
+      },
+      {
+        "name": "tiny",
+        "width": 120,
+        "height": 120,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 85
+      },
+      {
+        "name": "small",
+        "width": 240,
+        "height": 240,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 85
+      },
+      {
+        "name": "medium",
+        "width": 480,
+        "height": 480,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "large",
+        "width": 800,
+        "height": 800,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 95
+      },
+      {
+        "name": "xlarge",
+        "width": 1200,
+        "height": 1200,
+        "maintain_aspect_ratio": true,
+        "format": "jpg",
+        "quality": 95
+      },
+      {
+        "name": "webp_micro",
+        "width": 64,
+        "height": 64,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 75
+      },
+      {
+        "name": "webp_small",
+        "width": 240,
+        "height": 240,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 80
+      },
+      {
+        "name": "webp_medium",
+        "width": 480,
+        "height": 480,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "webp_large",
+        "width": 800,
+        "height": 800,
+        "maintain_aspect_ratio": true,
+        "format": "webp",
+        "quality": 90
+      },
+      {
+        "name": "square_tiny",
+        "width": 100,
+        "height": 100,
+        "maintain_aspect_ratio": false,
+        "format": "jpg",
+        "quality": 85
+      },
+      {
+        "name": "square_small",
+        "width": 200,
+        "height": 200,
+        "maintain_aspect_ratio": false,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "square_medium",
+        "width": 400,
+        "height": 400,
+        "maintain_aspect_ratio": false,
+        "format": "jpg",
+        "quality": 90
+      },
+      {
+        "name": "square_large",
+        "width": 600,
+        "height": 600,
+        "maintain_aspect_ratio": false,
+        "format": "jpg",
+        "quality": 95
+      },
+      {
+        "name": "avatar_small",
+        "width": 128,
+        "height": 128,
+        "maintain_aspect_ratio": false,
+        "format": "webp",
+        "quality": 85
+      },
+      {
+        "name": "avatar_medium",
+        "width": 256,
+        "height": 256,
+        "maintain_aspect_ratio": false,
+        "format": "webp",
+        "quality": 90
+      },
+      {
+        "name": "social_thumbnail",
+        "width": 1200,
+        "height": 630,
+        "maintain_aspect_ratio": false,
+        "format": "jpg",
+        "quality": 95
+      }
+    ]
+  },
+  "output_settings": {
+    "s3_bucket": "thumbnail-bucket",
+    "folder_structure": "thumbnails/{job_id}/{type}/{profile_name}/",
+    "generate_unique_filenames": true,
+    "preserve_original_filename": true,
+    "use_temporary_local_storage": true,
+    "local_storage_path": "/tmp/thumbnail-jobs/",
+    "delete_local_after_upload": false
+  }
+}

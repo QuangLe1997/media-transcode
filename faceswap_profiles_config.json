@@ -1,0 +1,727 @@
+{
+  "description": "Faceswap Media Profiles Configuration",
+  "version": "1.0",
+  "profiles": [
+    {
+      "id_profile": "high_main_image",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 1080,
+        "max_height": 1440,
+        "quality": 90,
+        "format": "jpeg",
+        "thumbnail_mode": false
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "high_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 240,
+        "max_height": 320,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "high_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 360,
+        "max_height": 480,
+        "quality": 80,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "high_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 480,
+        "max_height": 640,
+        "quality": 85,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "high_main_video",
+      "output_type": "video",
+      "video_config": {
+        "codec": "h264_nvenc",
+        "max_width": 720,
+        "max_height": 1280,
+        "crf": 20,
+        "max_bitrate": "4000k",
+        "preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "max_fps": 30,
+        "audio_codec": "aac",
+        "audio_bitrate": "128k"
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_main_video_cpu",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 720,
+        "max_height": 1280,
+        "crf": 20,
+        "max_bitrate": "4000k",
+        "preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "max_fps": 30,
+        "audio_codec": "aac",
+        "audio_bitrate": "128k"
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_video_s",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 240,
+        "max_height": 320,
+        "crf": 28,
+        "max_bitrate": "500k",
+        "preset": "fast",
+        "profile": "baseline",
+        "max_fps": 13,
+        "duration": 4,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_video_m",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 360,
+        "max_height": 480,
+        "crf": 26,
+        "max_bitrate": "800k",
+        "preset": "fast",
+        "profile": "main",
+        "max_fps": 17,
+        "duration": 4,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_video_l",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 480,
+        "max_height": 640,
+        "crf": 24,
+        "max_bitrate": "1200k",
+        "preset": "medium",
+        "profile": "main",
+        "max_fps": 20,
+        "duration": 4,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_gif_s",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 8,
+        "width": 240,
+        "height": 320,
+        "duration": 3,
+        "quality": 75,
+        "colors": 128,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_gif_m",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 10,
+        "width": 360,
+        "height": 480,
+        "duration": 3,
+        "quality": 80,
+        "colors": 256,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_thumbs_gif_l",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 12,
+        "width": 480,
+        "height": 640,
+        "duration": 3,
+        "quality": 85,
+        "colors": 256,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_main_image",
+      "output_type": "image",
+      "image_config": {
+          "max_width": 720,
+          "max_height": 960,
+        "quality": 85,
+        "format": "jpeg",
+        "thumbnail_mode": false
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "medium_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 180,
+        "max_height": 240,
+        "quality": 70,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "medium_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 270,
+        "max_height": 360,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "medium_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 360,
+        "max_height": 480,
+        "quality": 80,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "medium_main_video",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 720,
+        "max_height": 960,
+        "crf": 23,
+        "max_bitrate": "2500k",
+        "preset": "medium",
+        "profile": "main",
+        "level": "3.1",
+        "max_fps": 25,
+        "audio_codec": "aac",
+        "audio_bitrate": "96k"
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_video_s",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 180,
+        "max_height": 240,
+        "crf": 30,
+        "max_bitrate": "300k",
+        "preset": "fast",
+        "profile": "baseline",
+        "max_fps": 12,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_video_m",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 270,
+        "max_height": 360,
+        "crf": 28,
+        "max_bitrate": "500k",
+        "preset": "fast",
+        "profile": "baseline",
+        "max_fps": 15,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_video_l",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 360,
+        "max_height": 480,
+        "crf": 26,
+        "max_bitrate": "800k",
+        "preset": "fast",
+        "profile": "main",
+        "max_fps": 20,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_gif_s",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 6,
+        "width": 180,
+        "height": 240,
+        "duration": 3,
+        "quality": 70,
+        "colors": 64,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_gif_m",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 8,
+        "width": 270,
+        "height": 360,
+        "duration": 3,
+        "quality": 75,
+        "colors": 128,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_thumbs_gif_l",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 10,
+        "width": 360,
+        "height": 480,
+        "duration": 3,
+        "quality": 80,
+        "colors": 256,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_main_image",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 540,
+        "max_height": 720,
+        "quality": 80,
+        "format": "jpeg",
+        "thumbnail_mode": false
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "low_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 120,
+        "max_height": 160,
+        "quality": 65,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "low_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 180,
+        "max_height": 240,
+        "quality": 70,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "low_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 240,
+        "max_height": 320,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true
+      },
+      "input_type": "image"
+    },
+    {
+      "id_profile": "low_main_video",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 540,
+        "max_height": 720,
+        "crf": 26,
+        "max_bitrate": "1500k",
+        "preset": "fast",
+        "profile": "baseline",
+        "level": "3.0",
+        "max_fps": 20,
+        "audio_codec": "aac",
+        "audio_bitrate": "64k"
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_video_s",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 120,
+        "max_height": 160,
+        "crf": 32,
+        "max_bitrate": "200k",
+        "preset": "ultrafast",
+        "profile": "baseline",
+        "max_fps": 10,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_video_m",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 180,
+        "max_height": 240,
+        "crf": 30,
+        "max_bitrate": "300k",
+        "preset": "fast",
+        "profile": "baseline",
+        "max_fps": 12,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_video_l",
+      "output_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 240,
+        "max_height": 320,
+        "crf": 28,
+        "max_bitrate": "500k",
+        "preset": "fast",
+        "profile": "baseline",
+        "max_fps": 15,
+        "duration": 3,
+        "remove_audio": true,
+        "speed": 2.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_gif_s",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 4,
+        "width": 120,
+        "height": 160,
+        "duration": 3,
+        "quality": 60,
+        "colors": 32,
+        "dither": false,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_gif_m",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 6,
+        "width": 180,
+        "height": 240,
+        "duration": 3,
+        "quality": 65,
+        "colors": 64,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_thumbs_gif_l",
+      "output_type": "gif",
+      "gif_config": {
+        "fps": 8,
+        "width": 240,
+        "height": 320,
+        "duration": 3,
+        "quality": 70,
+        "colors": 128,
+        "dither": true,
+        "optimize": true,
+        "loop": 0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_video_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 240,
+        "max_height": 320,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_video_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 360,
+        "max_height": 480,
+        "quality": 80,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "high_video_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 480,
+        "max_height": 640,
+        "quality": 85,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_video_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 180,
+        "max_height": 240,
+        "quality": 70,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_video_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 270,
+        "max_height": 360,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "medium_video_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 360,
+        "max_height": 480,
+        "quality": 80,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_video_thumbs_image_s",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 120,
+        "max_height": 160,
+        "quality": 65,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_video_thumbs_image_m",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 180,
+        "max_height": 240,
+        "quality": 70,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    },
+    {
+      "id_profile": "low_video_thumbs_image_l",
+      "output_type": "image",
+      "image_config": {
+        "max_width": 240,
+        "max_height": 320,
+        "quality": 75,
+        "format": "jpeg",
+        "thumbnail_mode": true,
+        "extract_time": 1.0
+      },
+      "input_type": "video"
+    }
+  ],
+  "device_profile_sets": {
+    "high_end": {
+      "description": "High-end devices (flagship phones, premium tablets)",
+      "image_profiles": [
+        "high_main_image",
+        "high_thumbs_image_s",
+        "high_thumbs_image_m",
+        "high_thumbs_image_l"
+      ],
+      "video_profiles": [
+        "high_main_video",
+        "high_thumbs_video_s",
+        "high_thumbs_video_m",
+        "high_thumbs_video_l",
+        "high_thumbs_gif_s",
+        "high_thumbs_gif_m",
+        "high_thumbs_gif_l",
+        "high_video_thumbs_image_s",
+        "high_video_thumbs_image_m",
+        "high_video_thumbs_image_l"
+      ]
+    },
+    "medium": {
+      "description": "Mid-range devices (standard smartphones)",
+      "image_profiles": [
+        "medium_main_image",
+        "medium_thumbs_image_s",
+        "medium_thumbs_image_m",
+        "medium_thumbs_image_l"
+      ],
+      "video_profiles": [
+        "medium_main_video",
+        "medium_thumbs_video_s",
+        "medium_thumbs_video_m",
+        "medium_thumbs_video_l",
+        "medium_thumbs_gif_s",
+        "medium_thumbs_gif_m",
+        "medium_thumbs_gif_l",
+        "medium_video_thumbs_image_s",
+        "medium_video_thumbs_image_m",
+        "medium_video_thumbs_image_l"
+      ]
+    },
+    "low_end": {
+      "description": "Low-end devices (budget phones, older devices)",
+      "image_profiles": [
+        "low_main_image",
+        "low_thumbs_image_s",
+        "low_thumbs_image_m",
+        "low_thumbs_image_l"
+      ],
+      "video_profiles": [
+        "low_main_video",
+        "low_thumbs_video_s",
+        "low_thumbs_video_m",
+        "low_thumbs_video_l",
+        "low_thumbs_gif_s",
+        "low_thumbs_gif_m",
+        "low_thumbs_gif_l",
+        "low_video_thumbs_image_s",
+        "low_video_thumbs_image_m",
+        "low_video_thumbs_image_l"
+      ]
+    }
+  },
+  "usage_guidelines": {
+    "image_workflow": {
+      "main_profile": "Use for detail display and AI faceswap input",
+      "thumbnails": "Use s/m/l thumbnails based on screen size and network"
+    },
+    "video_workflow": {
+      "main_profile": "Use for detail display with audio and AI faceswap input",
+      "video_thumbnails": "3s preview videos without audio for list display",
+      "gif_thumbnails": "3s animated previews for faster loading",
+      "image_thumbnails": "Static frame thumbnails for minimal data usage"
+    },
+    "device_selection": {
+      "high_end": "Flagship phones (iPhone 13+, Samsung S21+, etc.)",
+      "medium": "Mid-range phones (iPhone SE, Samsung A-series, etc.)",
+      "low_end": "Budget phones, older devices, limited data plans"
+    }
+  }
+}
