@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcode-service"
+version = "1.0.0"
+description = "Media Transcoding Service with WebP support"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Media Transcode Team"}
+]
+
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0", 
+    "celery>=5.2.0",
+    "redis>=4.5.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.10.0",
+    "pydantic>=2.0.0",
+    "pillow>=10.0.0",
+    "imageio>=2.25.0",
+    "asyncpg>=0.28.0",
+    "boto3>=1.26.0",
+    "aioboto3>=11.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0", 
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+face-detection = [
+    "onnxruntime>=1.14.0",
+    "opencv-python>=4.7.0",
+    "scikit-learn>=1.2.0",
+]
+
+[project.scripts]
+transcode-api = "transcode_service.app:main"
+transcode-worker = "transcode_service.workers.transcode_worker:main"
+transcode-face-worker = "transcode_service.workers.face_detect_worker:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"transcode_service" = ["*.json", "*.yml", "*.yaml"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.venv
+  | __pycache__
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
