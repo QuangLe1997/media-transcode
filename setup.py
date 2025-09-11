@@ -21,8 +21,6 @@ setup(
     install_requires=[
         "fastapi>=0.100.0",
         "uvicorn[standard]>=0.20.0",
-        "celery>=5.2.0",
-        "redis>=4.5.0",
         "sqlalchemy>=2.0.0",
         "alembic>=1.10.0",
         "pydantic>=2.0.0",
@@ -53,7 +51,7 @@ setup(
     entry_points={
         "console_scripts": [
             "transcode-api=transcode_service.app:main",
-            "transcode-worker=transcode_service.workers.transcode_worker:main",
+            "transcode-task-listener=transcode_service.workers.task_listener:main",
             "transcode-face-worker=transcode_service.workers.face_detect_worker:main",
         ],
     },

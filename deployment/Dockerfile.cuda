@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     ffmpeg \
+    libmagic1 \
     libunistring-dev \
     nettle-dev \
     pkg-config \

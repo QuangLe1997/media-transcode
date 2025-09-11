@@ -7,19 +7,18 @@ from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, BackgroundTasks, Form
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.background_tasks import result_subscriber
-from config import settings
-from db import init_db, get_db, TaskCRUD
-from db.crud import ConfigTemplateCRUD
-from models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth, ConfigTemplateRequest, ConfigTemplateResponse
-from services import s3_service, pubsub_service
-from services.callback_service import callback_service
-from services.media_detection_service import media_detection_service
+from .background_tasks import result_subscriber
+from ..core.config import settings
+from ..core.db import init_db, get_db, TaskCRUD
+from ..core.db.crud import ConfigTemplateCRUD
+from ..models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth, ConfigTemplateRequest
+from ..services import s3_service, pubsub_service
+from ..services.callback_service import callback_service
+from ..services.media_detection_service import media_detection_service
 
 logger = logging.getLogger("api")
 
@@ -325,7 +324,7 @@ async def create_transcode_task(
             face_detection_published = False
             if transcode_config.face_detection_config and transcode_config.face_detection_config.enabled:
                 try:
-                    from models.schemas import FaceDetectionMessage
+                    from ..models.schemas import FaceDetectionMessage
                     logger.info(f"Publishing face detection task for {task_id}")
                     
                     # Set face detection status to processing
@@ -661,7 +660,7 @@ async def get_tasks_summary(
 ) -> Dict:
     """Get tasks summary with counts by status - very fast endpoint"""
     from sqlalchemy import select, func
-    from db.models import TranscodeTaskDB
+    from ..core.db.models import TranscodeTaskDB
 
     # Get status counts in single query
     result = await db.execute(
@@ -1011,7 +1010,7 @@ async def retry_task(
         face_detection_published = False
         if config.face_detection_config and config.face_detection_config.enabled:
             try:
-                from models.schemas import FaceDetectionMessage
+                from ..models.schemas import FaceDetectionMessage
                 logger.info(f"RETRY: Publishing face detection task for {task_id}")
                 
                 # Set face detection status to processing

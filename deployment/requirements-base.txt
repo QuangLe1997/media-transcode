@@ -1,8 +1,10 @@
 # Base dependencies for all environments
-flask==3.0.0
+python-magic==0.4.27
+ffmpeg-python==0.2.0
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
+pydantic-settings==2.1.0
 boto3==1.29.7
 google-cloud-pubsub==2.18.4
 sqlalchemy==2.0.23
@@ -23,7 +25,5 @@ imageio-ffmpeg==0.6.0
 av==15.0.0
 numpy==1.25.2
 
-# Background processing
-celery>=5.2.0
-redis>=4.5.0
+# Background processing removed (using PubSub only)
 alembic>=1.10.0

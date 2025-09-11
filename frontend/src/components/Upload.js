@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../api';
 import Editor from '@monaco-editor/react';
 
 const Upload = () => {
@@ -143,7 +144,7 @@ const Upload = () => {
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await axios.get('/api/config-templates');
+        const response = await api.get('/config-templates');
         setConfigTemplates(response.data.templates || []);
       } catch (error) {
         console.error('Error loading config templates:', error);
@@ -157,7 +158,7 @@ const Upload = () => {
     if (!templateId) return;
     
     try {
-      const response = await axios.get(`/api/config-templates/${templateId}`);
+      const response = await api.get(`/config-templates/${templateId}`);
       const template = response.data;
       setProfilesJson(JSON.stringify(template.config, null, 2));
       setMessage({ type: 'success', text: `Loaded template: ${template.name}` });
@@ -175,7 +176,7 @@ const Upload = () => {
 
     try {
       const profiles = JSON.parse(profilesJson);
-      const response = await axios.post('/api/config-templates', {
+      const response = await api.post('/config-templates', {
         name: templateName,
         config: profiles
       });
@@ -194,7 +195,7 @@ const Upload = () => {
     if (!window.confirm('Are you sure you want to delete this template?')) return;
     
     try {
-      await axios.delete(`/api/config-templates/${templateId}`);
+      await api.delete(`/config-templates/${templateId}`);
       setConfigTemplates(configTemplates.filter(t => t.template_id !== templateId));
       if (selectedTemplate === templateId) {
         setSelectedTemplate('');

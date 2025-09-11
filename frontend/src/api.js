@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// API base URL - will be set by environment or default to current host
+// API base URL - will be set by environment or default to localhost:8000
 const API_BASE = process.env.REACT_APP_API_URL || 
   (window.location.hostname === 'localhost' 
-    ? `${window.location.protocol}//${window.location.hostname}:8087`
+    ? 'http://localhost:8000' // Use direct connection to localhost:8000
     : '/api'); // Use nginx proxy when not localhost
 
 const api = axios.create({

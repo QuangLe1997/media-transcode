@@ -1,8 +1,8 @@
 import httpx
 import logging
 from typing import Optional
-from models.schemas import CallbackData, CallbackAuth
-from db.models import TranscodeTaskDB
+from ..models.schemas import CallbackData, CallbackAuth
+from ..core.db.models import TranscodeTaskDB
 import base64
 from datetime import datetime
 
@@ -13,7 +13,7 @@ class CallbackService:
     @staticmethod
     def _prepare_callback_data(task: TranscodeTaskDB) -> dict:
         """Prepare callback data in the new format"""
-        from models.schemas import TranscodeConfig
+        from ..models.schemas import TranscodeConfig
         
         # Parse config
         config = TranscodeConfig(**task.config) if task.config else None
@@ -175,7 +175,7 @@ class CallbackService:
     async def _send_pubsub(task: TranscodeTaskDB, callback_dict: dict) -> bool:
         """Send PubSub notification"""
         try:
-            from services import pubsub_service
+            from .. import pubsub_service
             
             # Publish to PubSub topic
             message_data = callback_dict

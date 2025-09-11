@@ -3,26 +3,26 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Google Pub/Sub
-    pubsub_project_id: str
-    pubsub_tasks_topic: str
-    tasks_subscription: str
-    pubsub_results_topic: str
-    pubsub_results_subscription: str
-    pubsub_publisher_credentials_path: str
-    pubsub_subscriber_credentials_path: str
+    pubsub_project_id: str = ""
+    pubsub_tasks_topic: str = ""
+    tasks_subscription: str = ""
+    pubsub_results_topic: str = ""
+    pubsub_results_subscription: str = ""
+    pubsub_publisher_credentials_path: str = ""
+    pubsub_subscriber_credentials_path: str = ""
     
     # AWS S3
-    aws_endpoint_public_url: str
-    aws_endpoint_url: str
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_bucket_name: str
-    aws_base_folder: str
+    aws_endpoint_public_url: str = ""
+    aws_endpoint_url: str = ""
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_bucket_name: str = ""
+    aws_base_folder: str = ""
 
     # Database
-    database_url: str
+    database_url: str = "postgresql+asyncpg://transcode_user:transcode_pass@localhost:5433/transcode_db"
 
-    # PostgreSQL specific settings
+    # PostgreSQL specific settings (Docker services)
     postgres_host: str = "localhost"
     postgres_port: int = 5433
     postgres_db: str = "transcode_db"
@@ -38,9 +38,88 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
+    
+    # FFmpeg Configuration  
+    ffmpeg_path: str = "/usr/bin/ffmpeg"
+    ffprobe_path: str = "/usr/bin/ffprobe"
+    ffmpeg_hwaccel: str = "none"
+    ffmpeg_gpu_enabled: bool = False
+    gpu_enabled: bool = False
+    gpu_type: str = "none"
+    
+    # Storage
+    temp_storage_path: str = "/tmp/transcode"
+    
+    # Legacy attribute names for backward compatibility
+    @property
+    def AWS_ACCESS_KEY_ID(self) -> str:
+        return self.aws_access_key_id
+        
+    @property
+    def AWS_SECRET_ACCESS_KEY(self) -> str:
+        return self.aws_secret_access_key
+        
+    @property
+    def AWS_REGION(self) -> str:
+        return "us-east-1"  # Default region
+        
+    @property 
+    def S3_BUCKET(self) -> str:
+        return self.aws_bucket_name
+        
+    @property
+    def TEMP_STORAGE_PATH(self) -> str:
+        return self.temp_storage_path
+        
+        
+    @property
+    def FFMPEG_PATH(self) -> str:
+        return self.ffmpeg_path
+        
+    @property
+    def FFPROBE_PATH(self) -> str:
+        return self.ffprobe_path
+        
+    @property
+    def GPU_ENABLED(self) -> bool:
+        return self.gpu_enabled
+        
+    @property
+    def GPU_TYPE(self) -> str:
+        return self.gpu_type
+        
+    # Flask configuration
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """SQLAlchemy database URI for Flask"""
+        if self.database_url:
+            return self.database_url
+        return self.postgres_url
+        
+    @property
+    def SQLALCHEMY_TRACK_MODIFICATIONS(self) -> bool:
+        return False
+        
+    @property
+    def DEBUG(self) -> bool:
+        return True
+        
+    @property
+    def UPLOAD_FOLDER(self) -> str:
+        return "uploads"
+        
+    @property 
+    def SECRET_KEY(self) -> str:
+        return "dev-secret-key-change-in-production"
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # Ignore extra fields instead of raising error
 
 
 settings = Settings()
+
+
+def get_config():
+    """Get configuration settings instance"""
+    return settings

@@ -4,8 +4,8 @@ import json
 import logging
 from typing import Optional, Callable
 from concurrent.futures import TimeoutError
-from config import settings
-from models.schemas import TranscodeMessage, TranscodeResult, FaceDetectionMessage, FaceDetectionResult
+from ..core.config import settings
+from ..models.schemas import TranscodeMessage, TranscodeResult, FaceDetectionMessage, FaceDetectionResult
 
 logger = logging.getLogger(__name__)
 

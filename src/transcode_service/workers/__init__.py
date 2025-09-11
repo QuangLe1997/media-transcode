@@ -1,2 +1,1 @@
-from .image_tasks import *
-from .video_tasks import *
+# Workers are imported as needed
