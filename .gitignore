@@ -76,8 +76,8 @@ docker-compose.override.yml
 # Specific config files that contain sensitive info
 key.json
 
-# Archive directory
-archive/
+# Test directory
+tests/
 
 # Temporary and development files
 *.tmp
