@@ -260,7 +260,7 @@ class TranscodeWorker:
             logger.info(f"Building ffmpeg_args from config for profile {profile.id_profile}")
 
             # Create a ProfileConfig-like object to use build_ffmpeg_args
-            from mobile_profile_system import VideoConfig as MobileVideoConfig, ImageConfig as MobileImageConfig, \
+            from ..core.mobile_profile_system import VideoConfig as MobileVideoConfig, ImageConfig as MobileImageConfig, \
                 DeviceType
 
             if profile.video_config:
