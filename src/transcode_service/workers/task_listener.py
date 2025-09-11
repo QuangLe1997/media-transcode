@@ -46,10 +46,13 @@ class PubSubTaskListener:
     async def _create_task_from_message(self, message_data: Dict) -> Optional[str]:
         """Create task from PubSub message data - identical logic to API endpoint"""
         try:
-            # Extract required fields
+            # Extract required fields - support both old and new format
             task_id = message_data.get("task_id")
-            media_url = message_data.get("media_url")
+            media_url = message_data.get("media_url") or message_data.get("source_url")
             profiles = message_data.get("profiles")
+            # Handle single profile format
+            if not profiles and message_data.get("profile"):
+                profiles = [message_data.get("profile")]
             s3_output_config = message_data.get("s3_output_config")
             face_detection_config = message_data.get("face_detection_config")
             
@@ -74,9 +77,9 @@ class PubSubTaskListener:
             if not task_id:
                 missing_fields.append('task_id')
             if not media_url:
-                missing_fields.append('media_url')
+                missing_fields.append('media_url/source_url')
             if not profiles:
-                missing_fields.append('profiles')
+                missing_fields.append('profiles/profile')
             if not s3_output_config:
                 missing_fields.append('s3_output_config')
             
