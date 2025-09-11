@@ -1,25 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: transcode-postgres-local
-    ports:
-      - "5434:5432"
-    environment:
-      - POSTGRES_DB=transcode_db
-      - POSTGRES_USER=transcode_user
-      - POSTGRES_PASSWORD=transcode_pass
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
-    volumes:
-      - postgres_data_local:/var/lib/postgresql/data
-    restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U transcode_user -d transcode_db" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
-
   api:
     build:
       context: ..
@@ -27,12 +6,9 @@ services:
     container_name: transcode-api-local
     ports:
       - "8087:8087"
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      # Database Configuration
-      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      # Database Configuration - using existing server
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@192.168.0.234:5433/transcode_db
       
       
       # API Configuration
@@ -97,12 +73,9 @@ services:
       dockerfile: deployment/Dockerfile.local
     container_name: transcode-consumer-local
     command: [ "python", "-m", "transcode_service.workers.transcode_worker" ]
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      # Database Configuration
-      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      # Database Configuration - using existing server
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@192.168.0.234:5433/transcode_db
       
       
       # Worker Configuration
@@ -151,12 +124,9 @@ services:
       dockerfile: deployment/Dockerfile.local
     container_name: transcode-face-detection-worker-local
     command: [ "python", "-m", "transcode_service.workers.face_detect_worker" ]
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      # Database Configuration
-      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      # Database Configuration - using existing server
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@192.168.0.234:5433/transcode_db
       
       
       # Performance optimizations
@@ -205,12 +175,9 @@ services:
       dockerfile: deployment/Dockerfile.local
     container_name: transcode-task-listener-local
     command: [ "python", "-m", "transcode_service.workers.task_listener" ]
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      # Database Configuration
-      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+      # Database Configuration - using existing server
+      - DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@192.168.0.234:5433/transcode_db
       
       
       # Performance optimizations
@@ -271,5 +238,3 @@ services:
           memory: 128M
           cpus: '0.5'
 
-volumes:
-  postgres_data_local:
