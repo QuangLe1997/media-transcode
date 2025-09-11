@@ -501,8 +501,8 @@ async def main():
     # Setup logging
     setup_logging()
 
-    # Get subscription name from environment or use default
-    subscription_name = os.getenv("PUBSUB_TASK_SUBSCRIPTION", "skl-transcode-cms-tasks-sub")
+    # Get subscription name from settings
+    subscription_name = settings.tasks_subscription or "transcode-utils-tasks-sub"
 
     # Create and initialize listener
     listener = PubSubTaskListener()

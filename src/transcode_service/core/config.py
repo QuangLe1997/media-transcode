@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     disable_pubsub: bool = False
     google_application_credentials: str = ""
     
+    # Face Detection PubSub
+    face_detection_subscription: str = ""
+    pubsub_face_detection_tasks_topic: str = ""
+    pubsub_face_detection_results_topic: str = ""
+    pubsub_face_detection_results_subscription: str = ""
+    
     # AWS S3
     aws_endpoint_public_url: str = ""
     aws_endpoint_url: str = ""
