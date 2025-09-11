@@ -57,7 +57,10 @@ services:
       - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
       - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
       
-      # Disable Pub/Sub for local development (optional - use real PubSub if needed)
+      # Google Cloud credentials
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      
+      # PubSub Configuration
       - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-}
       - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC:-}
       - TASKS_SUBSCRIPTION=${TASKS_SUBSCRIPTION:-}
@@ -65,10 +68,11 @@ services:
       - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION:-}
       - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
       - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
       
-      # Face Detection Pub/Sub Configuration (disabled for local)
-      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=
-      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=
+      # Face Detection Pub/Sub Configuration
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-}
       
     volumes:
       - /tmp/transcode:/tmp/transcode
@@ -120,14 +124,20 @@ services:
       - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
       - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
       
-      # Disable Pub/Sub for local development
-      - PUBSUB_PROJECT_ID=
-      - PUBSUB_TASKS_TOPIC=
-      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
+      # Google Cloud credentials
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      
+      # PubSub Configuration
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC:-}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
       
     volumes:
       - ./logs:/app/logs
       - /tmp/transcode:/tmp/transcode
+      - ../src/transcode_service/key.json:/app/key.json:ro
     restart: always
     deploy:
       resources:
@@ -162,20 +172,26 @@ services:
       - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
       - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
       
-      # Disable GPU and Pub/Sub for local development
+      # Google Cloud credentials
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      
+      # Disable GPU for local development, but enable PubSub with credentials
       - NVIDIA_VISIBLE_DEVICES=
       - NVIDIA_DRIVER_CAPABILITIES=
-      - PUBSUB_PROJECT_ID=
-      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=
-      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=
-      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
-      - FACE_DETECTION_SUBSCRIPTION=
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-}
+      - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-}
+      - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
+      - FACE_DETECTION_SUBSCRIPTION=${FACE_DETECTION_SUBSCRIPTION:-}
       - ORT_LOGGING_LEVEL=4
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
       
     volumes:
       - ./logs:/app/logs
       - ./models_faces:/app/models_faces
       - /tmp/transcode:/tmp/transcode
+      - ../src/transcode_service/key.json:/app/key.json:ro
     restart: always
     deploy:
       resources:
@@ -210,16 +226,22 @@ services:
       - AWS_ENDPOINT_PUBLIC_URL=${AWS_ENDPOINT_PUBLIC_URL:-}
       - AWS_BASE_FOLDER=${AWS_BASE_FOLDER:-}
       
-      # Disable Pub/Sub for local development
-      - PUBSUB_PROJECT_ID=
-      - PUBSUB_TASKS_TOPIC=
-      - PUBSUB_RESULTS_TOPIC=
-      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=
-      - PUBSUB_TASK_SUBSCRIPTION=
+      # Google Cloud credentials
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      
+      # PubSub Configuration for task listener
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-}
+      - PUBSUB_TASKS_TOPIC=${PUBSUB_TASKS_TOPIC:-}
+      - PUBSUB_RESULTS_TOPIC=${PUBSUB_RESULTS_TOPIC:-}
+      - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
+      - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
+      - PUBSUB_TASK_SUBSCRIPTION=${PUBSUB_TASK_SUBSCRIPTION:-}
       - PUBSUB_MAX_MESSAGES=5
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
       
     volumes:
       - ./logs:/app/logs
+      - ../src/transcode_service/key.json:/app/key.json:ro
     restart: always
     deploy:
       resources:

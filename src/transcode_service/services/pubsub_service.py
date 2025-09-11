@@ -22,6 +22,18 @@ class PubSubService:
         if self._initialized:
             return
             
+        # Check if PubSub is disabled
+        if settings.disable_pubsub:
+            logger.info("PubSub is disabled, skipping initialization")
+            self._initialized = True
+            return
+            
+        # Check if credentials paths are empty
+        if not settings.pubsub_publisher_credentials_path or not settings.pubsub_subscriber_credentials_path:
+            logger.info("PubSub credentials not configured, skipping initialization")
+            self._initialized = True
+            return
+            
         logger.info("Initializing PubSub clients...")
         
         # Publisher credentials
@@ -78,6 +90,10 @@ class PubSubService:
     def subscriber_client(self):
         self._lazy_init()
         return self._subscriber_client
+    
+    def _is_disabled(self) -> bool:
+        """Check if PubSub is disabled"""
+        return settings.disable_pubsub or not settings.pubsub_publisher_credentials_path
     
     def publish_transcode_task(self, message: TranscodeMessage) -> str:
         """Publish transcode task to Pub/Sub"""
@@ -291,6 +307,14 @@ class PubSubService:
     
     def listen_for_face_detection_messages(self, subscription_name: str, callback: Callable, timeout: Optional[float] = None):
         """Subscribe to face detection messages"""
+        if self._is_disabled():
+            logger.info("PubSub is disabled, skipping face detection message listener")
+            return
+            
+        if not subscription_name:
+            logger.info("Face detection subscription name not configured, skipping listener")
+            return
+            
         subscription_path = self.subscriber_client.subscription_path(
             self.project_id, subscription_name
         )

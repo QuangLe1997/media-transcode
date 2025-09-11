@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     pubsub_results_subscription: str = ""
     pubsub_publisher_credentials_path: str = ""
     pubsub_subscriber_credentials_path: str = ""
+    disable_pubsub: bool = False
+    google_application_credentials: str = ""
     
     # AWS S3
     aws_endpoint_public_url: str = ""

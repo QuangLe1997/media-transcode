@@ -1,4 +1,5 @@
 import json
+import logging.handlers
 import os
 import shutil
 import subprocess
@@ -6,7 +7,6 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 from typing import List, Dict, Any
-import logging.handlers
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

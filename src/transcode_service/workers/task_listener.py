@@ -7,8 +7,8 @@ import sys
 from typing import Dict, Optional
 
 from ..core.config import settings
-from ..core.logging_config import setup_logging
 from ..core.db import init_db, get_db, TaskCRUD
+from ..core.logging_config import setup_logging
 from ..models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth
 from ..services import pubsub_service
 from ..services.media_detection_service import media_detection_service
