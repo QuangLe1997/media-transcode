@@ -59,8 +59,8 @@ RUN mkdir -p logs temp /tmp/transcode models_faces && \
 
 
 # FFmpeg configuration - using default ffmpeg from apt (no custom build)
-ENV FFMPEG_HWACCEL=auto
-ENV FFMPEG_GPU_ENABLED=auto
+ENV FFMPEG_HWACCEL=nvdec
+ENV FFMPEG_GPU_ENABLED=true
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV FFPROBE_PATH=/usr/bin/ffprobe
 

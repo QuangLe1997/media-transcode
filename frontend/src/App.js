@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import {BrowserRouter as Router, Link, Route, Routes, useLocation} from 'react-router-dom';
 import Upload from './components/Upload';
 import Results from './components/Results';
 import TaskDetails from './components/TaskDetails';
+import ProfileManagerPage from './components/ProfileManagerPage';
 
 function Navigation() {
   const location = useLocation();
@@ -31,6 +32,12 @@ function Navigation() {
         >
           📊 Results
         </Link>
+          <Link
+              to="/profiles"
+              className={`nav-link ${location.pathname === '/profiles' ? 'active' : ''}`}
+          >
+              🔧 Profile Manager
+        </Link>
       </nav>
     </div>
   );
@@ -45,6 +52,7 @@ function App() {
           <Route path="/" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/results" element={<Results />} />
+            <Route path="/profiles" element={<ProfileManagerPage/>}/>
           <Route path="/task/:taskId" element={<TaskDetails />} />
         </Routes>
       </div>

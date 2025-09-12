@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import api from '../api';
 import Editor from '@monaco-editor/react';
+import ProfileTemplateManager from './ProfileTemplateManager';
 
 const Upload = () => {
   const navigate = useNavigate();
@@ -71,6 +72,9 @@ const Upload = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
 
+    // Profile template management
+    const [showProfileManager, setShowProfileManager] = useState(false);
+
   // Quick templates for profiles
   const profileTemplates = {
     video_720p: {
@@ -116,6 +120,12 @@ const Upload = () => {
       }
     }
   };
+
+    // Handle profiles loaded from ProfileManager
+    const handleProfilesLoad = (profilesJson) => {
+        setProfilesJson(profilesJson);
+        setMessage({type: 'success', text: 'Profiles loaded from template manager!'});
+    };
 
   const formatJson = (jsonString) => {
     try {
@@ -769,6 +779,22 @@ const Upload = () => {
             Profiles Configuration (JSON Array):
           </label>
           <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                  type="button"
+                  onClick={() => setShowProfileManager(true)}
+                  style={{
+                      padding: '4px 12px',
+                      fontSize: '0.8rem',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                  }}
+              >
+                  🔧 Profile Manager
+              </button>
             <button
               type="button"
               onClick={() => setProfilesJson(formatJson(profilesJson))}
@@ -1410,6 +1436,15 @@ const Upload = () => {
         </div>
       </div>
       </div>
+
+        {/* Profile Manager Modal */}
+        {showProfileManager && (
+            <ProfileTemplateManager
+                showAsModal={true}
+                onClose={() => setShowProfileManager(false)}
+                onProfilesLoad={handleProfilesLoad}
+            />
+        )}
     </div>
   );
 };

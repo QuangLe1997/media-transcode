@@ -1256,3 +1256,4 @@ async def delete_config_template(
         logger.error(f"Error deleting config template: {e}")
         raise HTTPException(500, "Failed to delete config template")
 
+# Legacy profile endpoints removed - use /config-templates instead
