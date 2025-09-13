@@ -1,0 +1,237 @@
+{
+  "api_requests": {
+    "video_popup_request": {
+      "description": "Transcode video popup for home screen",
+      "method": "POST",
+      "url": "/transcode",
+      "profiles": [
+        {
+          "id_profile": "popup_webp_high",
+          "output_type": "webp",
+          "input_type": "video",
+          "webp_config": {
+            "fps": 20,
+            "width": 720,
+            "height": 1280,
+            "quality": 90,
+            "animated": true,
+            "method": 5,
+            "loop": 0,
+            "lossless": false
+          }
+        },
+        {
+          "id_profile": "popup_webp_low",
+          "output_type": "webp",
+          "input_type": "video",
+          "webp_config": {
+            "fps": 15,
+            "width": 540,
+            "height": 960,
+            "quality": 80,
+            "animated": true,
+            "method": 3,
+            "loop": 0,
+            "lossless": false
+          }
+        },
+        {
+          "id_profile": "popup_mp4_high",
+          "output_type": "video",
+          "input_type": "video",
+          "video_config": {
+            "codec": "libx264",
+            "max_width": 720,
+            "max_height": 1280,
+            "fps": 20,
+            "crf": 25,
+            "preset": "medium",
+            "profile": "main",
+            "level": "4.1",
+            "remove_audio": true
+          }
+        },
+        {
+          "id_profile": "popup_mp4_low",
+          "output_type": "video",
+          "input_type": "video",
+          "video_config": {
+            "codec": "libx264",
+            "max_width": 540,
+            "max_height": 960,
+            "fps": 15,
+            "crf": 30,
+            "preset": "fast",
+            "profile": "baseline",
+            "level": "3.1",
+            "remove_audio": true
+          }
+        }
+      ],
+      "s3_output_config": {
+        "base_path": "popup-home-content",
+        "folder_structure": "{task_id}/profiles/{profile_id}",
+        "cleanup_temp_files": true
+      }
+    },
+
+    "image_popup_request": {
+      "description": "Transcode image popup for home screen",
+      "method": "POST",
+      "url": "/transcode",
+      "profiles": [
+        {
+          "id_profile": "popup_image_webp_high",
+          "output_type": "image",
+          "input_type": "image",
+          "image_config": {
+            "max_width": 720,
+            "max_height": 1280,
+            "quality": 92,
+            "format": "webp"
+          }
+        },
+        {
+          "id_profile": "popup_image_webp_low",
+          "output_type": "image",
+          "input_type": "image",
+          "image_config": {
+            "max_width": 540,
+            "max_height": 960,
+            "quality": 85,
+            "format": "webp"
+          }
+        },
+        {
+          "id_profile": "popup_image_jpg_high",
+          "output_type": "image",
+          "input_type": "image",
+          "image_config": {
+            "max_width": 720,
+            "max_height": 1280,
+            "quality": 95,
+            "format": "jpeg"
+          }
+        },
+        {
+          "id_profile": "popup_image_jpg_low",
+          "output_type": "image",
+          "input_type": "image",
+          "image_config": {
+            "max_width": 540,
+            "max_height": 960,
+            "quality": 90,
+            "format": "jpeg"
+          }
+        }
+      ],
+      "s3_output_config": {
+        "base_path": "popup-home-content",
+        "folder_structure": "{task_id}/profiles/{profile_id}",
+        "cleanup_temp_files": true
+      }
+    }
+  },
+
+  "curl_examples": {
+    "video_popup": "curl -X POST 'http://localhost:8000/transcode' \\\n  -F 'media_url=https://example.com/popup-video.mp4' \\\n  -F 'profiles=[{\"id_profile\":\"popup_webp_high\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":20,\"width\":720,\"height\":1280,\"quality\":90,\"animated\":true,\"method\":5,\"loop\":0}},{\"id_profile\":\"popup_webp_low\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":15,\"width\":540,\"height\":960,\"quality\":80,\"animated\":true,\"method\":3,\"loop\":0}},{\"id_profile\":\"popup_mp4_high\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":720,\"max_height\":1280,\"fps\":20,\"crf\":25,\"preset\":\"medium\",\"profile\":\"main\",\"remove_audio\":true}},{\"id_profile\":\"popup_mp4_low\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":540,\"max_height\":960,\"fps\":15,\"crf\":30,\"preset\":\"fast\",\"profile\":\"baseline\",\"remove_audio\":true}}]' \\\n  -F 's3_output_config={\"base_path\":\"popup-home-content\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\"}'",
+
+    "image_popup": "curl -X POST 'http://localhost:8000/transcode' \\\n  -F 'media_url=https://example.com/popup-image.jpg' \\\n  -F 'profiles=[{\"id_profile\":\"popup_image_webp_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":720,\"max_height\":1280,\"quality\":92,\"format\":\"webp\"}},{\"id_profile\":\"popup_image_jpg_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":720,\"max_height\":1280,\"quality\":95,\"format\":\"jpeg\"}}]' \\\n  -F 's3_output_config={\"base_path\":\"popup-home-content\"}'"
+  },
+
+  "javascript_integration": {
+    "code": "// Mobile app popup display logic\nclass PopupManager {\n  constructor() {\n    this.deviceTier = this.detectDeviceTier();\n  }\n\n  detectDeviceTier() {\n    // Simple detection based on screen resolution and device\n    const screenHeight = window.screen.height * window.devicePixelRatio;\n    const isHighEnd = screenHeight >= 2000 || /iPhone\\s?(12|13|14|15)/.test(navigator.userAgent);\n    return isHighEnd ? 'high' : 'low';\n  }\n\n  getPopupUrl(outputs) {\n    const tier = this.deviceTier;\n    \n    // Try WebP first\n    const webpProfile = `popup_webp_${tier}`;\n    const mp4Profile = `popup_mp4_${tier}`;\n    const webpImageProfile = `popup_image_webp_${tier}`;\n    const jpgProfile = `popup_image_jpg_${tier}`;\n    \n    // Check WebP support\n    const supportsWebP = this.checkWebPSupport();\n    \n    if (outputs[webpProfile] && supportsWebP) {\n      return outputs[webpProfile][0].url;\n    } else if (outputs[mp4Profile]) {\n      return outputs[mp4Profile][0].url;\n    } else if (outputs[webpImageProfile] && supportsWebP) {\n      return outputs[webpImageProfile][0].url;\n    } else if (outputs[jpgProfile]) {\n      return outputs[jpgProfile][0].url;\n    }\n    \n    // Fallback to any available\n    return Object.values(outputs)[0][0].url;\n  }\n\n  checkWebPSupport() {\n    // Simple WebP support check\n    const canvas = document.createElement('canvas');\n    canvas.width = canvas.height = 1;\n    return canvas.toDataURL('image/webp').indexOf('image/webp') === 5;\n  }\n\n  displayPopup(taskOutputs) {\n    const popupUrl = this.getPopupUrl(taskOutputs);\n    const isVideo = popupUrl.includes('.mp4') || popupUrl.includes('.webp');\n    \n    const popup = document.createElement('div');\n    popup.className = 'home-popup';\n    popup.style.cssText = `\n      position: fixed;\n      top: 10%;\n      left: 50%;\n      transform: translateX(-50%);\n      width: 90%;\n      max-width: 400px;\n      height: 80vh;\n      z-index: 9999;\n      background: #000;\n      border-radius: 12px;\n      overflow: hidden;\n    `;\n    \n    if (isVideo) {\n      const video = document.createElement('video');\n      video.src = popupUrl;\n      video.autoplay = true;\n      video.loop = true;\n      video.muted = true;\n      video.playsInline = true;\n      video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';\n      popup.appendChild(video);\n    } else {\n      const img = document.createElement('img');\n      img.src = popupUrl;\n      img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';\n      popup.appendChild(img);\n    }\n    \n    // Add close button\n    const closeBtn = document.createElement('button');\n    closeBtn.innerHTML = '×';\n    closeBtn.style.cssText = `\n      position: absolute;\n      top: 20px;\n      right: 20px;\n      width: 40px;\n      height: 40px;\n      border-radius: 50%;\n      background: rgba(0,0,0,0.5);\n      color: white;\n      border: none;\n      font-size: 24px;\n      cursor: pointer;\n    `;\n    closeBtn.onclick = () => popup.remove();\n    popup.appendChild(closeBtn);\n    \n    document.body.appendChild(popup);\n  }\n}\n\n// Usage\nconst popupManager = new PopupManager();\nfetch(`/task/${taskId}`)\n  .then(res => res.json())\n  .then(data => {\n    if (data.status === 'completed') {\n      popupManager.displayPopup(data.outputs);\n    }\n  });"
+  },
+
+  "response_example": {
+    "video_popup_completed": {
+      "task_id": "popup-123456",
+      "status": "completed",
+      "outputs": {
+        "popup_webp_high": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-123456/profiles/popup_webp_high/output.webp",
+          "metadata": {
+            "file_size": 3145728,
+            "dimensions": "720×1280",
+            "duration": 10,
+            "format": "webp"
+          }
+        }],
+        "popup_webp_low": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-123456/profiles/popup_webp_low/output.webp",
+          "metadata": {
+            "file_size": 1572864,
+            "dimensions": "540×960",
+            "duration": 10,
+            "format": "webp"
+          }
+        }],
+        "popup_mp4_high": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-123456/profiles/popup_mp4_high/output.mp4",
+          "metadata": {
+            "file_size": 4194304,
+            "dimensions": "720×1280",
+            "duration": 10,
+            "fps": 20,
+            "format": "mp4"
+          }
+        }],
+        "popup_mp4_low": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-123456/profiles/popup_mp4_low/output.mp4",
+          "metadata": {
+            "file_size": 2097152,
+            "dimensions": "540×960",
+            "duration": 10,
+            "fps": 15,
+            "format": "mp4"
+          }
+        }]
+      },
+      "expected_profiles": 4,
+      "completed_profiles": 4,
+      "completion_percentage": 100.0
+    },
+
+    "image_popup_completed": {
+      "task_id": "popup-img-789",
+      "status": "completed",
+      "outputs": {
+        "popup_image_webp_high": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-img-789/profiles/popup_image_webp_high/output.webp",
+          "metadata": {
+            "file_size": 409600,
+            "dimensions": "720×1280",
+            "format": "webp"
+          }
+        }],
+        "popup_image_webp_low": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-img-789/profiles/popup_image_webp_low/output.webp",
+          "metadata": {
+            "file_size": 204800,
+            "dimensions": "540×960",
+            "format": "webp"
+          }
+        }],
+        "popup_image_jpg_high": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-img-789/profiles/popup_image_jpg_high/output.jpg",
+          "metadata": {
+            "file_size": 512000,
+            "dimensions": "720×1280",
+            "format": "jpeg"
+          }
+        }],
+        "popup_image_jpg_low": [{
+          "url": "https://cdn.example.com/popup-home-content/popup-img-789/profiles/popup_image_jpg_low/output.jpg",
+          "metadata": {
+            "file_size": 256000,
+            "dimensions": "540×960",
+            "format": "jpeg"
+          }
+        }]
+      },
+      "expected_profiles": 4,
+      "completed_profiles": 4,
+      "completion_percentage": 100.0
+    }
+  }
+}

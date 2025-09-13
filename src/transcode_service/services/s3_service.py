@@ -38,6 +38,48 @@ class S3Service:
         """Get full S3 key with base folder prefix"""
         base_folder = custom_base_folder if custom_base_folder is not None else self.base_folder
         return f"{base_folder}/{key}" if base_folder else key
+    
+    def _get_content_type_by_extension(self, file_path: str) -> Optional[str]:
+        """Get content type based on file extension with explicit mappings for media files"""
+        ext = os.path.splitext(file_path)[1].lower()
+        
+        # Explicit mappings for media files to ensure proper browser playback
+        content_type_mapping = {
+            # Video formats
+            '.mp4': 'video/mp4',
+            '.webm': 'video/webm',
+            '.avi': 'video/x-msvideo',
+            '.mov': 'video/quicktime',
+            '.mkv': 'video/x-matroska',
+            '.m4v': 'video/mp4',
+            
+            # Image formats
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.bmp': 'image/bmp',
+            '.tiff': 'image/tiff',
+            '.tif': 'image/tiff',
+            
+            # Audio formats
+            '.mp3': 'audio/mpeg',
+            '.wav': 'audio/wav',
+            '.ogg': 'audio/ogg',
+            '.aac': 'audio/aac',
+            '.m4a': 'audio/mp4',
+            
+            # Other formats
+            '.json': 'application/json',
+            '.txt': 'text/plain',
+            '.html': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+        }
+        
+        return content_type_mapping.get(ext)
 
     def upload_file(self, file_data: BinaryIO, key: str, content_type: Optional[str] = None) -> str:
         """Upload file to S3 and return public URL"""
@@ -46,19 +88,26 @@ class S3Service:
 
             # Determine content type if not provided
             if not content_type:
-                content_type = mimetypes.guess_type(key)[0] or 'application/octet-stream'
+                content_type = self._get_content_type_by_extension(key) or mimetypes.guess_type(key)[0] or 'application/octet-stream'
 
+            # Set content disposition for proper browser handling
+            content_disposition = 'inline'
+            if content_type.startswith('video/') or content_type.startswith('audio/'):
+                content_disposition = 'inline; filename="' + os.path.basename(key) + '"'
+            
             extra_args = {
                 'ContentType': content_type,
                 'CacheControl': 'public, max-age=31536000',  # 1 year cache for better web performance
-                'ContentDisposition': 'inline'
+                'ContentDisposition': content_disposition
             }
 
             # Optimize cache control based on content type
             if content_type.startswith('image/'):
                 extra_args['CacheControl'] = 'public, max-age=31536000'  # 1 year for images
-            elif content_type.startswith('video/'):
-                extra_args['CacheControl'] = 'public, max-age=2592000'  # 30 days for videos
+            elif content_type.startswith('video/') or content_type.startswith('audio/'):
+                extra_args['CacheControl'] = 'public, max-age=2592000'  # 30 days for videos/audio
+                # Add additional headers for video streaming
+                extra_args['AcceptRanges'] = 'bytes'  # Enable range requests for video streaming
 
             self.s3_client.upload_fileobj(
                 file_data,
@@ -85,19 +134,26 @@ class S3Service:
                 full_key = self._get_full_key(key, custom_base_folder)
 
             # Determine content type
-            content_type = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
+            content_type = self._get_content_type_by_extension(file_path) or mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
 
+            # Set content disposition for proper browser handling
+            content_disposition = 'inline'
+            if content_type.startswith('video/') or content_type.startswith('audio/'):
+                content_disposition = 'inline; filename="' + os.path.basename(file_path) + '"'
+            
             extra_args = {
                 'ContentType': content_type,
                 'CacheControl': 'public, max-age=31536000',  # 1 year cache for better web performance
-                'ContentDisposition': 'inline'
+                'ContentDisposition': content_disposition
             }
 
             # Optimize cache control based on content type
             if content_type.startswith('image/'):
                 extra_args['CacheControl'] = 'public, max-age=31536000'  # 1 year for images
-            elif content_type.startswith('video/'):
-                extra_args['CacheControl'] = 'public, max-age=2592000'  # 30 days for videos
+            elif content_type.startswith('video/') or content_type.startswith('audio/'):
+                extra_args['CacheControl'] = 'public, max-age=2592000'  # 30 days for videos/audio
+                # Add additional headers for video streaming
+                extra_args['AcceptRanges'] = 'bytes'  # Enable range requests for video streaming
             
             self.s3_client.upload_file(
                 file_path,

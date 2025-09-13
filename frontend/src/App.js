@@ -3,7 +3,7 @@ import {BrowserRouter as Router, Link, Route, Routes, useLocation} from 'react-r
 import Upload from './components/Upload';
 import Results from './components/Results';
 import TaskDetails from './components/TaskDetails';
-import ProfileManagerPage from './components/ProfileManagerPage';
+import ConfigTemplatesPage from './components/ConfigTemplatesPage';
 
 function Navigation() {
   const location = useLocation();
@@ -32,11 +32,11 @@ function Navigation() {
         >
           📊 Results
         </Link>
-          <Link
-              to="/profiles"
-              className={`nav-link ${location.pathname === '/profiles' ? 'active' : ''}`}
-          >
-              🔧 Profile Manager
+        <Link
+          to="/config-templates"
+          className={`nav-link ${location.pathname === '/config-templates' ? 'active' : ''}`}
+        >
+          📋 Config Templates
         </Link>
       </nav>
     </div>
@@ -52,7 +52,7 @@ function App() {
           <Route path="/" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/results" element={<Results />} />
-            <Route path="/profiles" element={<ProfileManagerPage/>}/>
+          <Route path="/config-templates" element={<ConfigTemplatesPage />} />
           <Route path="/task/:taskId" element={<TaskDetails />} />
         </Routes>
       </div>

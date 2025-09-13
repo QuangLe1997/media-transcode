@@ -50,30 +50,21 @@ const ConfirmModal = ({
   const styles = getTypeStyles();
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      zIndex: 1000,
-      width: '100%',
-      height: '100%',
-      pointerEvents: 'none'
-    }}>
+    <>
       <div style={{
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
         background: 'rgba(0, 0, 0, 0.5)',
-        pointerEvents: 'auto'
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px'
       }} onClick={onClose}>
         <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           background: 'white',
           borderRadius: '12px',
           padding: '24px',
@@ -217,22 +208,22 @@ const ConfirmModal = ({
             {confirmText}
           </button>
         </div>
+        </div>
       </div>
-    </div>
 
       <style jsx>{`
         @keyframes modalSlideIn {
           from {
             opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
+            transform: scale(0.9);
           }
           to {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
+            transform: scale(1);
           }
         }
       `}</style>
-    </div>
+    </>
   );
 };
 

@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebP Video Converter UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        /* File Selection */
+        .file-selection {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-selection:hover {
+            background: #f8f9fa;
+            border-color: #495057;
+        }
+        
+        .file-selection.has-file {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .selected-file {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        /* Configuration Sections */
+        .config-sections {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .config-row-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .config-section {
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+        
+        .config-section.compact {
+            padding: 10px;
+        }
+        
+        .config-section h3 {
+            margin-bottom: 12px;
+            color: #495057;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 6px;
+        }
+        
+        /* Compact Configuration Form */
+        .config-form-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .form-group-compact {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group-compact label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .form-group-compact input,
+        .form-group-compact select {
+            padding: 4px 6px;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        
+        .form-group-compact input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+        
+        /* Range container */
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .range-container input[type="range"] {
+            flex: 1;
+            margin: 0;
+        }
+        
+        .range-container span {
+            min-width: 35px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.7rem;
+            background: #e9ecef;
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+        
+        /* Config display styles */
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+        
+        .config-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .config-value {
+            font-family: monospace;
+            color: #007bff;
+            background: #e7f1ff;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 0.7rem;
+        }
+        
+        /* Original Configuration Form (if needed) */
+        .config-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* Range sliders */
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        input[type="range"] + span {
+            display: inline-block;
+            width: 50px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #e9ecef;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        input, select {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .preset-btn {
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        
+        .preset-btn:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+        
+        .preset-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .convert-btn {
+            grid-column: 1 / -1;
+            padding: 15px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .convert-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Status and Results */
+        .status-panel {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .command-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            background: #f8f9fa;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border: 1px solid #dee2e6;
+        }
+        
+        .result-item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .result-item img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        
+        .result-info {
+            padding: 15px;
+        }
+        
+        .result-info h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .result-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .result-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            background: white;
+            border-radius: 3px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            cursor: default;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-row-container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .config-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-form-compact {
+                grid-template-columns: 1fr;
+            }
+            
+            .preset-buttons {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .config-sections {
+                max-height: none;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 350px 1fr;
+            }
+            
+            .config-row-container {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 WebP Video Converter</h1>
+        
+        <div class="main-grid">
+            <!-- File Selection Panel -->
+            <div class="panel">
+                <h2>📁 Select Media File</h2>
+                <div class="file-selection" id="fileSelection">
+                    <div>
+                        <h3>📂 Drop media file here or click to browse</h3>
+                        <p>Video: MP4, MOV, AVI, MKV, WebM</p>
+                        <p>Image: JPG, PNG, GIF, WebP, BMP</p>
+                    </div>
+                    <div class="selected-file" id="selectedFile" style="display: none;"></div>
+                </div>
+                <input type="file" id="fileInput" accept="video/*,image/*,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.tif,.webp,.mp4,.mov,.avi,.mkv,.webm,.m4v" style="display: none;">
+            </div>
+            
+            <!-- Configuration Panel -->
+            <div class="panel">
+                <h2>⚙️ Configuration</h2>
+                
+                <!-- Preset Buttons -->
+                <div class="preset-buttons">
+                    <div class="preset-btn" data-preset="tiny">🔷 Tiny<br><small>180px, Q60</small></div>
+                    <div class="preset-btn" data-preset="low">🟢 Low<br><small>270px, Q75</small></div>
+                    <div class="preset-btn" data-preset="high">🔵 High<br><small>360px, Q85</small></div>
+                    <div class="preset-btn" data-preset="banner">🟡 Banner<br><small>540px, Q80</small></div>
+                    <div class="preset-btn" data-preset="lossless">🟣 Lossless<br><small>270px</small></div>
+                </div>
+                
+                <!-- Configuration Form -->
+                <div class="config-sections">
+                    <!-- Basic & Advanced Settings Row -->
+                    <div class="config-row-container">
+                        <!-- Basic Settings -->
+                        <div class="config-section compact">
+                            <h3>🎯 Basic Settings</h3>
+                            <div class="config-form-compact">
+                                <div class="form-group-compact">
+                                    <label>Width</label>
+                                    <input type="number" id="width" min="50" max="1920" value="360">
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Height</label>
+                                    <input type="number" id="height" min="50" max="1920" placeholder="Auto">
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Quality</label>
+                                    <input type="number" id="quality" min="1" max="100" value="85">
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>FPS</label>
+                                    <input type="number" id="fps" min="1" max="60" value="15" step="1">
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>Duration</label>
+                                    <input type="number" id="duration" min="0.5" max="120" value="6" step="0.5">
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>Speed</label>
+                                    <select id="speed">
+                                        <option value="0.5">0.5x - Slow</option>
+                                        <option value="0.8">0.8x - Slower</option>
+                                        <option value="1.0" selected>1.0x - Normal</option>
+                                        <option value="1.2">1.2x - Faster</option>
+                                        <option value="1.5">1.5x - Fast</option>
+                                        <option value="2.0">2.0x - Very Fast</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>Start Time</label>
+                                    <input type="number" id="startTime" min="0" value="0" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="config-section compact">
+                            <h3>⚙️ Advanced Settings</h3>
+                            <div class="config-form-compact">
+                                <div class="form-group-compact">
+                                    <label>Method</label>
+                                    <select id="method">
+                                        <option value="0">0 - Fast</option>
+                                        <option value="1">1 - Fast</option>
+                                        <option value="2">2 - Good</option>
+                                        <option value="3">3 - Better</option>
+                                        <option value="4" selected>4 - Best</option>
+                                        <option value="5">5 - Slow</option>
+                                        <option value="6">6 - Slowest</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Preset</label>
+                                    <select id="preset">
+                                        <option value="default">Default</option>
+                                        <option value="photo">Photo</option>
+                                        <option value="picture">Picture</option>
+                                        <option value="drawing">Drawing</option>
+                                        <option value="icon">Icon</option>
+                                        <option value="text">Text</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Near Loss</label>
+                                    <input type="number" id="nearLossless" min="0" max="100" placeholder="Off">
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Target KB</label>
+                                    <input type="number" id="targetSize" min="10" placeholder="Auto">
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Alpha Q</label>
+                                    <input type="number" id="alphaQuality" min="0" max="100" value="100">
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Alpha M</label>
+                                    <select id="alphaMethod">
+                                        <option value="0">0 - None</option>
+                                        <option value="1" selected>1 - Comp</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Processing & Special Modes Row -->
+                    <div class="config-row-container">
+                        <!-- Image Processing -->
+                        <div class="config-section compact">
+                            <h3>🎨 Image Processing</h3>
+                            <div class="config-form-compact">
+                                <div class="form-group-compact">
+                                    <label>Contrast</label>
+                                    <div class="range-container">
+                                        <input type="range" id="contrast" min="0.1" max="3" value="1" step="0.1">
+                                        <span id="contrastValue">1.0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Brightness</label>
+                                    <div class="range-container">
+                                        <input type="range" id="brightness" min="-1" max="1" value="0" step="0.1">
+                                        <span id="brightnessValue">0.0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>Saturation</label>
+                                    <div class="range-container">
+                                        <input type="range" id="saturation" min="0" max="3" value="1" step="0.1">
+                                        <span id="saturationValue">1.0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>
+                                        <input type="checkbox" id="denoising"> Denoise
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>
+                                        <input type="checkbox" id="sharpening"> Sharpen
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>
+                                        <input type="checkbox" id="autoFilter"> Auto Filter
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Special Modes -->
+                        <div class="config-section compact">
+                            <h3>🔧 Special Modes</h3>
+                            <div class="config-form-compact">
+                                <div class="form-group-compact">
+                                    <label>
+                                        <input type="checkbox" id="lossless"> Lossless
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <label>
+                                        <input type="checkbox" id="twoPass"> Two-Pass
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>
+                                        <input type="checkbox" id="animated" checked> Animated
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>Loop</label>
+                                    <select id="loopCount">
+                                        <option value="0" selected>∞ Infinite</option>
+                                        <option value="1">1 Time</option>
+                                        <option value="2">2 Times</option>
+                                        <option value="3">3 Times</option>
+                                        <option value="5">5 Times</option>
+                                        <option value="10">10 Times</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group-compact video-only">
+                                    <label>
+                                        <input type="checkbox" id="saveFrames"> Save Frames
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group-compact">
+                                    <!-- Empty for symmetry -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="convert-btn" id="convertBtn" disabled>
+                    🚀 Convert to WebP
+                </button>
+            </div>
+        </div>
+        
+        <!-- Status and Results Panel -->
+        <div class="panel status-panel">
+            <h2>📊 Status & Results</h2>
+            
+            <div id="statusArea"></div>
+            
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+    
+    <!-- Modal for viewing images -->
+    <div class="modal" id="modal">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <img id="modalImage" src="" alt="">
+    </div>
+    
+    <script>
+        // Global variables
+        let selectedFile = null;
+        let isConverting = false;
+        
+        // DOM elements
+        const fileSelection = document.getElementById('fileSelection');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const convertBtn = document.getElementById('convertBtn');
+        const statusArea = document.getElementById('statusArea');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const modal = document.getElementById('modal');
+        const modalImage = document.getElementById('modalImage');
+        
+        // Preset configurations
+        const presets = {
+            tiny: { width: 180, quality: 60, fps: 8, duration: 3, method: 1 },
+            low: { width: 270, quality: 75, fps: 10, duration: 5, method: 2 },
+            high: { width: 360, quality: 85, fps: 15, duration: 6, method: 4 },
+            banner: { width: 540, quality: 80, fps: 12, duration: 8, method: 4 },
+            lossless: { width: 270, quality: 100, fps: 12, duration: 4, method: 6, lossless: true }
+        };
+        
+        // File selection events
+        fileSelection.addEventListener('click', () => fileInput.click());
+        fileSelection.addEventListener('dragover', handleDragOver);
+        fileSelection.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Preset button events
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+        });
+        
+        // Convert button event
+        convertBtn.addEventListener('click', convertVideo);
+        
+        // Modal events
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Range slider events
+        document.getElementById('contrast').addEventListener('input', (e) => {
+            document.getElementById('contrastValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('brightness').addEventListener('input', (e) => {
+            document.getElementById('brightnessValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('saturation').addEventListener('input', (e) => {
+            document.getElementById('saturationValue').textContent = e.target.value;
+        });
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            fileSelection.style.background = '#e3f2fd';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            fileSelection.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                selectFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                selectFile(e.target.files[0]);
+            }
+        }
+        
+        function selectFile(file) {
+            // Check if file is video or image
+            if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+                return;
+            }
+            
+            selectedFile = file;
+            const isVideo = file.type.startsWith('video/');
+            
+            selectedFileDiv.style.display = 'block';
+            selectedFileDiv.innerHTML = `
+                <strong>Selected:</strong> ${file.name}<br>
+                <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+                <strong>Type:</strong> ${file.type} (${isVideo ? 'Video' : 'Image'})
+            `;
+            
+            fileSelection.classList.add('has-file');
+            convertBtn.disabled = false;
+            
+            // Show/hide video-specific controls
+            toggleVideoControls(isVideo);
+        }
+        
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Update form fields
+            document.getElementById('width').value = preset.width;
+            document.getElementById('quality').value = preset.quality;
+            document.getElementById('fps').value = preset.fps;
+            document.getElementById('duration').value = preset.duration;
+            document.getElementById('method').value = preset.method;
+            document.getElementById('lossless').checked = preset.lossless || false;
+            
+            // Update active preset button
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-preset="${presetName}"]`).classList.add('active');
+        }
+        
+        async function convertVideo() {
+            if (!selectedFile || isConverting) return;
+            
+            isConverting = true;
+            convertBtn.disabled = true;
+            convertBtn.textContent = '🔄 Converting...';
+            
+            // Get configuration
+            const config = {
+                // Basic settings
+                width: parseInt(document.getElementById('width').value) || null,
+                height: parseInt(document.getElementById('height').value) || null,
+                quality: parseInt(document.getElementById('quality').value),
+                fps: parseInt(document.getElementById('fps').value),
+                duration: parseFloat(document.getElementById('duration').value),
+                speed: parseFloat(document.getElementById('speed').value),
+                startTime: parseFloat(document.getElementById('startTime').value),
+                
+                // Advanced settings
+                method: parseInt(document.getElementById('method').value),
+                preset: document.getElementById('preset').value,
+                nearLossless: parseInt(document.getElementById('nearLossless').value) || null,
+                targetSize: parseInt(document.getElementById('targetSize').value) || null,
+                alphaQuality: parseInt(document.getElementById('alphaQuality').value),
+                alphaMethod: parseInt(document.getElementById('alphaMethod').value),
+                
+                // Image processing
+                contrast: parseFloat(document.getElementById('contrast').value),
+                brightness: parseFloat(document.getElementById('brightness').value),
+                saturation: parseFloat(document.getElementById('saturation').value),
+                denoising: document.getElementById('denoising').checked,
+                sharpening: document.getElementById('sharpening').checked,
+                autoFilter: document.getElementById('autoFilter').checked,
+                
+                // Special modes
+                lossless: document.getElementById('lossless').checked,
+                twoPass: document.getElementById('twoPass').checked,
+                animated: document.getElementById('animated').checked,
+                loopCount: parseInt(document.getElementById('loopCount').value),
+                saveFrames: document.getElementById('saveFrames').checked
+            };
+            
+            try {
+                // Start conversion
+                await simulateConversion(selectedFile, config);
+                
+            } catch (error) {
+                console.error('Conversion failed:', error);
+            } finally {
+                isConverting = false;
+                convertBtn.disabled = false;
+                convertBtn.textContent = '🚀 Convert to WebP';
+            }
+        }
+        
+        async function simulateConversion(file, config) {
+            // Create FormData to send file and config to Flask backend
+            const formData = new FormData();
+            formData.append('video', file);
+            
+            // Add all configuration parameters
+            Object.keys(config).forEach(key => {
+                if (config[key] !== null && config[key] !== undefined) {
+                    formData.append(key, config[key]);
+                }
+            });
+            
+            // No progress indication needed
+            
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Add URL for the converted file
+                    result.url = `/api/output/${result.outputFilename}`;
+                    displayResult(result);
+                } else {
+                    throw new Error(result.error || 'Conversion failed');
+                }
+                
+            } catch (error) {
+                console.error('Conversion error:', error);
+                throw error;
+            }
+        }
+        
+        function displayResult(result) {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'result-item';
+            
+            // Use the actual WebP URL from server
+            const imgSrc = result.url || `/api/output/${result.outputFilename}`;
+            const filename = result.outputFilename || result.outputPath.split('/').pop();
+            
+            // Determine if this is an animated WebP (from video input or animated config)
+            const isAnimated = selectedFile && selectedFile.type.startsWith('video/') || 
+                              (result.config && result.config.animated !== false);
+            
+            // Create appropriate media element
+            const mediaElement = isAnimated ? 
+                `<div class="webp-video-container" style="position: relative;">
+                    <img src="${imgSrc}" alt="Converted WebP" onclick="openModal('${imgSrc}')" 
+                         style="width: 100%; height: auto; max-height: 400px; object-fit: contain; cursor: pointer; background: #f8f9fa;">
+                    <div class="webp-controls" style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.7); padding: 3px 6px; border-radius: 3px;">
+                        <span style="color: white; font-size: 0.7rem;">🔄 Animated</span>
+                    </div>
+                </div>` :
+                `<img src="${imgSrc}" alt="Converted WebP" onclick="openModal('${imgSrc}')">`;
+            
+            resultItem.innerHTML = `
+                ${mediaElement}
+                <div class="result-info">
+                    <h4>${filename}</h4>
+                    <div class="result-stats">
+                        <div class="result-stat">
+                            <span>Size:</span>
+                            <span>${result.fileSizeMB ? result.fileSizeMB.toFixed(2) : (result.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>Dimensions:</span>
+                            <span>${result.dimensions.width}×${result.dimensions.height}</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>Quality:</span>
+                            <span>${result.config.lossless ? 'Lossless' : 'Q' + result.config.quality}</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>FPS:</span>
+                            <span>${result.config.fps}</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>Speed:</span>
+                            <span>${result.config.speed}x</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>Duration:</span>
+                            <span>${result.config.duration}s</span>
+                        </div>
+                        <div class="result-stat">
+                            <span>Time:</span>
+                            <span>${result.conversionTime.toFixed(1)}s</span>
+                        </div>
+                    </div>
+                    <div class="result-actions" style="margin-top: 15px; display: flex; gap: 5px; flex-wrap: wrap;">
+                        <a href="${imgSrc}" download="${filename}" style="background: #28a745; color: white; padding: 5px 10px; border-radius: 3px; text-decoration: none; font-size: 0.8rem;">📥 Download</a>
+                        <button onclick="toggleAdvanced('${result.outputFilename || filename}')" style="background: #007bff; color: white; padding: 5px 10px; border-radius: 3px; border: none; font-size: 0.8rem; cursor: pointer;">⚙️ Config</button>
+                        <button onclick="copyConfig('${result.outputFilename || filename}')" style="background: #6c757d; color: white; padding: 5px 10px; border-radius: 3px; border: none; font-size: 0.8rem; cursor: pointer;">📋 Copy</button>
+                        <button onclick="deleteResult('${result.outputFilename || filename}')" style="background: #dc3545; color: white; padding: 5px 10px; border-radius: 3px; border: none; font-size: 0.8rem; cursor: pointer;">🗑️ Delete</button>
+                    </div>
+                    
+                    <!-- Advanced Config Section (Initially Hidden) -->
+                    <div id="advanced-${result.outputFilename || filename}" class="advanced-config" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                        <h5 style="margin: 0 0 8px 0; color: #495057; font-size: 0.8rem;">🔧 Configuration Used:</h5>
+                        <div class="config-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.75rem;">
+                            <!-- Basic Settings -->
+                            <div class="config-item">
+                                <span class="config-label">Width:</span>
+                                <span class="config-value">${result.config.width || 'Auto'}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Height:</span>
+                                <span class="config-value">${result.config.height || 'Auto'}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Quality:</span>
+                                <span class="config-value">${result.config.lossless ? 'Lossless' : result.config.quality}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">FPS:</span>
+                                <span class="config-value">${result.config.fps}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Speed:</span>
+                                <span class="config-value">${result.config.speed}x</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Duration:</span>
+                                <span class="config-value">${result.config.duration}s</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Start:</span>
+                                <span class="config-value">${result.config.startTime || 0}s</span>
+                            </div>
+                            
+                            <!-- Advanced Settings -->
+                            <div class="config-item">
+                                <span class="config-label">Method:</span>
+                                <span class="config-value">${result.config.method}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Preset:</span>
+                                <span class="config-value">${result.config.preset}</span>
+                            </div>
+                            ${result.config.nearLossless ? `
+                            <div class="config-item">
+                                <span class="config-label">Near Lossless:</span>
+                                <span class="config-value">${result.config.nearLossless}</span>
+                            </div>
+                            ` : ''}
+                            ${result.config.targetSize ? `
+                            <div class="config-item">
+                                <span class="config-label">Target Size:</span>
+                                <span class="config-value">${result.config.targetSize || 'Auto'}KB</span>
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Image Processing -->
+                            ${result.config.contrast !== 1 ? `
+                            <div class="config-item">
+                                <span class="config-label">Contrast:</span>
+                                <span class="config-value">${result.config.contrast}</span>
+                            </div>
+                            ` : ''}
+                            ${result.config.brightness !== 0 ? `
+                            <div class="config-item">
+                                <span class="config-label">Brightness:</span>
+                                <span class="config-value">${result.config.brightness}</span>
+                            </div>
+                            ` : ''}
+                            ${result.config.saturation !== 1 ? `
+                            <div class="config-item">
+                                <span class="config-label">Saturation:</span>
+                                <span class="config-value">${result.config.saturation}</span>
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Special Modes -->
+                            <div class="config-item">
+                                <span class="config-label">Loop:</span>
+                                <span class="config-value">${result.config.loopCount === 0 ? '∞' : result.config.loopCount}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Animated:</span>
+                                <span class="config-value">${result.config.animated ? 'Yes' : 'No'}</span>
+                            </div>
+                            ${result.config.twoPass ? `
+                            <div class="config-item">
+                                <span class="config-label">Two-Pass:</span>
+                                <span class="config-value">Yes</span>
+                            </div>
+                            ` : ''}
+                            ${result.config.denoising ? `
+                            <div class="config-item">
+                                <span class="config-label">Denoise:</span>
+                                <span class="config-value">Yes</span>
+                            </div>
+                            ` : ''}
+                            ${result.config.sharpening ? `
+                            <div class="config-item">
+                                <span class="config-label">Sharpen:</span>
+                                <span class="config-value">Yes</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- JSON Config for Copying -->
+                        <div style="margin-top: 10px;">
+                            <h6 style="margin: 0 0 5px 0; color: #495057; font-size: 0.75rem;">JSON Config:</h6>
+                            <textarea id="json-${result.outputFilename || filename}" readonly style="width: 100%; height: 60px; font-size: 0.7rem; font-family: monospace; padding: 5px; border: 1px solid #dee2e6; border-radius: 3px; background: #ffffff; resize: vertical;">${JSON.stringify(result.config, null, 2)}</textarea>
+                            <div style="margin-top: 5px; display: flex; gap: 5px;">
+                                <button onclick="applyConfigFromJson('${result.outputFilename || filename}')" style="background: #17a2b8; color: white; padding: 3px 8px; border-radius: 3px; border: none; font-size: 0.7rem; cursor: pointer;">🔄 Apply Config</button>
+                                <button onclick="copyJsonToClipboard('${result.outputFilename || filename}')" style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 3px; border: none; font-size: 0.7rem; cursor: pointer;">📋 Copy JSON</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsGrid.appendChild(resultItem);
+        }
+        
+        // Status function removed - using console.log for debugging only
+        
+        function openModal(src) {
+            modalImage.src = src;
+            modal.classList.add('active');
+        }
+        
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Additional functions for config management
+        function toggleAdvanced(filename) {
+            const advancedDiv = document.getElementById(`advanced-${filename}`);
+            if (advancedDiv.style.display === 'none') {
+                advancedDiv.style.display = 'block';
+            } else {
+                advancedDiv.style.display = 'none';
+            }
+        }
+        
+        function copyConfig(filename) {
+            const jsonTextarea = document.getElementById(`json-${filename}`);
+            if (jsonTextarea) {
+                jsonTextarea.select();
+                document.execCommand('copy');
+                console.log('Config copied to clipboard');
+            }
+        }
+        
+        function copyJsonToClipboard(filename) {
+            copyConfig(filename);
+        }
+        
+        function applyConfigFromJson(filename) {
+            const jsonTextarea = document.getElementById(`json-${filename}`);
+            if (jsonTextarea) {
+                try {
+                    const config = JSON.parse(jsonTextarea.value);
+                    
+                    // Apply configuration to form
+                    if (config.width) document.getElementById('width').value = config.width;
+                    if (config.height) document.getElementById('height').value = config.height;
+                    if (config.quality) document.getElementById('quality').value = config.quality;
+                    if (config.fps) document.getElementById('fps').value = config.fps;
+                    if (config.speed) document.getElementById('speed').value = config.speed;
+                    if (config.duration) document.getElementById('duration').value = config.duration;
+                    if (config.startTime) document.getElementById('startTime').value = config.startTime;
+                    if (config.method) document.getElementById('method').value = config.method;
+                    if (config.preset) document.getElementById('preset').value = config.preset;
+                    if (config.nearLossless) document.getElementById('nearLossless').value = config.nearLossless;
+                    if (config.targetSize) document.getElementById('targetSize').value = config.targetSize;
+                    if (config.alphaQuality) document.getElementById('alphaQuality').value = config.alphaQuality;
+                    if (config.alphaMethod) document.getElementById('alphaMethod').value = config.alphaMethod;
+                    if (config.contrast) {
+                        document.getElementById('contrast').value = config.contrast;
+                        document.getElementById('contrastValue').textContent = config.contrast;
+                    }
+                    if (config.brightness) {
+                        document.getElementById('brightness').value = config.brightness;
+                        document.getElementById('brightnessValue').textContent = config.brightness;
+                    }
+                    if (config.saturation) {
+                        document.getElementById('saturation').value = config.saturation;
+                        document.getElementById('saturationValue').textContent = config.saturation;
+                    }
+                    
+                    document.getElementById('lossless').checked = config.lossless || false;
+                    document.getElementById('twoPass').checked = config.twoPass || false;
+                    document.getElementById('animated').checked = config.animated !== false;
+                    document.getElementById('denoising').checked = config.denoising || false;
+                    document.getElementById('sharpening').checked = config.sharpening || false;
+                    document.getElementById('autoFilter').checked = config.autoFilter || false;
+                    document.getElementById('saveFrames').checked = config.saveFrames || false;
+                    if (config.loopCount !== undefined) document.getElementById('loopCount').value = config.loopCount;
+                    
+                    console.log('Configuration applied successfully');
+                } catch (error) {
+                    console.error('Error parsing JSON config:', error);
+                }
+            }
+        }
+        
+        function deleteResult(filename) {
+            if (confirm('Are you sure you want to delete this result?')) {
+                const resultItems = document.querySelectorAll('.result-item');
+                resultItems.forEach(item => {
+                    if (item.innerHTML.includes(filename)) {
+                        item.remove();
+                    }
+                });
+                
+                // Optional: Call backend to delete file
+                fetch(`/api/output/${filename}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => console.log('File deleted:', data))
+                    .catch(error => console.error('Delete error:', error));
+            }
+        }
+        
+        function toggleVideoControls(showVideo) {
+            const videoOnlyElements = document.querySelectorAll('.video-only');
+            videoOnlyElements.forEach(element => {
+                element.style.display = showVideo ? 'flex' : 'none';
+            });
+            
+            // Update convert button text
+            const convertBtn = document.getElementById('convertBtn');
+            if (showVideo) {
+                convertBtn.innerHTML = '🚀 Convert Video to WebP';
+            } else {
+                convertBtn.innerHTML = '🚀 Convert Image to WebP';
+            }
+        }
+        
+        // Initialize
+        console.log('WebP Media Converter ready');
+        // Hide video controls by default
+        toggleVideoControls(false);
+    </script>
+</body>
+</html>

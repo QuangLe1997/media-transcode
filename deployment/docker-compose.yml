@@ -71,6 +71,7 @@ services:
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
       - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+      - PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION:-face-detection-worker-results-sub}
     volumes:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
@@ -146,6 +147,7 @@ services:
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
       - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+      - PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION:-face-detection-worker-results-sub}
     volumes:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
@@ -280,6 +282,7 @@ services:
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
       - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-face-detection-worker-results}
+      - PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION:-face-detection-worker-results-sub}
       
       # Task Listener Configuration
       - PUBSUB_TASK_SUBSCRIPTION=${PUBSUB_TASK_SUBSCRIPTION:-skl-transcode-cms-tasks-sub}
@@ -305,7 +308,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: transcode-frontend
     ports:

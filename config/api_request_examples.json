@@ -1,0 +1,90 @@
+{
+  "video_transcode_request": {
+    "description": "Transcode video với đầy đủ profiles cho mobile",
+    "method": "POST",
+    "url": "/transcode",
+    "content_type": "multipart/form-data",
+    "form_data": {
+      "media_url": "https://example.com/input-video.mp4",
+      "profiles": "[{\"id_profile\":\"video_high_end_mobile\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":1080,\"crf\":23,\"preset\":\"medium\",\"profile\":\"main\",\"level\":\"4.1\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"128k\"}},{\"id_profile\":\"video_low_end_mobile\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":720,\"crf\":28,\"preset\":\"fast\",\"profile\":\"baseline\",\"level\":\"3.1\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"96k\"}},{\"id_profile\":\"preview_webp_high_end\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":15,\"duration\":5.0,\"start_time\":1.0,\"quality\":85,\"animated\":true,\"method\":4,\"loop\":0,\"height\":720}},{\"id_profile\":\"preview_webp_low_end\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":12,\"duration\":5.0,\"start_time\":1.0,\"quality\":75,\"animated\":true,\"method\":2,\"loop\":0,\"height\":480}},{\"id_profile\":\"preview_mp4_high_end\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":720,\"duration\":5,\"start_time\":1,\"crf\":28,\"preset\":\"fast\",\"profile\":\"main\",\"remove_audio\":true}},{\"id_profile\":\"preview_mp4_low_end\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":480,\"duration\":5,\"start_time\":1,\"crf\":32,\"preset\":\"ultrafast\",\"profile\":\"baseline\",\"remove_audio\":true}}]",
+      "s3_output_config": "{\"base_path\":\"mobile-transcode-outputs\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\",\"cleanup_temp_files\":true,\"cleanup_on_task_reset\":true,\"upload_timeout\":600,\"max_retries\":3}",
+      "callback_url": "https://your-api.com/webhook/transcode-complete"
+    }
+  },
+
+  "image_transcode_request": {
+    "description": "Transcode image với đầy đủ profiles cho mobile",
+    "method": "POST", 
+    "url": "/transcode",
+    "content_type": "multipart/form-data",
+    "form_data": {
+      "media_url": "https://example.com/input-image.jpg",
+      "profiles": "[{\"id_profile\":\"image_png_high_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":1920,\"quality\":95,\"format\":\"png\"}},{\"id_profile\":\"image_png_low_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":1080,\"quality\":85,\"format\":\"png\"}},{\"id_profile\":\"thumb_webp_high_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":400,\"quality\":85,\"format\":\"webp\"}},{\"id_profile\":\"thumb_webp_low_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":300,\"quality\":75,\"format\":\"webp\"}},{\"id_profile\":\"thumb_jpg_high_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":400,\"quality\":90,\"format\":\"jpeg\"}},{\"id_profile\":\"thumb_jpg_low_end\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_height\":300,\"quality\":80,\"format\":\"jpeg\"}}]",
+      "s3_output_config": "{\"base_path\":\"mobile-transcode-outputs\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\",\"cleanup_temp_files\":true,\"cleanup_on_task_reset\":true,\"upload_timeout\":600,\"max_retries\":3}"
+    }
+  },
+
+  "curl_examples": {
+    "video_request": "curl -X POST http://localhost:8000/transcode \\\n  -F 'media_url=https://example.com/video.mp4' \\\n  -F 'profiles=[{\"id_profile\":\"video_high_end_mobile\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":1080,\"crf\":23,\"preset\":\"medium\",\"profile\":\"main\",\"level\":\"4.1\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"128k\"}}]' \\\n  -F 's3_output_config={\"base_path\":\"mobile-transcode-outputs\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\",\"cleanup_temp_files\":true}'",
+    
+    "file_upload_request": "curl -X POST http://localhost:8000/transcode \\\n  -F 'video=@/path/to/local/video.mp4' \\\n  -F 'profiles=[{\"id_profile\":\"video_high_end_mobile\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_height\":1080,\"crf\":23}}]' \\\n  -F 's3_output_config={\"base_path\":\"mobile-transcode-outputs\"}'"
+  },
+
+  "javascript_example": {
+    "description": "Ví dụ gọi API từ JavaScript",
+    "code": "const formData = new FormData();\nformData.append('media_url', 'https://example.com/video.mp4');\nformData.append('profiles', JSON.stringify([\n  {\n    id_profile: 'video_high_end_mobile',\n    output_type: 'video',\n    input_type: 'video',\n    video_config: {\n      codec: 'libx264',\n      max_height: 1080,\n      crf: 23,\n      preset: 'medium',\n      profile: 'main',\n      audio_codec: 'aac',\n      audio_bitrate: '128k'\n    }\n  }\n]));\nformData.append('s3_output_config', JSON.stringify({\n  base_path: 'mobile-transcode-outputs',\n  folder_structure: '{task_id}/profiles/{profile_id}',\n  cleanup_temp_files: true\n}));\n\nfetch('/transcode', {\n  method: 'POST',\n  body: formData\n})\n.then(response => response.json())\n.then(data => console.log('Success:', data));"
+  },
+
+  "response_examples": {
+    "success_response": {
+      "task_id": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "processing",
+      "source_url": "https://example.com/input-video.mp4",
+      "input_type": "url",
+      "profiles_count": 6,
+      "media_detection": {
+        "detected_type": "video",
+        "original_profiles": 6,
+        "filtered_profiles": 6,
+        "skipped_profiles": []
+      },
+      "face_detection_enabled": false,
+      "face_detection_published": false
+    },
+    
+    "task_status_response": {
+      "task_id": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "completed",
+      "source_url": "https://example.com/input-video.mp4",
+      "outputs": {
+        "video_high_end_mobile": [
+          {
+            "url": "https://static-vncdn.skylinklabs.ai/dev-facefusion-media/mobile-transcode-outputs/550e8400-e29b-41d4-a716-446655440000/profiles/video_high_end_mobile/video_high_end_mobile_output_0.mp4",
+            "metadata": {
+              "file_size": 15728640,
+              "dimensions": "1920×1080",
+              "duration": 120,
+              "format": "mp4",
+              "bitrate": "2000k"
+            }
+          }
+        ],
+        "preview_webp_high_end": [
+          {
+            "url": "https://static-vncdn.skylinklabs.ai/dev-facefusion-media/mobile-transcode-outputs/550e8400-e29b-41d4-a716-446655440000/profiles/preview_webp_high_end/preview_webp_high_end_output.webp",
+            "metadata": {
+              "file_size": 524288,
+              "dimensions": "1280×720",
+              "duration": 5,
+              "format": "webp"
+            }
+          }
+        ]
+      },
+      "expected_profiles": 6,
+      "completed_profiles": 6,
+      "failed_profiles": 0,
+      "completion_percentage": 100.0
+    }
+  }
+}

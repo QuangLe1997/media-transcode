@@ -1070,38 +1070,28 @@ const Results = () => {
       {/* Delete Modal */}
       {showDeleteModal && (
         <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           zIndex: 1000,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none'
-        }}>
+          padding: '20px'
+        }} onClick={() => setShowDeleteModal(false)}>
           <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            pointerEvents: 'auto'
-          }} onClick={() => setShowDeleteModal(false)}>
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '450px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
-            }} onClick={(e) => e.stopPropagation()}>
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '450px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
+          }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginTop: 0, marginBottom: '16px' }}>Delete Options</h3>
             <p style={{ marginBottom: '16px', color: '#666' }}>
               You are about to delete {selectedTasks.length} task(s).
@@ -1151,7 +1141,6 @@ const Results = () => {
                 Delete {selectedTasks.length} Task(s)
               </button>
             </div>
-          </div>
           </div>
         </div>
       )}

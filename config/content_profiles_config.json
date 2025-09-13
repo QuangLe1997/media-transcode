@@ -1,0 +1,295 @@
+{
+  "video_profiles": [
+    {
+      "id_profile": "video_mp4_high_res_premium",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 1080,
+        "crf": 20,
+        "preset": "slow",
+        "profile": "high",
+        "level": "4.2",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_mp4_high_res_standard",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 1080,
+        "crf": 23,
+        "preset": "medium",
+        "profile": "main",
+        "level": "4.1",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_mp4_high_res_basic",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 1080,
+        "crf": 28,
+        "preset": "fast",
+        "profile": "baseline",
+        "level": "3.1",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_mp4_low_res_premium",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 720,
+        "crf": 22,
+        "preset": "slow",
+        "profile": "high",
+        "level": "4.0",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_mp4_low_res_standard",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 720,
+        "crf": 26,
+        "preset": "medium",
+        "profile": "main",
+        "level": "3.2",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_mp4_low_res_basic",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_height": 720,
+        "crf": 30,
+        "preset": "ultrafast",
+        "profile": "baseline",
+        "level": "3.1",
+        "remove_audio": true
+      }
+    },
+    {
+      "id_profile": "video_webp_high_res_premium",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 24,
+        "height": 1080,
+        "quality": 90,
+        "lossless": false,
+        "animated": true,
+        "method": 6,
+        "loop": 0
+      }
+    },
+    {
+      "id_profile": "video_webp_high_res_standard",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 20,
+        "height": 1080,
+        "quality": 85,
+        "lossless": false,
+        "animated": true,
+        "method": 4,
+        "loop": 0
+      }
+    },
+    {
+      "id_profile": "video_webp_high_res_basic",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 15,
+        "height": 1080,
+        "quality": 75,
+        "lossless": false,
+        "animated": true,
+        "method": 2,
+        "loop": 0
+      }
+    },
+    {
+      "id_profile": "video_webp_low_res_premium",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 24,
+        "height": 720,
+        "quality": 90,
+        "lossless": false,
+        "animated": true,
+        "method": 6,
+        "loop": 0
+      }
+    },
+    {
+      "id_profile": "video_webp_low_res_standard",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 18,
+        "height": 720,
+        "quality": 85,
+        "lossless": false,
+        "animated": true,
+        "method": 4,
+        "loop": 0
+      }
+    },
+    {
+      "id_profile": "video_webp_low_res_basic",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "fps": 12,
+        "height": 720,
+        "quality": 70,
+        "lossless": false,
+        "animated": true,
+        "method": 1,
+        "loop": 0
+      }
+    }
+  ],
+  
+  "image_profiles": [
+    {
+      "id_profile": "image_jpg_high_res",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "max_height": 1920,
+        "quality": 95,
+        "format": "jpeg"
+      }
+    },
+    {
+      "id_profile": "image_jpg_low_res",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "max_height": 1080,
+        "quality": 90,
+        "format": "jpeg"
+      }
+    },
+    {
+      "id_profile": "image_webp_high_res",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "max_height": 1920,
+        "quality": 90,
+        "format": "webp"
+      }
+    },
+    {
+      "id_profile": "image_webp_low_res",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "max_height": 1080,
+        "quality": 85,
+        "format": "webp"
+      }
+    }
+  ],
+
+  "s3_output_config": {
+    "base_path": "content-transcode-outputs",
+    "folder_structure": "{task_id}/profiles/{profile_id}",
+    "cleanup_temp_files": true,
+    "cleanup_on_task_reset": true,
+    "upload_timeout": 900,
+    "max_retries": 3
+  },
+
+  "device_groups": {
+    "premium_devices": {
+      "description": "Flagship smartphones, high-end tablets",
+      "video_profiles": [
+        "video_mp4_high_res_premium",
+        "video_mp4_low_res_premium", 
+        "video_webp_high_res_premium",
+        "video_webp_low_res_premium"
+      ]
+    },
+    "standard_devices": {
+      "description": "Mid-range smartphones, standard tablets",
+      "video_profiles": [
+        "video_mp4_high_res_standard",
+        "video_mp4_low_res_standard",
+        "video_webp_high_res_standard", 
+        "video_webp_low_res_standard"
+      ]
+    },
+    "basic_devices": {
+      "description": "Entry-level smartphones, older devices",
+      "video_profiles": [
+        "video_mp4_high_res_basic",
+        "video_mp4_low_res_basic",
+        "video_webp_high_res_basic",
+        "video_webp_low_res_basic"
+      ]
+    }
+  },
+
+  "usage_examples": {
+    "all_video_profiles": {
+      "profiles": [
+        "video_mp4_high_res_premium", "video_mp4_high_res_standard", "video_mp4_high_res_basic",
+        "video_mp4_low_res_premium", "video_mp4_low_res_standard", "video_mp4_low_res_basic", 
+        "video_webp_high_res_premium", "video_webp_high_res_standard", "video_webp_high_res_basic",
+        "video_webp_low_res_premium", "video_webp_low_res_standard", "video_webp_low_res_basic"
+      ],
+      "description": "Tất cả 12 profiles video cho đầy đủ 3 nhóm thiết bị x 2 độ phân giải x 2 format"
+    },
+    "all_image_profiles": {
+      "profiles": [
+        "image_jpg_high_res", "image_jpg_low_res",
+        "image_webp_high_res", "image_webp_low_res"
+      ],
+      "description": "Tất cả 4 profiles image cho 2 độ phân giải x 2 format"
+    },
+    "premium_only": {
+      "profiles": [
+        "video_mp4_high_res_premium", "video_mp4_low_res_premium",
+        "video_webp_high_res_premium", "video_webp_low_res_premium"
+      ],
+      "description": "Chỉ profiles cho thiết bị cao cấp"
+    }
+  },
+
+  "profile_matrix": {
+    "video_profiles_breakdown": {
+      "resolutions": ["High (1080p)", "Low (720p)"],
+      "formats": ["MP4", "WebP"],
+      "device_tiers": ["Premium", "Standard", "Basic"],
+      "total_combinations": 12,
+      "audio": "Removed from all video profiles"
+    },
+    "image_profiles_breakdown": {
+      "resolutions": ["High (1920p)", "Low (1080p)"],
+      "formats": ["JPEG", "WebP"],
+      "total_combinations": 4
+    }
+  }
+}

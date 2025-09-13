@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -51,9 +52,26 @@ class Settings(BaseSettings):
     ffmpeg_path: str = "/usr/bin/ffmpeg"
     ffprobe_path: str = "/usr/bin/ffprobe"
     ffmpeg_hwaccel: str = "none"
-    ffmpeg_gpu_enabled: bool = False
+    ffmpeg_gpu_enabled: str = "false"  # Can be "true", "false", or "auto"
     gpu_enabled: bool = False
     gpu_type: str = "none"
+    
+    @field_validator('ffmpeg_gpu_enabled')
+    @classmethod
+    def validate_ffmpeg_gpu_enabled(cls, v):
+        if isinstance(v, bool):
+            return str(v).lower()
+        if isinstance(v, str) and v.lower() in ['true', 'false', 'auto']:
+            return v.lower()
+        raise ValueError('ffmpeg_gpu_enabled must be "true", "false", or "auto"')
+    
+    @property
+    def is_gpu_enabled(self) -> bool:
+        """Check if GPU is enabled (handles auto detection)"""
+        if self.ffmpeg_gpu_enabled == 'auto':
+            # Auto-detect GPU availability (simplified logic)
+            return self.gpu_enabled
+        return self.ffmpeg_gpu_enabled == 'true'
     
     # Storage
     temp_storage_path: str = "/tmp/transcode"

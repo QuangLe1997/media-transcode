@@ -16,7 +16,7 @@ class TaskCRUD:
             task_id: str,
             source_url: str,
             source_key: Optional[str],
-            config: TranscodeConfig,
+            config: Dict,
             callback_url: Optional[str] = None,
             callback_auth: Optional[Dict] = None,
             pubsub_topic: Optional[str] = None
@@ -26,7 +26,7 @@ class TaskCRUD:
             task_id=task_id,
             source_url=source_url,
             source_key=source_key,
-            config=config.model_dump(),
+            config=config,
             status=TaskStatus.PENDING,
             callback_url=callback_url,
             callback_auth=callback_auth,

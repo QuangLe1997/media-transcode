@@ -4,7 +4,7 @@ import axios from 'axios';
 const API_BASE = process.env.REACT_APP_API_URL || 
   (window.location.hostname === 'localhost' 
     ? 'http://localhost:8000' // Use direct connection to localhost:8000
-    : '/api'); // Use nginx proxy when not localhost
+    : `http://${window.location.hostname}:8087`); // Use direct connection to API port
 
 const api = axios.create({
   baseURL: API_BASE,

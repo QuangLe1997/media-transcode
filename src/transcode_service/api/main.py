@@ -15,7 +15,8 @@ from .background_tasks import result_subscriber
 from ..core.config import settings
 from ..core.db import init_db, get_db, TaskCRUD
 from ..core.db.crud import ConfigTemplateCRUD
-from ..models.schemas import TranscodeConfig, TranscodeMessage, TaskStatus, CallbackAuth, ConfigTemplateRequest
+from ..models.schemas import TaskStatus, CallbackAuth, ConfigTemplateRequest
+from ..models.schemas_v2 import UniversalTranscodeConfig, UniversalTranscodeMessage, UniversalTranscodeProfile, UniversalConverterConfig, S3OutputConfig
 from ..services import s3_service, pubsub_service
 from ..services.callback_service import callback_service
 from ..services.media_detection_service import media_detection_service
@@ -160,13 +161,19 @@ async def create_transcode_task(
         if video and media_url:
             raise HTTPException(400, "Provide either 'video' file or 'media_url', not both")
 
-        # Parse JSON configs
+        # Parse JSON configs - V2 format required
         try:
             profiles_data = json.loads(profiles)
             s3_config_data = json.loads(s3_output_config)
             face_detection_config_data = None
             if face_detection_config:
                 face_detection_config_data = json.loads(face_detection_config)
+                
+            # Validate v2 format - each profile must have 'config' field
+            for i, profile_data in enumerate(profiles_data):
+                if 'config' not in profile_data:
+                    raise HTTPException(400, f"Profile {i} missing 'config' field - v2 Universal format required")
+                    
         except json.JSONDecodeError as e:
             raise HTTPException(400, f"Invalid JSON format: {e}")
 
@@ -195,24 +202,40 @@ async def create_transcode_task(
         
         logger.info(f"Detected media type: {detected_media_type}")
 
-        # Create initial config to get profile objects
-        initial_config_data = {
-            "profiles": profiles_data,
-            "s3_output_config": s3_config_data
-        }
-        if face_detection_config_data:
-            initial_config_data["face_detection_config"] = face_detection_config_data
-        initial_transcode_config = TranscodeConfig(**initial_config_data)
+        # Create v2 profiles from data
+        universal_profiles = []
+        for profile_data in profiles_data:
+            try:
+                # Parse v2 config
+                universal_config = UniversalConverterConfig(**profile_data['config'])
+                
+                universal_profile = UniversalTranscodeProfile(
+                    id_profile=profile_data['id_profile'],
+                    input_type=profile_data.get('input_type'),
+                    output_filename=profile_data.get('output_filename'),
+                    config=universal_config
+                )
+                universal_profiles.append(universal_profile)
+                
+            except Exception as e:
+                raise HTTPException(400, f"Invalid profile {profile_data.get('id_profile', 'unknown')}: {e}")
+        
+        # Create S3 config
+        s3_config = S3OutputConfig.with_defaults(s3_config_data, settings)
         
         # Filter profiles based on detected media type
-        filtered_profiles, skipped_profiles = media_detection_service.filter_profiles_by_input_type(
-            profiles=initial_transcode_config.profiles,
-            media_type=detected_media_type
-        )
+        filtered_profiles = []
+        skipped_profiles = []
         
+        for profile in universal_profiles:
+            if profile.input_type and profile.input_type != detected_media_type:
+                skipped_profiles.append(profile.id_profile)
+            else:
+                filtered_profiles.append(profile)
+
         # Get filtering summary
         filter_summary = media_detection_service.get_profile_summary(
-            original_count=len(initial_transcode_config.profiles),
+            original_count=len(universal_profiles),
             filtered_count=len(filtered_profiles),
             skipped_profiles=skipped_profiles,
             media_type=detected_media_type
@@ -220,14 +243,12 @@ async def create_transcode_task(
         
         logger.info(f"Profile filtering summary: {filter_summary}")
         
-        # Create final config with filtered profiles
-        config_data = {
-            "profiles": [profile.model_dump() for profile in filtered_profiles],
-            "s3_output_config": s3_config_data
-        }
-        if face_detection_config_data:
-            config_data["face_detection_config"] = face_detection_config_data
-        transcode_config = TranscodeConfig(**config_data)
+        # Create v2 config
+        transcode_config = UniversalTranscodeConfig(
+            profiles=filtered_profiles,
+            s3_output_config=s3_config,
+            face_detection_config=face_detection_config_data
+        )
         
         # Check if we have any profiles left after filtering
         if not transcode_config.profiles:
@@ -279,13 +300,15 @@ async def create_transcode_task(
 
         # Create task in database and publish messages in transaction-like manner
         try:
-            # Create task in database first
+            # Store v2 config directly as dict in database
+            config_dict = transcode_config.model_dump()
+            
             task = await TaskCRUD.create_task(
                 db=db,
                 task_id=task_id,
                 source_url=source_url,
                 source_key=source_key,
-                config=transcode_config,
+                config=config_dict,
                 callback_url=callback_url,
                 callback_auth=callback_auth_obj.model_dump() if callback_auth_obj else None,
                 pubsub_topic=pubsub_topic
@@ -299,19 +322,21 @@ async def create_transcode_task(
             
             for i, profile in enumerate(transcode_config.profiles, 1):
                 try:
-                    logger.info(f"Publishing {i}/{len(transcode_config.profiles)}: profile {profile.id_profile} for task {task_id}")
-                    message = TranscodeMessage(
+                    logger.info(f"Publishing v2 {i}/{len(transcode_config.profiles)}: profile {profile.id_profile} for task {task_id}")
+                    
+                    # Create v2 message
+                    message = UniversalTranscodeMessage(
                         task_id=task_id,
                         source_url=source_url,
                         profile=profile,
                         s3_output_config=transcode_config.s3_output_config,
                         source_key=source_key
                     )
-                    message_id = pubsub_service.publish_transcode_task(message)
+                    message_id = pubsub_service.publish_universal_transcode_task(message)
                     published_count += 1
-                    logger.info(f"✅ Published {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, message_id: {message_id}")
+                    logger.info(f"✅ Published v2 {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, message_id: {message_id}")
                 except Exception as e:
-                    logger.error(f"❌ Failed to publish {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, error: {e}")
+                    logger.error(f"❌ Failed to publish v2 {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, error: {e}")
                     failed_profiles.append(profile.id_profile)
             
             logger.info(f"=== PUBLISHING COMPLETE: {published_count}/{len(transcode_config.profiles)} messages for task {task_id} ===")
@@ -322,7 +347,7 @@ async def create_transcode_task(
             
             # Publish face detection task if enabled
             face_detection_published = False
-            if transcode_config.face_detection_config and transcode_config.face_detection_config.enabled:
+            if transcode_config.face_detection_config and transcode_config.face_detection_config.get('enabled', False):
                 try:
                     from ..models.schemas import FaceDetectionMessage
                     logger.info(f"Publishing face detection task for {task_id}")
@@ -333,7 +358,7 @@ async def create_transcode_task(
                     face_message = FaceDetectionMessage(
                         task_id=task_id,
                         source_url=source_url,
-                        config=transcode_config.face_detection_config.model_dump()
+                        config=transcode_config.face_detection_config
                     )
                     
                     face_message_id = pubsub_service.publish_face_detection_task(face_message)
@@ -497,11 +522,11 @@ async def get_task_status(
     # Ensure outputs format compatibility (metadata already included from consumer)
     enhanced_outputs = ensure_outputs_compatibility(task.outputs) if task.outputs else None
 
-    # Face detection info
+    # Face detection info - check v2 config format
     face_detection_enabled = False
-    if task.config:
-        config = TranscodeConfig(**task.config)
-        face_detection_enabled = bool(config.face_detection_config and config.face_detection_config.enabled)
+    if task.config and task.config.get('face_detection_config'):
+        face_detection_config = task.config['face_detection_config']
+        face_detection_enabled = bool(face_detection_config and face_detection_config.get('enabled', False))
 
     # Format face detection results for task status
     face_detection_results = None
@@ -701,20 +726,16 @@ async def get_task_result(
     if not task:
         raise HTTPException(404, "Task not found")
 
-    # Parse config
-    config = TranscodeConfig(**task.config) if task.config else None
-    
-    # Calculate profile counts
-    expected_profiles = len(config.profiles) if config and config.profiles else 0
+    # Get profile counts from v2 config format
+    expected_profiles = len(task.config.get('profiles', [])) if task.config else 0
     completed_profiles = len(task.outputs) if task.outputs else 0
     failed_profiles = len(task.failed_profiles) if task.failed_profiles else 0
     
-    # Face detection info
-    face_detection_enabled = bool(
-        config and 
-        config.face_detection_config and 
-        config.face_detection_config.enabled
-    )
+    # Face detection info - check v2 config format  
+    face_detection_enabled = False
+    if task.config and task.config.get('face_detection_config'):
+        face_detection_config = task.config['face_detection_config']
+        face_detection_enabled = bool(face_detection_config and face_detection_config.get('enabled', False))
     
     # Format outputs
     outputs = []
@@ -972,16 +993,17 @@ async def retry_task(
     if task.face_detection_status:
         await TaskCRUD.update_face_detection_status(db, task_id, None)
 
-    # Re-publish task messages
+    # Re-publish task messages using v2 format
     try:
-        config = TranscodeConfig(**task.config)
+        # Parse v2 config from task
+        config = UniversalTranscodeConfig(**task.config)
         published_count = 0
         
-        logger.info(f"=== RETRY PUBLISHING START: task {task_id} with {len(config.profiles)} profiles ===")
+        logger.info(f"=== RETRY PUBLISHING V2 START: task {task_id} with {len(config.profiles)} profiles ===")
         
         for profile in config.profiles:
             try:
-                message = TranscodeMessage(
+                message = UniversalTranscodeMessage(
                     task_id=task_id,
                     source_url=task.source_url,
                     profile=profile,
@@ -989,12 +1011,12 @@ async def retry_task(
                     source_key=task.source_key
                 )
                 
-                message_id = pubsub_service.publish_transcode_task(message)
+                message_id = pubsub_service.publish_universal_transcode_task(message)
                 published_count += 1
-                logger.info(f"✅ RETRY: Published profile {profile.id_profile}, message_id: {message_id}")
+                logger.info(f"✅ RETRY: Published v2 profile {profile.id_profile}, message_id: {message_id}")
                 
             except Exception as e:
-                logger.error(f"❌ RETRY: Failed to publish profile {profile.id_profile}: {str(e)}")
+                logger.error(f"❌ RETRY: Failed to publish v2 profile {profile.id_profile}: {str(e)}")
                 
                 # Mark this profile as failed immediately
                 await TaskCRUD.add_failed_profile(
@@ -1004,11 +1026,11 @@ async def retry_task(
                     f"Failed to publish retry message: {str(e)}"
                 )
         
-        logger.info(f"=== RETRY PUBLISHING COMPLETE: {published_count}/{len(config.profiles)} messages for task {task_id} ===")
+        logger.info(f"=== RETRY PUBLISHING V2 COMPLETE: {published_count}/{len(config.profiles)} messages for task {task_id} ===")
         
         # Re-publish face detection task if enabled
         face_detection_published = False
-        if config.face_detection_config and config.face_detection_config.enabled:
+        if config.face_detection_config and config.face_detection_config.get('enabled', False):
             try:
                 from ..models.schemas import FaceDetectionMessage
                 logger.info(f"RETRY: Publishing face detection task for {task_id}")
@@ -1019,7 +1041,7 @@ async def retry_task(
                 face_message = FaceDetectionMessage(
                     task_id=task_id,
                     source_url=task.source_url,
-                    config=config.face_detection_config.model_dump()
+                    config=config.face_detection_config
                 )
                 
                 face_message_id = pubsub_service.publish_face_detection_task(face_message)

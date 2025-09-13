@@ -1,0 +1,136 @@
+{
+  "api_request_examples": {
+    "video_template_complete": {
+      "description": "Complete transcode request for video template upload",
+      "method": "POST",
+      "url": "/transcode",
+      "form_data": {
+        "media_url": "https://example.com/template-video.mp4",
+        "profiles": "[{\"id_profile\":\"preview_webp_high\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":15,\"width\":360,\"height\":480,\"duration\":6.0,\"start_time\":1.0,\"quality\":85,\"animated\":true,\"method\":4,\"loop\":0}},{\"id_profile\":\"preview_webp_low\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":10,\"width\":270,\"height\":360,\"duration\":5.0,\"start_time\":1.0,\"quality\":75,\"animated\":true,\"method\":2,\"loop\":0}},{\"id_profile\":\"preview_mp4_high\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":360,\"max_height\":480,\"fps\":15,\"duration\":6,\"start_time\":1,\"speed\":1.5,\"crf\":28,\"preset\":\"fast\",\"profile\":\"main\",\"remove_audio\":true}},{\"id_profile\":\"preview_mp4_low\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":270,\"max_height\":360,\"fps\":10,\"duration\":5,\"start_time\":1,\"speed\":1.5,\"crf\":32,\"preset\":\"ultrafast\",\"profile\":\"baseline\",\"remove_audio\":true}},{\"id_profile\":\"detail_video_high\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":720,\"max_height\":960,\"crf\":23,\"preset\":\"medium\",\"profile\":\"main\",\"level\":\"4.1\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"128k\"}},{\"id_profile\":\"detail_video_low\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":540,\"max_height\":720,\"crf\":28,\"preset\":\"fast\",\"profile\":\"baseline\",\"level\":\"3.1\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"96k\"}},{\"id_profile\":\"ai_video_high\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":1080,\"max_height\":1440,\"crf\":20,\"preset\":\"slow\",\"profile\":\"high\",\"level\":\"4.2\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"192k\"}},{\"id_profile\":\"ai_video_standard\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":720,\"max_height\":960,\"crf\":23,\"preset\":\"medium\",\"profile\":\"main\",\"level\":\"4.0\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"128k\"}}]",
+        "s3_output_config": "{\"base_path\":\"ai-face-swap-templates\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\",\"cleanup_temp_files\":true}",
+        "face_detection_config": "{\"enabled\":true,\"similarity_threshold\":0.6,\"min_faces_in_group\":1,\"sample_interval\":10,\"save_faces\":true}"
+      }
+    },
+    
+    "image_template_complete": {
+      "description": "Complete transcode request for image template upload",
+      "method": "POST",
+      "url": "/transcode",
+      "form_data": {
+        "media_url": "https://example.com/template-image.jpg",
+        "profiles": "[{\"id_profile\":\"thumb_webp_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":360,\"max_height\":480,\"quality\":85,\"format\":\"webp\"}},{\"id_profile\":\"thumb_webp_low\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":270,\"max_height\":360,\"quality\":75,\"format\":\"webp\"}},{\"id_profile\":\"thumb_jpg_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":360,\"max_height\":480,\"quality\":90,\"format\":\"jpeg\"}},{\"id_profile\":\"thumb_jpg_low\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":270,\"max_height\":360,\"quality\":80,\"format\":\"jpeg\"}},{\"id_profile\":\"detail_webp_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":720,\"max_height\":960,\"quality\":90,\"format\":\"webp\"}},{\"id_profile\":\"detail_webp_low\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":540,\"max_height\":720,\"quality\":85,\"format\":\"webp\"}},{\"id_profile\":\"detail_jpg_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":720,\"max_height\":960,\"quality\":95,\"format\":\"jpeg\"}},{\"id_profile\":\"detail_jpg_low\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":540,\"max_height\":720,\"quality\":90,\"format\":\"jpeg\"}},{\"id_profile\":\"ai_image_high_jpg\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":1080,\"max_height\":1440,\"quality\":95,\"format\":\"jpeg\"}},{\"id_profile\":\"ai_image_high_png\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":1080,\"max_height\":1440,\"quality\":100,\"format\":\"png\"}},{\"id_profile\":\"ai_image_standard_jpg\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":720,\"max_height\":960,\"quality\":90,\"format\":\"jpeg\"}}]",
+        "s3_output_config": "{\"base_path\":\"ai-face-swap-templates\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\",\"cleanup_temp_files\":true}",
+        "face_detection_config": "{\"enabled\":true,\"save_faces\":true}"
+      }
+    }
+  },
+
+  "curl_examples": {
+    "video_with_face_detection": "curl -X POST 'http://localhost:8000/transcode' \\\n  -F 'media_url=https://example.com/face-template.mp4' \\\n  -F 'profiles=[{\"id_profile\":\"preview_webp_high\",\"output_type\":\"webp\",\"input_type\":\"video\",\"webp_config\":{\"fps\":15,\"width\":360,\"height\":480,\"duration\":6.0,\"start_time\":1.0,\"quality\":85,\"animated\":true,\"method\":4,\"loop\":0}},{\"id_profile\":\"ai_video_high\",\"output_type\":\"video\",\"input_type\":\"video\",\"video_config\":{\"codec\":\"libx264\",\"max_width\":1080,\"max_height\":1440,\"crf\":20,\"preset\":\"slow\",\"profile\":\"high\",\"level\":\"4.2\",\"audio_codec\":\"aac\",\"audio_bitrate\":\"192k\"}}]' \\\n  -F 's3_output_config={\"base_path\":\"ai-face-swap-templates\",\"folder_structure\":\"{task_id}/profiles/{profile_id}\"}' \\\n  -F 'face_detection_config={\"enabled\":true,\"similarity_threshold\":0.6,\"save_faces\":true}'",
+    
+    "image_simple": "curl -X POST 'http://localhost:8000/transcode' \\\n  -F 'media_url=https://example.com/template.jpg' \\\n  -F 'profiles=[{\"id_profile\":\"thumb_jpg_high\",\"output_type\":\"image\",\"input_type\":\"image\",\"image_config\":{\"max_width\":360,\"max_height\":480,\"quality\":90,\"format\":\"jpeg\"}}]' \\\n  -F 's3_output_config={\"base_path\":\"ai-face-swap-templates\"}'"
+  },
+
+  "javascript_example": {
+    "code": "// Upload video template with all profiles\nconst formData = new FormData();\nformData.append('media_url', 'https://example.com/template.mp4');\n\n// Add all video profiles for different use cases\nconst videoProfiles = [\n  // Preview profiles (WebP + MP4 fallback)\n  {\n    id_profile: 'preview_webp_high',\n    output_type: 'webp',\n    input_type: 'video',\n    webp_config: {\n      fps: 15,\n      width: 360,\n      height: 480,\n      duration: 6.0,\n      start_time: 1.0,\n      quality: 85,\n      animated: true,\n      method: 4,\n      loop: 0\n    }\n  },\n  {\n    id_profile: 'preview_mp4_high',\n    output_type: 'video',\n    input_type: 'video',\n    video_config: {\n      codec: 'libx264',\n      max_width: 360,\n      max_height: 480,\n      fps: 15,\n      duration: 6,\n      start_time: 1,\n      speed: 1.5,\n      crf: 28,\n      preset: 'fast',\n      profile: 'main',\n      remove_audio: true\n    }\n  },\n  // Detail view profile\n  {\n    id_profile: 'detail_video_high',\n    output_type: 'video',\n    input_type: 'video',\n    video_config: {\n      codec: 'libx264',\n      max_width: 720,\n      max_height: 960,\n      crf: 23,\n      preset: 'medium',\n      profile: 'main',\n      audio_codec: 'aac',\n      audio_bitrate: '128k'\n    }\n  },\n  // AI processing profile\n  {\n    id_profile: 'ai_video_high',\n    output_type: 'video',\n    input_type: 'video',\n    video_config: {\n      codec: 'libx264',\n      max_width: 1080,\n      max_height: 1440,\n      crf: 20,\n      preset: 'slow',\n      profile: 'high',\n      audio_codec: 'aac',\n      audio_bitrate: '192k'\n    }\n  }\n];\n\nformData.append('profiles', JSON.stringify(videoProfiles));\n\n// S3 configuration\nformData.append('s3_output_config', JSON.stringify({\n  base_path: 'ai-face-swap-templates',\n  folder_structure: '{task_id}/profiles/{profile_id}',\n  cleanup_temp_files: true\n}));\n\n// Face detection configuration\nformData.append('face_detection_config', JSON.stringify({\n  enabled: true,\n  similarity_threshold: 0.6,\n  save_faces: true\n}));\n\n// Send request\nfetch('/transcode', {\n  method: 'POST',\n  body: formData\n})\n.then(response => response.json())\n.then(data => {\n  console.log('Task ID:', data.task_id);\n  console.log('Status:', data.status);\n  // Poll for results\n  checkTaskStatus(data.task_id);\n});"
+  },
+
+  "response_examples": {
+    "success_response": {
+      "task_id": "abc123-def456-ghi789",
+      "status": "processing",
+      "source_url": "https://example.com/template-video.mp4",
+      "input_type": "url",
+      "profiles_count": 8,
+      "media_detection": {
+        "detected_type": "video",
+        "original_profiles": 8,
+        "filtered_profiles": 8,
+        "skipped_profiles": []
+      },
+      "face_detection_enabled": true,
+      "face_detection_published": true
+    },
+    
+    "completed_task": {
+      "task_id": "abc123-def456-ghi789",
+      "status": "completed",
+      "outputs": {
+        "preview_webp_high": [{
+          "url": "https://cdn.example.com/ai-face-swap-templates/abc123/profiles/preview_webp_high/output.webp",
+          "metadata": {
+            "file_size": 524288,
+            "dimensions": "360×480",
+            "duration": 6,
+            "format": "webp"
+          }
+        }],
+        "preview_mp4_high": [{
+          "url": "https://cdn.example.com/ai-face-swap-templates/abc123/profiles/preview_mp4_high/output.mp4",
+          "metadata": {
+            "file_size": 1048576,
+            "dimensions": "360×480",
+            "duration": 6,
+            "fps": 15,
+            "format": "mp4"
+          }
+        }],
+        "detail_video_high": [{
+          "url": "https://cdn.example.com/ai-face-swap-templates/abc123/profiles/detail_video_high/output.mp4",
+          "metadata": {
+            "file_size": 10485760,
+            "dimensions": "720×960",
+            "duration": 30,
+            "format": "mp4",
+            "bitrate": "2800k"
+          }
+        }],
+        "ai_video_high": [{
+          "url": "https://cdn.example.com/ai-face-swap-templates/abc123/profiles/ai_video_high/output.mp4",
+          "metadata": {
+            "file_size": 20971520,
+            "dimensions": "1080×1440",
+            "duration": 30,
+            "format": "mp4",
+            "bitrate": "5600k"
+          }
+        }]
+      },
+      "face_detection_status": "completed",
+      "face_detection_results": {
+        "faces": [
+          {
+            "name": "face_0",
+            "index": 0,
+            "avatar_url": "https://cdn.example.com/ai-face-swap-templates/abc123/faces/avatars/face_0_avatar.jpg",
+            "face_image_url": "https://cdn.example.com/ai-face-swap-templates/abc123/faces/images/face_0_face.jpg",
+            "group_size": 150,
+            "gender": "male",
+            "age": 25
+          }
+        ],
+        "is_change_index": false
+      },
+      "expected_profiles": 8,
+      "completed_profiles": 8,
+      "completion_percentage": 100.0
+    }
+  },
+
+  "client_usage_guide": {
+    "mobile_display_logic": {
+      "list_view": "Use thumb_webp_* with thumb_jpg_* as fallback",
+      "preview_animation": "Use preview_webp_* with preview_mp4_* as fallback",
+      "detail_view": "Use detail_video_* or detail_*_* based on media type",
+      "ai_processing": "Use ai_video_* or ai_image_* profiles"
+    },
+    "device_detection": {
+      "high_end": "Use *_high profiles (iPhone 12+, Samsung S21+, etc.)",
+      "low_end": "Use *_low profiles (older or budget devices)"
+    },
+    "fallback_strategy": {
+      "webp_not_supported": "Fallback to MP4 for video previews, JPEG for images",
+      "connection_slow": "Use low-end profiles regardless of device capability"
+    }
+  }
+}

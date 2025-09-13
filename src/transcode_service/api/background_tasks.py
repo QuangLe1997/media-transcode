@@ -2,14 +2,25 @@ import asyncio
 import logging
 
 from ..core.db import get_db, TaskCRUD
-from ..models.schemas import TranscodeResult, FaceDetectionResult, TaskStatus, TranscodeConfig
+from ..models.schemas import FaceDetectionResult, TaskStatus
+from ..models.schemas_v2 import UniversalTranscodeResult
 from ..services import pubsub_service, s3_service
 from ..services.callback_service import callback_service
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_transcode_result(result: TranscodeResult):
+async def handle_transcode_result(result: UniversalTranscodeResult):
+    """Handle transcode result from Pub/Sub - V2 ONLY"""
+    await _handle_transcode_result_common(result)
+
+
+async def handle_universal_transcode_result(result: UniversalTranscodeResult):
+    """Handle universal transcode result from Pub/Sub v2"""
+    await _handle_transcode_result_common(result)
+
+
+async def _handle_transcode_result_common(result: UniversalTranscodeResult):
     """Handle transcode result from Pub/Sub"""
     logger.info(f"📥 === BACKGROUND PROCESSING RESULT: task {result.task_id}, profile {result.profile_id} ===")
     logger.info(f"Result status: {result.status}, URLs count: {len(result.output_urls) if result.output_urls else 0}")
@@ -46,12 +57,11 @@ async def handle_transcode_result(result: TranscodeResult):
                 )
                 logger.info(f"✅ Successfully added outputs for profile {result.profile_id}")
 
-                # Check if all profiles are completed
-                config = TranscodeConfig(**task.config)
+                # Check if all profiles are completed - get from task config
                 task = await TaskCRUD.get_task(db, result.task_id)
 
                 current_outputs = len(task.outputs) if task.outputs else 0
-                expected_outputs = len(config.profiles)
+                expected_outputs = len(task.config.get('profiles', [])) if task.config else 0
                 logger.info(f"Progress check: {current_outputs}/{expected_outputs} profiles completed")
 
                 # Always check if task should be completed (including partial completion)
@@ -83,14 +93,15 @@ async def handle_transcode_result(result: TranscodeResult):
                 )
 
                 # Check if all profiles are processed (completed or failed)
-                config = TranscodeConfig(**task.config)
                 task = await TaskCRUD.get_task(db, result.task_id)
 
                 completed_profiles = len(task.outputs) if task.outputs else 0
                 failed_profiles = len(task.failed_profiles) if task.failed_profiles else 0
                 total_processed = completed_profiles + failed_profiles
 
-                if total_processed >= len(config.profiles):
+                expected_profiles = len(task.config.get('profiles', [])) if task.config else 0
+                
+                if total_processed >= expected_profiles:
                     # All profiles processed
                     if completed_profiles > 0:
                         # Some profiles succeeded, mark as completed with partial failure
@@ -198,8 +209,7 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                 # Check if task should be marked as failed overall
                 # (depends on whether transcode is complete and successful)
                 task = await TaskCRUD.get_task(db, result.task_id)
-                config = TranscodeConfig(**task.config)
-                expected_profiles = len(config.profiles)
+                expected_profiles = len(task.config.get('profiles', [])) if task.config else 0
 
                 if task.outputs and len(task.outputs) >= expected_profiles:
                     # Transcode is complete, but face detection failed
@@ -251,39 +261,47 @@ async def face_detection_subscriber():
 
 
 async def transcode_result_subscriber():
-    """Background task to subscribe to transcode results"""
-    logger.info("Starting transcode result subscriber background task")
+    """Background task to subscribe to transcode results - DISABLED (v1 system)"""
+    logger.info("V1 transcode result subscriber is DISABLED - using v2 system only")
+    # V1 system disabled - all processing moved to v2
+    while True:
+        await asyncio.sleep(60)  # Sleep indefinitely
+
+
+async def universal_transcode_result_subscriber():
+    """Background task to subscribe to universal transcode results (v2)"""
+    logger.info("Starting universal transcode result subscriber background task")
 
     # Initial delay to let API start properly
     await asyncio.sleep(2)
 
     while True:
         try:
-            # Use pull method instead of streaming for better reliability
-            results = pubsub_service.pull_results(max_messages=10)
+            # Pull universal transcode results (v2)
+            results = pubsub_service.pull_universal_results(max_messages=10)
 
             if results:
-                logger.info(f"🔄 TRANSCODE SUBSCRIBER: Processing {len(results)} transcode results")
+                logger.info(f"🔄 UNIVERSAL TRANSCODE SUBSCRIBER: Processing {len(results)} v2 results")
                 for result in results:
-                    await handle_transcode_result(result)
-                logger.info(f"✅ TRANSCODE SUBSCRIBER: Completed processing {len(results)} transcode results")
+                    await handle_universal_transcode_result(result)
+                logger.info(f"✅ UNIVERSAL TRANSCODE SUBSCRIBER: Completed processing {len(results)} v2 results")
 
-            # Wait before next pull - shorter if we had results
+            # Wait before next pull
             wait_time = 2 if results else 5
             await asyncio.sleep(wait_time)
 
         except Exception as e:
-            logger.error(f"Error in transcode result subscriber: {e}")
-            await asyncio.sleep(10)  # Wait before retrying
+            logger.error(f"Error in universal transcode result subscriber: {e}")
+            await asyncio.sleep(10)
 
 
 async def result_subscriber():
-    """Background task to subscribe to both transcode and face detection results"""
+    """Background task to subscribe to all result types"""
     logger.info("Starting result subscriber background task")
 
-    # Run both subscribers in parallel
+    # Run v2 and face detection subscribers only (v1 disabled)
     await asyncio.gather(
-        transcode_result_subscriber(),
-        face_detection_subscriber(),
+        universal_transcode_result_subscriber(), # v2 results only
+        face_detection_subscriber(),            # face detection results
         return_exceptions=True
     )
