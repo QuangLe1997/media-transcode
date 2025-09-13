@@ -979,8 +979,7 @@ class FaceProcessor:
         # Process frames in parallel with batch processing to avoid memory
         # issues
         logger.info(
-            f"Processing {
-            len(frames_to_process)} frames with face detection"
+            f"Processing {len(frames_to_process)} frames with face detection"
         )
 
         # Calculate optimal batch size based on available memory
@@ -1028,8 +1027,7 @@ class FaceProcessor:
         # Process detected faces
         processed_frames = len(set(f["frame_number"] for f in faces_with_metadata))
         logger.info(
-            f"Found {
-            len(faces_with_metadata)} faces in {processed_frames} frames"
+            f"Found {len(faces_with_metadata)} faces in {processed_frames} frames"
         )
 
         # Continue with clustering and result creation
@@ -1478,9 +1476,7 @@ class FaceProcessor:
 
         if len(groups_data_filtered) != len(groups_data):
             logger.info(
-                f"Filtered groups: {
-                len(groups_data) -
-                len(groups_data_filtered)}"
+                f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}"
             )
             is_change_index = True
 
