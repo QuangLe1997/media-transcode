@@ -14,7 +14,8 @@ import sys
 from typing import Dict, Optional
 
 from ..core.config import settings
-from ..core.db import TaskCRUD, get_db, init_db
+from ..core.db.crud import TaskCRUD
+from ..core.db.database import get_db, init_db
 from ..core.logging_config import setup_logging
 from ..models.schemas_v2 import (
     CallbackAuth,
@@ -25,8 +26,8 @@ from ..models.schemas_v2 import (
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
 )
-from ..services import pubsub_service
 from ..services.media_detection_service import media_detection_service
+from ..services.pubsub_service import pubsub_service
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +264,7 @@ class PubSubTaskListenerV2:
 
                 # Publish face detection task if enabled
                 face_config = transcode_config.face_detection_config
-                if face_config and face_config.get("enabled", False):
+                if face_config and getattr(face_config, "enabled", False):
                     try:
                         from ..models.schemas import FaceDetectionMessage
 
@@ -274,7 +275,7 @@ class PubSubTaskListenerV2:
                         )
 
                         # Combine face detection config with s3 output config
-                        face_detection_config_copy = face_config.copy()
+                        face_detection_config_copy = dict(face_config)
                         face_detection_config_copy["s3_output_config"] = enhanced_s3_config
 
                         face_message = FaceDetectionMessage(

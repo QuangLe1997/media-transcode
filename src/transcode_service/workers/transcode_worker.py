@@ -5,10 +5,8 @@ Simplified worker that only supports WebP, JPG, and MP4 outputs
 No GIF processing - only formats supported by UniversalMediaConverter
 """
 
-from ..services import pubsub_service, s3_service
-from ..models.schemas_v2 import MediaMetadata, UniversalTranscodeMessage, UniversalTranscodeResult
-import logging.handlers
 import json
+import logging.handlers
 import os
 import shutil
 import subprocess
@@ -17,6 +15,10 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
+
+from ..models.schemas_v2 import MediaMetadata, UniversalTranscodeMessage, UniversalTranscodeResult
+from ..services.pubsub_service import pubsub_service
+from ..services.s3_service import s3_service
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -47,16 +49,10 @@ logging.basicConfig(
 
 logger = logging.getLogger("consumer_v2")
 
-# Import UniversalMediaConverter from app_local
-# Get the project root directory (go up from src/transcode_service/workers/)
-project_root = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
-universal_converter_path = os.path.join(project_root, "app_local")
-sys.path.insert(0, universal_converter_path)
+# UniversalMediaConverter is now available as part of the package
 
 try:
-    from universal_media_converter import UniversalMediaConverter
+    from ..core.universal_media_converter import UniversalMediaConverter
 
     HAS_UNIVERSAL_CONVERTER = True
     logger.info("✅ UniversalMediaConverter imported successfully")
@@ -338,7 +334,7 @@ class TranscodeWorkerV2:
             self.temp_dir,
             f"{
                 message.task_id}_{
-                profile.id_profile}_output.{output_format}",
+                profile.id_profile}.{output_format}",
         )
         temp_outputs.append(temp_output)
 
@@ -479,7 +475,7 @@ def main():
                 logger.error(f"Failed to process message: {e}")
                 logger.error(f"Message data: {message_data}")
 
-        pubsub_service.subscribe_to_tasks(
+        pubsub_service.listen_for_transcode_messages(
             callback=process_universal_message, timeout=None  # Run forever
         )
     except KeyboardInterrupt:

@@ -10,8 +10,6 @@ from ..core.config import settings
 from ..models.schemas import (
     FaceDetectionMessage,
     FaceDetectionResult,
-    TranscodeMessage,
-    TranscodeResult,
 )
 from ..models.schemas_v2 import UniversalTranscodeMessage, UniversalTranscodeResult
 
@@ -70,26 +68,22 @@ class PubSubService:
         # V2 Topic paths for UniversalMediaConverter
         self.universal_tasks_topic_path = self._publisher_client.topic_path(
             self.project_id,
-            getattr(settings, "pubsub_universal_tasks_topic", "universal-transcode-worker-tasks"),
+            settings.pubsub_tasks_topic
         )
         self.universal_results_topic_path = self._publisher_client.topic_path(
             self.project_id,
-            getattr(
-                settings, "pubsub_universal_results_topic", "universal-transcode-worker-results"
-            ),
+            settings.pubsub_results_topic
         )
 
         # Face detection topic paths (using same topics or add new ones if
         # needed)
         self.face_detection_tasks_topic_path = self._publisher_client.topic_path(
             self.project_id,
-            getattr(settings, "pubsub_face_detection_tasks_topic", "face-detection-worker-tasks"),
+            settings.pubsub_face_detection_tasks_topic
         )
         self.face_detection_results_topic_path = self._publisher_client.topic_path(
             self.project_id,
-            getattr(
-                settings, "pubsub_face_detection_results_topic", "face-detection-worker-results"
-            ),
+            settings.pubsub_face_detection_results_topic
         )
 
         # Subscription paths
@@ -101,15 +95,10 @@ class PubSubService:
         )
 
         # Face detection results subscription path
-        face_detection_results_subscription = getattr(
-            settings,
-            "pubsub_face_detection_results_subscription",
-            "face-detection-worker-results-sub",
-        )
+        face_detection_results_subscription = settings.pubsub_face_detection_results_subscription
         self.face_detection_results_subscription_path = self._subscriber_client.subscription_path(
             self.project_id, face_detection_results_subscription
         )
-
         self._initialized = True
         logger.info("PubSub clients initialized successfully")
 
@@ -127,19 +116,6 @@ class PubSubService:
         """Check if PubSub is disabled"""
         return settings.disable_pubsub or not settings.pubsub_publisher_credentials_path
 
-    def publish_transcode_task(self, message: TranscodeMessage) -> str:
-        """Publish transcode task to Pub/Sub - DISABLED (v1 system)"""
-        logger.warning(
-            "V1 publish_transcode_task is DISABLED - use publish_universal_transcode_task instead"
-        )
-        return "disabled"
-
-    def publish_transcode_result(self, result: TranscodeResult) -> str:
-        """Publish transcode result to Pub/Sub - DISABLED (v1 system)"""
-        logger.warning(
-            "V1 publish_transcode_result is DISABLED - use publish_universal_transcode_result instead"
-        )
-        return "disabled"
 
     def publish_universal_transcode_task(self, message: UniversalTranscodeMessage) -> str:
         """Publish universal transcode task to Pub/Sub v2"""
@@ -195,20 +171,66 @@ class PubSubService:
             logger.error(f"Error publishing universal transcode result: {e}")
             raise
 
-    def subscribe_to_tasks(self, callback: Callable, timeout: Optional[float] = None):
-        """Subscribe to transcode tasks - DISABLED (v1 system)"""
-        logger.warning("V1 subscribe_to_tasks is DISABLED - v1 worker should not be used")
-        return
+    def listen_for_transcode_messages(self, callback: Callable, timeout: Optional[float] = None):
+        """Subscribe to universal transcode tasks (v2 system)"""
+        if self._is_disabled():
+            logger.info("PubSub is disabled, skipping universal transcode task subscription")
+            return
 
-    def subscribe_to_results(self, callback: Callable, timeout: Optional[float] = None):
-        """Subscribe to transcode results - DISABLED (v1 system)"""
-        logger.warning("V1 subscribe_to_results is DISABLED - v1 system not used")
-        return
+        # Use universal tasks subscription
+        subscription_name = getattr(
+            settings,
+            "pubsub_universal_tasks_subscription",
+            "universal-transcode-worker-tasks-sub",
+        )
 
-    def pull_results(self, max_messages: int = 10) -> list[TranscodeResult]:
-        """Pull transcode results - DISABLED (v1 system)"""
-        logger.warning("V1 pull_results is DISABLED - use pull_universal_results instead")
-        return []
+        if not subscription_name:
+            logger.info("Universal tasks subscription name not configured, skipping listener")
+            return
+
+        subscription_path = self.subscriber_client.subscription_path(
+            self.project_id, subscription_name
+        )
+
+        logger.info("🎧 Setting up universal transcode subscriber...")
+        logger.info(f"📍 Project ID: {self.project_id}")
+        logger.info(f"📬 Subscription name: {subscription_name}")
+        logger.info(f"🔗 Full subscription path: {subscription_path}")
+        logger.info(f"📨 Universal tasks topic: {self.universal_tasks_topic_path}")
+
+        def message_callback(message):
+            try:
+                data = json.loads(message.data.decode("utf-8"))
+                universal_message = UniversalTranscodeMessage(**data)
+
+                logger.info(f"📥 Received universal transcode task: {universal_message.task_id}")
+                logger.info(f"🔗 Source URL: {universal_message.source_url}")
+                logger.info(f"⚙️ Profile: {universal_message.profile.id_profile}")
+
+                callback(universal_message)
+
+                message.ack()
+                logger.info(f"✅ Acknowledged universal transcode message: {universal_message.task_id}")
+
+            except Exception as e:
+                logger.error(f"❌ Error processing universal transcode message: {e}")
+                message.nack()
+
+        flow_control = pubsub_v1.types.FlowControl(max_messages=2)
+
+        streaming_pull_future = self.subscriber_client.subscribe(
+            subscription_path, callback=message_callback, flow_control=flow_control
+        )
+
+        logger.info(f"🎧 Listening for universal transcode messages on {subscription_path}")
+
+        with self.subscriber_client:
+            try:
+                streaming_pull_future.result(timeout=timeout)
+            except TimeoutError:
+                streaming_pull_future.cancel()
+                streaming_pull_future.result()
+
 
     def publish_face_detection_task(self, message: FaceDetectionMessage) -> str:
         """Publish face detection task to Pub/Sub"""
@@ -303,7 +325,7 @@ class PubSubService:
             self.project_id, subscription_name
         )
 
-        logger.info(f"🎧 Setting up face detection subscriber...")
+        logger.info("🎧 Setting up face detection subscriber...")
         logger.info(f"📍 Project ID: {self.project_id}")
         logger.info(f"📬 Subscription name: {subscription_name}")
         logger.info(f"🔗 Full subscription path: {subscription_path}")
@@ -417,11 +439,7 @@ class PubSubService:
 
             for received_message in response.received_messages:
                 try:
-                    import json
-
                     data = json.loads(received_message.message.data.decode("utf-8"))
-                    from ..models.schemas_v2 import UniversalTranscodeResult
-
                     result = UniversalTranscodeResult(**data)
                     results.append(result)
                     ack_ids.append(received_message.ack_id)
