@@ -4,6 +4,8 @@ import logging
 import httpx
 
 from ..core.db.models import TranscodeTaskDB
+from ..models.schemas import TranscodeConfig
+# Import will be done locally where needed to avoid circular import
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,6 @@ class CallbackService:
     @staticmethod
     def _prepare_callback_data(task: TranscodeTaskDB) -> dict:
         """Prepare callback data in the new format"""
-        from ..models.schemas import TranscodeConfig
 
         # Parse config
         config = TranscodeConfig(**task.config) if task.config else None
@@ -24,7 +25,9 @@ class CallbackService:
 
         # Face detection info
         face_detection_enabled = bool(
-            config and config.face_detection_config and config.face_detection_config.enabled
+            config and
+            config.face_detection_config and
+            getattr(config.face_detection_config, 'enabled', False)
         )
 
         # Format outputs
@@ -129,8 +132,8 @@ class CallbackService:
 
         except Exception as e:
             logger.error(
-                f"Error sending callback for task {
-                    task.task_id}: {e}"
+                "Error sending callback for task %s: %s",
+                task.task_id, e
             )
             return False
 
@@ -169,31 +172,29 @@ class CallbackService:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(task.callback_url, json=callback_dict, headers=headers)
 
-                if response.status_code >= 200 and response.status_code < 300:
+                if 200 <= response.status_code < 300:
                     logger.info(
-                        f"Callback sent successfully for task {
-                            task.task_id} to {
-                            task.callback_url}"
+                        "Callback sent successfully for task %s to %s",
+                        task.task_id, task.callback_url
                     )
                     return True
-                else:
-                    logger.error(
-                        f"Callback failed for task {
-                            task.task_id}. Status: {
-                            response.status_code}, Response: {
-                            response.text}"
-                    )
-                    return False
+
+                logger.error(
+                    "Callback failed for task %s. Status: %s, Response: %s",
+                    task.task_id, response.status_code, response.text
+                )
+                return False
 
         except Exception as e:
-            logger.error(f"Error sending webhook for task {task.task_id}: {e}")
+            logger.error("Error sending webhook for task %s: %s", task.task_id, e)
             return False
 
     @staticmethod
     async def _send_pubsub(task: TranscodeTaskDB, callback_dict: dict) -> bool:
         """Send PubSub notification"""
         try:
-            from .. import pubsub_service
+            from .. import services
+            pubsub_service = services.pubsub_service
 
             # Publish to PubSub topic
             message_data = callback_dict
@@ -203,23 +204,21 @@ class CallbackService:
 
             if success:
                 logger.info(
-                    f"PubSub notification sent successfully for task {
-                        task.task_id} to topic {
-                        task.pubsub_topic}"
+                    "PubSub notification sent successfully for task %s to topic %s",
+                    task.task_id, task.pubsub_topic
                 )
                 return True
-            else:
-                logger.error(
-                    f"Failed to send PubSub notification for task {
-                        task.task_id} to topic {
-                        task.pubsub_topic}"
-                )
-                return False
+
+            logger.error(
+                "Failed to send PubSub notification for task %s to topic %s",
+                task.task_id, task.pubsub_topic
+            )
+            return False
 
         except Exception as e:
             logger.error(
-                f"Error sending PubSub notification for task {
-                    task.task_id}: {e}"
+                "Error sending PubSub notification for task %s: %s",
+                task.task_id, e
             )
             return False
 
@@ -235,13 +234,12 @@ class CallbackService:
             if attempt < max_retries - 1:  # Don't wait after last attempt
                 wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
                 logger.info(
-                    f"Callback failed for task {
-                        task.task_id}, retrying in {wait_time}s (attempt {
-                        attempt + 1}/{max_retries})"
+                    "Callback failed for task %s, retrying in %ss (attempt %s/%s)",
+                    task.task_id, wait_time, attempt + 1, max_retries
                 )
                 await asyncio.sleep(wait_time)
 
-        logger.error(f"All callback attempts failed for task {task.task_id}")
+        logger.error("All callback attempts failed for task %s", task.task_id)
         return False
 
 
