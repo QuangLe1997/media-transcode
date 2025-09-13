@@ -111,9 +111,7 @@ class S3Service:
             elif content_type.startswith("video/") or content_type.startswith("audio/"):
                 # 30 days for videos/audio
                 extra_args["CacheControl"] = "public, max-age=2592000"
-                # Add additional headers for video streaming
-                # Enable range requests for video streaming
-                extra_args["AcceptRanges"] = "bytes"
+                # Note: AcceptRanges header is automatically set by S3 for video streaming
 
             self.s3_client.upload_fileobj(
                 file_data, self.bucket_name, full_key, ExtraArgs=extra_args
@@ -167,9 +165,7 @@ class S3Service:
             elif content_type.startswith("video/") or content_type.startswith("audio/"):
                 # 30 days for videos/audio
                 extra_args["CacheControl"] = "public, max-age=2592000"
-                # Add additional headers for video streaming
-                # Enable range requests for video streaming
-                extra_args["AcceptRanges"] = "bytes"
+                # Note: AcceptRanges header is automatically set by S3 for video streaming
 
             self.s3_client.upload_file(file_path, self.bucket_name, full_key, ExtraArgs=extra_args)
 
