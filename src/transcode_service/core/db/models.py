@@ -6,7 +6,7 @@ from sqlalchemy import String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 
-from ...models.schemas import TaskStatus
+from ...models.schemas_v2 import TaskStatus
 
 Base = declarative_base()
 

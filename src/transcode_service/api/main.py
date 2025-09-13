@@ -325,8 +325,7 @@ async def create_transcode_task(
                 except Exception as e:
                     raise HTTPException(
                         400,
-                        f"Cannot access media URL: {
-                        str(e)}",
+                        f"Cannot access media URL: {str(e)}",
                     ) from e
 
             source_url = media_url

@@ -268,8 +268,7 @@ class FaceDetectionWorker:
             # Publish result
             try:
                 logger.info(
-                    f"Publishing face detection result for task {
-                    message.task_id}"
+                    f"Publishing face detection result for task {message.task_id}"
                 )
                 message_id = pubsub_service.publish_face_detection_result(result)
                 logger.info(f"✅ Face detection result published with message_id: {message_id}")

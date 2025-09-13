@@ -23,6 +23,7 @@ from ..core.db.database import get_db, init_db
 from ..core.logging_config import setup_logging
 from ..models.schemas_v2 import (
     CallbackAuth,
+    FaceDetectionMessage,
     S3OutputConfig,
     TaskStatus,
     UniversalConverterConfig,
@@ -290,8 +291,6 @@ class PubSubTaskListenerV2:
                 face_config = transcode_config.face_detection_config
                 if face_config and getattr(face_config, "enabled", False):
                     try:
-                        from ..models.schemas import FaceDetectionMessage
-
                         logger.info(f"Publishing face detection task for {task_id}")
 
                         await TaskCRUD.update_face_detection_status(

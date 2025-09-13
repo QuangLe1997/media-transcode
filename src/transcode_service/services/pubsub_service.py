@@ -175,11 +175,7 @@ class PubSubService:
             return
 
         # Use universal tasks subscription
-        subscription_name = getattr(
-            settings,
-            "pubsub_universal_tasks_subscription",
-            "universal-transcode-worker-tasks-sub",
-        )
+        subscription_name = settings.tasks_subscription
 
         if not subscription_name:
             logger.info("Universal tasks subscription name not configured, skipping listener")
@@ -234,13 +230,10 @@ class PubSubService:
             data = message.model_dump_json().encode("utf-8")
 
             logger.info(
-                f"🔤 Publishing face detection task to topic: {
-                self.face_detection_tasks_topic_path}"
+                f"🔤 Publishing face detection task to topic: {self.face_detection_tasks_topic_path}"
             )
             logger.info(
-                f"📋 Face detection task details - task_id: {
-                message.task_id}, source_url: {
-                message.source_url}"
+                f"📋 Face detection task details - task_id: {message.task_id}, source_url: {message.source_url}"
             )
             logger.info(f"⚙️ Face detection config: {message.config}")
 

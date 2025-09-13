@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 
 database_url = settings.database_url
 logger.info(
-    f"Using database: {
-    database_url.split('@', maxsplit=1)[0] if '@' in database_url else 'local'}"
+    f"Using database: {database_url.split('@', maxsplit=1)[0] if '@' in database_url else 'local'}"
 )
 
 # Configure engine based on database type
