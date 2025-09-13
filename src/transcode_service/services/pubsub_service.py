@@ -134,8 +134,7 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published universal transcode task: {
-                message.task_id}, message_id: {message_id}"
+                f"Published universal transcode task: {message.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -161,8 +160,7 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published universal transcode result: {
-                result.task_id}, message_id: {message_id}"
+                f"Published universal transcode result: {result.task_id}, message_id: {message_id}"
             )
             return message_id
 

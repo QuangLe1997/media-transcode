@@ -615,12 +615,6 @@ def serve_transcode_ui():
     return send_from_directory('.', 'media_transcode_ui.html')
 
 
-@app.route('/viewer')
-def serve_viewer_ui():
-    """Serve the WebP viewer UI"""
-    return send_from_directory('.', 'webp_viewer.html')
-
-
 if __name__ == '__main__':
     print("🚀 Starting Unified Media Server...")
     print(f"📁 Upload folder: {UPLOAD_FOLDER}")

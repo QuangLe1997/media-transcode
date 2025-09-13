@@ -141,8 +141,7 @@ class PubSubTaskListenerV2:
                     )
                     universal_profiles.append(universal_profile)
                     logger.info(
-                        f"✅ Created universal profile: {
-                        universal_profile.id_profile}"
+                        f"✅ Created universal profile: {universal_profile.id_profile}"
                     )
 
                 except Exception as e:
@@ -163,9 +162,7 @@ class PubSubTaskListenerV2:
                     filtered_profiles.append(profile)
 
             logger.info(
-                f"Profile filtering: {
-                len(filtered_profiles)} selected, {
-                len(skipped_profiles)} skipped"
+                f"Profile filtering: {len(filtered_profiles)} selected, {len(skipped_profiles)} skipped"
             )
             if skipped_profiles:
                 logger.info(f"Skipped profiles (media type mismatch): {skipped_profiles}")
@@ -242,15 +239,12 @@ class PubSubTaskListenerV2:
                 failed_profiles = []
 
                 logger.info(
-                    f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {
-                    len(filtered_profiles)} profiles ==="
+                    f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {len(filtered_profiles)} profiles ==="
                 )
 
                 for i, profile in enumerate(filtered_profiles, 1):
                     try:
-                        profile_info = f"{i}/{
-                        len(filtered_profiles)}: profile {
-                        profile.id_profile}"
+                        profile_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
                         logger.info(f"Publishing v2 {profile_info} for task {task_id}")
 
                         # Use shared file path if available, otherwise fallback to URL
@@ -279,15 +273,11 @@ class PubSubTaskListenerV2:
                         # pubsub_service)
                         message_id = pubsub_service.publish_universal_transcode_task(message)
                         published_count += 1
-                        success_info = f"{i}/{
-                        len(filtered_profiles)}: profile {
-                        profile.id_profile}"
+                        success_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
                         logger.info(f"✅ Published v2 {success_info}, message_id: {message_id}")
 
                     except Exception as e:
-                        error_info = f"{i}/{
-                        len(filtered_profiles)}: profile {
-                        profile.id_profile}"
+                        error_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
                         logger.error(f"❌ Failed to publish v2 {error_info}, error: {e}")
                         failed_profiles.append(profile.id_profile)
 

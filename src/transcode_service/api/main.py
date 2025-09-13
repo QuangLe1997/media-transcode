@@ -103,8 +103,7 @@ async def startup_event():
         #
         total_time = time.time() - start_time
         logger.info(
-            f"Background services started. Total startup time: {
-            total_time:.2f}s"
+            f"Background services started. Total startup time: {total_time:.2f}s"
         )
 
     except Exception as e:
@@ -238,9 +237,7 @@ async def create_transcode_task(
             except Exception as e:
                 raise HTTPException(
                     400,
-                    f"Invalid profile {
-                    profile_data.get(
-                        'id_profile', 'unknown')}: {e}",
+                    f"Invalid profile {profile_data.get('id_profile', 'unknown')}: {e}",
                 ) from e
 
         # Create S3 config
@@ -321,8 +318,7 @@ async def create_transcode_task(
                     if response.status_code >= 400:
                         raise HTTPException(
                             400,
-                            f"Media URL not accessible: HTTP {
-                            response.status_code}",
+                            f"Media URL not accessible: HTTP {response.status_code}",
                         )
                 except httpx.TimeoutException as exc:
                     raise HTTPException(400, "Media URL request timeout") from exc

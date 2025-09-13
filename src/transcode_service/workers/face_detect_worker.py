@@ -46,8 +46,7 @@ class FaceDetectionWorker:
     def __init__(self):
         self.temp_dir = tempfile.mkdtemp(prefix="face_detect_")
         logger.info(
-            f"Initialized FaceDetectionWorker with temp dir: {
-            self.temp_dir}"
+            f"Initialized FaceDetectionWorker with temp dir: {self.temp_dir}"
         )
 
         # Auto check and download models on startup
@@ -188,8 +187,7 @@ class FaceDetectionWorker:
             # Create task-specific temp directory to avoid cross-contamination
             task_temp_dir = os.path.join(
                 self.temp_dir,
-                f"task_{
-                message.task_id}",
+                f"task_{message.task_id}",
             )
             os.makedirs(task_temp_dir, exist_ok=True)
             logger.info(f"Created task-specific temp directory: {task_temp_dir}")
@@ -255,8 +253,7 @@ class FaceDetectionWorker:
 
         except Exception as e:
             logger.error(
-                f"Error processing face detection task {
-                message.task_id}: {e}"
+                f"Error processing face detection task {message.task_id}: {e}"
             )
 
             # Create failure result
