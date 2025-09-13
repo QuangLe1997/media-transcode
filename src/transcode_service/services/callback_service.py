@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 
@@ -5,6 +6,7 @@ import httpx
 
 from ..core.db.models import TranscodeTaskDB
 from ..models.schemas import TranscodeConfig
+
 # Import will be done locally where needed to avoid circular import
 
 logger = logging.getLogger(__name__)
@@ -153,13 +155,13 @@ class CallbackService:
                     headers["Authorization"] = f"Bearer {auth_config['token']}"
 
                 elif (
-                    auth_type == "basic"
-                    and auth_config.get("username")
-                    and auth_config.get("password")
+                        auth_type == "basic"
+                        and auth_config.get("username")
+                        and auth_config.get("password")
                 ):
                     credentials = f"{
-                        auth_config['username']}:{
-                        auth_config['password']}"
+                    auth_config['username']}:{
+                    auth_config['password']}"
                     encoded = base64.b64encode(credentials.encode()).decode()
                     headers["Authorization"] = f"Basic {encoded}"
 
@@ -193,8 +195,8 @@ class CallbackService:
     async def _send_pubsub(task: TranscodeTaskDB, callback_dict: dict) -> bool:
         """Send PubSub notification"""
         try:
-            from .. import services
-            pubsub_service = services.pubsub_service
+            # Import locally to avoid circular import
+            from .pubsub_service import pubsub_service
 
             # Publish to PubSub topic
             message_data = callback_dict
@@ -225,14 +227,12 @@ class CallbackService:
     @staticmethod
     async def retry_callback(task: TranscodeTaskDB, max_retries: int = 3) -> bool:
         """Retry callback with exponential backoff"""
-        import asyncio
-
         for attempt in range(max_retries):
             if await CallbackService.send_callback(task):
                 return True
 
             if attempt < max_retries - 1:  # Don't wait after last attempt
-                wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+                wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
                 logger.info(
                     "Callback failed for task %s, retrying in %ss (attempt %s/%s)",
                     task.task_id, wait_time, attempt + 1, max_retries

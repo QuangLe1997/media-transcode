@@ -1,17 +1,18 @@
 import logging
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from ..config import settings
 from .models import Base
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
 database_url = settings.database_url
 logger.info(
     f"Using database: {
-        database_url.split('@')[0] if '@' in database_url else 'local'}"
+    database_url.split('@', maxsplit=1)[0] if '@' in database_url else 'local'}"
 )
 
 # Configure engine based on database type
@@ -52,8 +53,6 @@ async def init_db():
 
     # Warm up connection pool
     try:
-        from sqlalchemy import text
-
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
             await session.commit()

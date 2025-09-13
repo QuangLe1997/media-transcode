@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .models import ConfigTemplateDB, TranscodeTaskDB
 from ...models.schemas import (
     ConfigTemplateRequest,
     ConfigTemplateResponse,
@@ -12,20 +13,19 @@ from ...models.schemas import (
     TaskStatus,
     TranscodeConfig,
 )
-from .models import ConfigTemplateDB, TranscodeTaskDB
 
 
 class TaskCRUD:
     @staticmethod
     async def create_task(
-        db: AsyncSession,
-        task_id: str,
-        source_url: str,
-        source_key: Optional[str],
-        config: Dict,
-        callback_url: Optional[str] = None,
-        callback_auth: Optional[Dict] = None,
-        pubsub_topic: Optional[str] = None,
+            db: AsyncSession,
+            task_id: str,
+            source_url: str,
+            source_key: Optional[str],
+            config: Dict,
+            callback_url: Optional[str] = None,
+            callback_auth: Optional[Dict] = None,
+            pubsub_topic: Optional[str] = None,
     ) -> TranscodeTaskDB:
         """Create new transcode task"""
         task = TranscodeTaskDB(
@@ -51,7 +51,7 @@ class TaskCRUD:
 
     @staticmethod
     async def update_task_status(
-        db: AsyncSession, task_id: str, status: TaskStatus, error_message: Optional[str] = None
+            db: AsyncSession, task_id: str, status: TaskStatus, error_message: Optional[str] = None
     ) -> Optional[TranscodeTaskDB]:
         """Update task status"""
         stmt = (
@@ -66,11 +66,11 @@ class TaskCRUD:
 
     @staticmethod
     async def add_task_output(
-        db: AsyncSession,
-        task_id: str,
-        profile_id: str,
-        output_urls: List[str],
-        metadata: Optional[List[MediaMetadata]] = None,
+            db: AsyncSession,
+            task_id: str,
+            profile_id: str,
+            output_urls: List[str],
+            metadata: Optional[List[MediaMetadata]] = None,
     ) -> Optional[TranscodeTaskDB]:
         """Add output URLs and metadata for a profile"""
         task = await TaskCRUD.get_task(db, task_id)
@@ -115,7 +115,7 @@ class TaskCRUD:
 
     @staticmethod
     async def add_failed_profile(
-        db: AsyncSession, task_id: str, profile_id: str, error_message: str
+            db: AsyncSession, task_id: str, profile_id: str, error_message: str
     ) -> Optional[TranscodeTaskDB]:
         """Add failed profile information"""
         task = await TaskCRUD.get_task(db, task_id)
@@ -140,7 +140,7 @@ class TaskCRUD:
 
     @staticmethod
     async def get_tasks_by_status(
-        db: AsyncSession, status: TaskStatus, limit: int = 100
+            db: AsyncSession, status: TaskStatus, limit: int = 100
     ) -> List[TranscodeTaskDB]:
         """Get tasks by status"""
         result = await db.execute(
@@ -168,7 +168,7 @@ class TaskCRUD:
 
     @staticmethod
     async def get_tasks_optimized(
-        db: AsyncSession, status: Optional[TaskStatus] = None, limit: int = 50, offset: int = 0
+            db: AsyncSession, status: Optional[TaskStatus] = None, limit: int = 50, offset: int = 0
     ) -> List[TranscodeTaskDB]:
         """Optimized method to get tasks with pagination"""
         query = select(TranscodeTaskDB)
@@ -183,7 +183,7 @@ class TaskCRUD:
 
     @staticmethod
     async def update_face_detection_status(
-        db: AsyncSession, task_id: str, status: TaskStatus, error_message: Optional[str] = None
+            db: AsyncSession, task_id: str, status: TaskStatus, error_message: Optional[str] = None
     ) -> Optional[TranscodeTaskDB]:
         """Update face detection status"""
         stmt = (
@@ -202,7 +202,7 @@ class TaskCRUD:
 
     @staticmethod
     async def add_face_detection_results(
-        db: AsyncSession, task_id: str, results: Dict
+            db: AsyncSession, task_id: str, results: Dict
     ) -> Optional[TranscodeTaskDB]:
         """Add face detection results"""
         stmt = (
@@ -243,7 +243,7 @@ class TaskCRUD:
 
     @staticmethod
     async def mark_task_completed_check_all(
-        db: AsyncSession, task_id: str
+            db: AsyncSession, task_id: str
     ) -> Optional[TranscodeTaskDB]:
         """Mark task as completed if both transcode and face detection are done"""
         task = await TaskCRUD.get_task(db, task_id)
@@ -263,7 +263,7 @@ class TaskCRUD:
 
         # Check if face detection is complete (if enabled)
         face_detection_enabled = (
-            config.face_detection_config and config.face_detection_config.enabled
+                config.face_detection_config and getattr(config.face_detection_config, 'enabled', False)
         )
 
         if face_detection_enabled:
@@ -297,7 +297,7 @@ class TaskCRUD:
 class ConfigTemplateCRUD:
     @staticmethod
     async def create_template(
-        db: AsyncSession, request: ConfigTemplateRequest
+            db: AsyncSession, request: ConfigTemplateRequest
     ) -> ConfigTemplateResponse:
         """Create new config template"""
         template_id = str(uuid.uuid4())
@@ -336,7 +336,7 @@ class ConfigTemplateCRUD:
 
     @staticmethod
     async def update_template(
-        db: AsyncSession, template_id: str, request: ConfigTemplateRequest
+            db: AsyncSession, template_id: str, request: ConfigTemplateRequest
     ) -> Optional[ConfigTemplateResponse]:
         """Update existing template"""
         stmt = (

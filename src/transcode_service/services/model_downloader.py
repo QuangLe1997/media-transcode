@@ -80,8 +80,8 @@ class ModelDownloader:
 
             logger.info(
                 f"Successfully downloaded {
-                    filepath.name} ({
-                    filepath.stat().st_size} bytes)"
+                filepath.name} ({
+                filepath.stat().st_size} bytes)"
             )
             return True
 
@@ -91,8 +91,8 @@ class ModelDownloader:
         except Exception as e:
             logger.error(
                 f"Unexpected error downloading {
-                    filepath.name}: {
-                    str(e)}"
+                filepath.name}: {
+                str(e)}"
             )
             return False
 

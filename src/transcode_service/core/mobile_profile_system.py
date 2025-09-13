@@ -468,7 +468,7 @@ def get_profiles_for_image_input() -> List[ProfileConfig]:
 
 
 def get_profiles_by_device_type(
-    device_type: DeviceType, media_type: MediaType
+        device_type: DeviceType, media_type: MediaType
 ) -> List[ProfileConfig]:
     """Trả về profiles phù hợp với device type và media type"""
     if media_type == MediaType.VIDEO:
@@ -487,7 +487,7 @@ def get_profiles_by_device_type(
 def _check_gpu_codec_availability() -> dict:
     """Check which GPU codecs are available in FFmpeg"""
     try:
-        result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True, timeout=10, check=False)
         encoders = result.stdout.lower()
 
         return {
@@ -514,13 +514,13 @@ def _get_fallback_codec(gpu_codec: str) -> str:
     return fallback_map.get(gpu_codec, "libx264")
 
 
-def _adapt_profile_for_cpu(profile: "ProfileConfig") -> "ProfileConfig":
+def _adapt_profile_for_cpu(profile_config: "ProfileConfig") -> "ProfileConfig":
     """Adapt GPU profile for CPU by changing codec and settings"""
-    if not profile.video_config:
-        return profile
+    if not profile_config.video_config:
+        return profile_config
 
     # Create a copy of the profile with CPU codec
-    video_config = profile.video_config.copy()
+    video_config = profile_config.video_config.copy()
 
     # Change GPU codec to CPU codec
     if video_config.codec in ["h264_nvenc", "h265_nvenc", "hevc_nvenc"]:
@@ -541,7 +541,7 @@ def _adapt_profile_for_cpu(profile: "ProfileConfig") -> "ProfileConfig":
         video_config.preset = preset_map.get(video_config.preset, "medium")
 
     # Create new profile with adapted config
-    adapted_profile = profile.copy()
+    adapted_profile = profile_config.copy()
     adapted_profile.video_config = video_config
     adapted_profile.description += " (CPU fallback)"
 
@@ -568,12 +568,11 @@ def _parse_bitrate_to_kbps(bitrate_str: str) -> int:
     if bitrate_str.endswith("m"):
         # Convert M to k (multiply by 1000)
         return int(float(bitrate_str.rstrip("m")) * 1000)
-    elif bitrate_str.endswith("k"):
+    if bitrate_str.endswith("k"):
         # Already in k format
         return int(float(bitrate_str.rstrip("k")))
-    else:
-        # Assume it's in bits per second, convert to k
-        return int(float(bitrate_str) / 1000)
+    # Assume it's in bits per second, convert to k
+    return int(float(bitrate_str) / 1000)
 
 
 def _create_fps_filter(max_fps: int) -> str:
@@ -584,30 +583,30 @@ def _create_fps_filter(max_fps: int) -> str:
 
 
 def build_ffmpeg_args(
-    profile: ProfileConfig, keep_aspect_ratio: bool = True, check_gpu_availability: bool = True
+        profile_config: ProfileConfig, keep_aspect_ratio: bool = True, check_gpu_availability: bool = True
 ) -> List[str]:
     """Build FFmpeg arguments from profile config with GPU codec fallback"""
     args = []
 
-    if profile.video_config:
+    if profile_config.video_config:
         # Check GPU codec availability and fallback if needed
-        if check_gpu_availability and profile.video_config.codec in [
+        if check_gpu_availability and profile_config.video_config.codec in [
             "h264_nvenc",
             "h265_nvenc",
             "hevc_nvenc",
         ]:
             gpu_codecs = _check_gpu_codec_availability()
-            if not gpu_codecs.get(profile.video_config.codec, False):
+            if not gpu_codecs.get(profile_config.video_config.codec, False):
                 logging.warning(
                     f"GPU codec {
-                        profile.video_config.codec} not available, falling back to CPU"
+                    profile_config.video_config.codec} not available, falling back to CPU"
                 )
-                adapted_profile = _adapt_profile_for_cpu(profile)
+                adapted_profile = _adapt_profile_for_cpu(profile_config)
                 return _build_video_args(adapted_profile.video_config, keep_aspect_ratio)
 
-        return _build_video_args(profile.video_config, keep_aspect_ratio)
-    elif profile.image_config:
-        return _build_image_args(profile.image_config, keep_aspect_ratio)
+        return _build_video_args(profile_config.video_config, keep_aspect_ratio)
+    if profile_config.image_config:
+        return _build_image_args(profile_config.image_config, keep_aspect_ratio)
 
     return args
 
@@ -775,8 +774,8 @@ def _build_image_args(config: ImageConfig, keep_aspect_ratio: bool = True) -> Li
         if keep_aspect_ratio:
             if config.max_width and config.max_height:
                 scale = f"scale={
-                    config.max_width}:{
-                    config.max_height}:force_original_aspect_ratio=decrease"
+                config.max_width}:{
+                config.max_height}:force_original_aspect_ratio=decrease"
             elif config.max_width:
                 scale = f"scale={config.max_width}:-1"
             else:

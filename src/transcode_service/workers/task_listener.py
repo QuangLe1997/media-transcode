@@ -13,6 +13,8 @@ import signal
 import sys
 from typing import Dict, Optional
 
+from google.cloud import pubsub_v1
+
 from ..core.config import settings
 from ..core.db.crud import TaskCRUD
 from ..core.db.database import get_db, init_db
@@ -39,7 +41,8 @@ class PubSubTaskListenerV2:
         self.running = False
         self.tasks = []
 
-    async def initialize(self):
+    @staticmethod
+    async def initialize():
         """Initialize database and services"""
         logger.info("Initializing PubSub Task Listener v2...")
         await init_db()
@@ -70,10 +73,6 @@ class PubSubTaskListenerV2:
             profiles = message_data.get("profiles")
             s3_output_config = message_data.get("s3_output_config")
             face_detection_config = message_data.get("face_detection_config")
-
-            # Only support new format (multiple profiles) - v2 requires proper format
-            # Old format conversion removed - API must send proper
-            # UniversalConverter format
 
             callback_url = message_data.get("callback_url")
             callback_auth = message_data.get("callback_auth")
@@ -115,15 +114,6 @@ class PubSubTaskListenerV2:
             # Create enhanced S3 config
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
 
-            # 🔧 S3 CONFIG LOGGING
-            logger.info(f"🔧 S3 CONFIG ENHANCED for task v2 {task_id}:")
-            logger.info(f"   📦 Bucket: {enhanced_s3_config.bucket}")
-            logger.info(f"   📁 Base path: {enhanced_s3_config.base_path}")
-            logger.info(
-                f"   🗂️  Folder structure: {
-                    enhanced_s3_config.folder_structure}"
-            )
-
             # Convert profiles to UniversalTranscodeProfile format - ONLY new
             # v2 format supported
             universal_profiles = []
@@ -149,7 +139,7 @@ class PubSubTaskListenerV2:
                     universal_profiles.append(universal_profile)
                     logger.info(
                         f"✅ Created universal profile: {
-                            universal_profile.id_profile}"
+                        universal_profile.id_profile}"
                     )
 
                 except Exception as e:
@@ -160,9 +150,6 @@ class PubSubTaskListenerV2:
             if not universal_profiles:
                 logger.error("No valid profiles after conversion to v2 format")
                 return None
-
-            # Filter profiles based on detected media type (if input_type is
-            # specified)
             filtered_profiles = []
             skipped_profiles = []
 
@@ -174,8 +161,8 @@ class PubSubTaskListenerV2:
 
             logger.info(
                 f"Profile filtering: {
-                    len(filtered_profiles)} selected, {
-                    len(skipped_profiles)} skipped"
+                len(filtered_profiles)} selected, {
+                len(skipped_profiles)} skipped"
             )
             if skipped_profiles:
                 logger.info(f"Skipped profiles (media type mismatch): {skipped_profiles}")
@@ -223,14 +210,14 @@ class PubSubTaskListenerV2:
 
                 logger.info(
                     f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {
-                        len(filtered_profiles)} profiles ==="
+                    len(filtered_profiles)} profiles ==="
                 )
 
                 for i, profile in enumerate(filtered_profiles, 1):
                     try:
                         profile_info = f"{i}/{
-                            len(filtered_profiles)}: profile {
-                            profile.id_profile}"
+                        len(filtered_profiles)}: profile {
+                        profile.id_profile}"
                         logger.info(f"Publishing v2 {profile_info} for task {task_id}")
 
                         message = UniversalTranscodeMessage(
@@ -246,14 +233,14 @@ class PubSubTaskListenerV2:
                         message_id = pubsub_service.publish_universal_transcode_task(message)
                         published_count += 1
                         success_info = f"{i}/{
-                            len(filtered_profiles)}: profile {
-                            profile.id_profile}"
+                        len(filtered_profiles)}: profile {
+                        profile.id_profile}"
                         logger.info(f"✅ Published v2 {success_info}, message_id: {message_id}")
 
                     except Exception as e:
                         error_info = f"{i}/{
-                            len(filtered_profiles)}: profile {
-                            profile.id_profile}"
+                        len(filtered_profiles)}: profile {
+                        profile.id_profile}"
                         logger.error(f"❌ Failed to publish v2 {error_info}, error: {e}")
                         failed_profiles.append(profile.id_profile)
 
@@ -307,12 +294,14 @@ class PubSubTaskListenerV2:
                 await db.commit()
 
                 return task_id
+            return None
 
         except Exception as e:
             logger.error(f"Error creating task v2 from message: {e}")
             return None
 
-    def _validate_media_url(self, url: str) -> bool:
+    @staticmethod
+    def _validate_media_url(url: str) -> bool:
         """Validate if URL is accessible and points to media file"""
         try:
             from urllib.parse import urlparse
@@ -381,8 +370,6 @@ class PubSubTaskListenerV2:
 
             def run_subscriber():
                 try:
-                    from google.cloud import pubsub_v1
-
                     max_messages = int(os.getenv("PUBSUB_MAX_MESSAGES", "10"))
                     flow_control = pubsub_v1.types.FlowControl(max_messages=max_messages)
 
@@ -430,8 +417,7 @@ async def main():
     """Main function to run the PubSub task listener v2"""
     setup_logging()
 
-    # Get subscription name from settings (use v2 subscription)
-    subscription_name = settings.tasks_subscription_v2 or "transcode-utils-tasks-v2-sub"
+    subscription_name = settings.tasks_subscription
 
     listener = PubSubTaskListenerV2()
     await listener.initialize()

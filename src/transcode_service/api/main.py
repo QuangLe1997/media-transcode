@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -9,12 +10,15 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .background_tasks import result_subscriber
 from ..core.config import settings
-from ..core.db import TaskCRUD, get_db, init_db
-from ..core.db.crud import ConfigTemplateCRUD
-from ..models.schemas import CallbackAuth, ConfigTemplateRequest, TaskStatus
+from ..core.db.crud import TaskCRUD, ConfigTemplateCRUD
+from ..core.db.database import get_db, init_db
+from ..core.db.models import TranscodeTaskDB
+from ..models.schemas import CallbackAuth, ConfigTemplateRequest, FaceDetectionMessage, TaskStatus
 from ..models.schemas_v2 import (
     S3OutputConfig,
     UniversalConverterConfig,
@@ -22,10 +26,10 @@ from ..models.schemas_v2 import (
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
 )
-from ..services import pubsub_service, s3_service
 from ..services.callback_service import callback_service
 from ..services.media_detection_service import media_detection_service
-from .background_tasks import result_subscriber
+from ..services.pubsub_service import pubsub_service
+from ..services.s3_service import s3_service
 
 logger = logging.getLogger("api")
 
@@ -85,8 +89,6 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and start background tasks"""
-    import time
-
     start_time = time.time()
 
     try:
@@ -97,14 +99,12 @@ async def startup_event():
 
         # Start background result subscriber
         logger.info("Starting background result subscriber...")
-        import asyncio
-
         asyncio.create_task(result_subscriber())
         #
         total_time = time.time() - start_time
         logger.info(
             f"Background services started. Total startup time: {
-                total_time:.2f}s"
+            total_time:.2f}s"
         )
 
     except Exception as e:
@@ -139,20 +139,20 @@ def _validate_media_url(url: str) -> bool:
 
 @app.post("/transcode")
 async def create_transcode_task(
-    # Optional file upload
-    video: Optional[UploadFile] = File(None),
-    # Optional URL input
-    media_url: Optional[str] = Form(None),
-    # Required config
-    profiles: str = Form(...),
-    s3_output_config: str = Form(...),
-    # Optional face detection config
-    face_detection_config: Optional[str] = Form(None),
-    # Optional callback/notification
-    callback_url: Optional[str] = Form(None),
-    callback_auth: Optional[str] = Form(None),
-    pubsub_topic: Optional[str] = Form(None),
-    db: AsyncSession = Depends(get_db),
+        # Optional file upload
+        video: Optional[UploadFile] = File(None),
+        # Optional URL input
+        media_url: Optional[str] = Form(None),
+        # Required config
+        profiles: str = Form(...),
+        s3_output_config: str = Form(...),
+        # Optional face detection config
+        face_detection_config: Optional[str] = Form(None),
+        # Optional callback/notification
+        callback_url: Optional[str] = Form(None),
+        callback_auth: Optional[str] = Form(None),
+        pubsub_topic: Optional[str] = Form(None),
+        db: AsyncSession = Depends(get_db),
 ) -> Dict:
     """
     Unified transcode endpoint - handles both file upload and URL input with optional face detection
@@ -196,7 +196,7 @@ async def create_transcode_task(
                     )
 
         except json.JSONDecodeError as e:
-            raise HTTPException(400, f"Invalid JSON format: {e}")
+            raise HTTPException(400, f"Invalid JSON format: {e}") from e
 
         # Parse callback auth if provided
         callback_auth_obj = None
@@ -204,8 +204,8 @@ async def create_transcode_task(
             try:
                 callback_auth_data = json.loads(callback_auth)
                 callback_auth_obj = CallbackAuth(**callback_auth_data)
-            except json.JSONDecodeError:
-                raise HTTPException(400, "Invalid callback_auth JSON format")
+            except json.JSONDecodeError as exc:
+                raise HTTPException(400, "Invalid callback_auth JSON format") from exc
 
         # Detect media type
         detected_media_type = None
@@ -239,9 +239,9 @@ async def create_transcode_task(
                 raise HTTPException(
                     400,
                     f"Invalid profile {
-                        profile_data.get(
-                            'id_profile', 'unknown')}: {e}",
-                )
+                    profile_data.get(
+                        'id_profile', 'unknown')}: {e}",
+                ) from e
 
         # Create S3 config
         s3_config = S3OutputConfig.with_defaults(s3_config_data, settings)
@@ -306,8 +306,6 @@ async def create_transcode_task(
             )
 
             # Small delay to ensure S3 consistency for large files
-            import time
-
             time.sleep(1)
 
         # Handle URL input
@@ -324,16 +322,16 @@ async def create_transcode_task(
                         raise HTTPException(
                             400,
                             f"Media URL not accessible: HTTP {
-                                response.status_code}",
+                            response.status_code}",
                         )
-                except httpx.TimeoutException:
-                    raise HTTPException(400, "Media URL request timeout")
+                except httpx.TimeoutException as exc:
+                    raise HTTPException(400, "Media URL request timeout") from exc
                 except Exception as e:
                     raise HTTPException(
                         400,
                         f"Cannot access media URL: {
-                            str(e)}",
-                    )
+                        str(e)}",
+                    ) from e
 
             source_url = media_url
             source_key = None  # No S3 key for URL sources
@@ -381,9 +379,9 @@ async def create_transcode_task(
                     published_count += 1
                     logger.info(
                         f"✅ Published v2 {i}/{
-                            len(
-                                transcode_config.profiles)}: profile {
-                            profile.id_profile}, message_id: {message_id}"
+                        len(
+                            transcode_config.profiles)}: profile {
+                        profile.id_profile}, message_id: {message_id}"
                     )
                 except Exception as e:
                     logger.error(
@@ -402,12 +400,10 @@ async def create_transcode_task(
             # Publish face detection task if enabled
             face_detection_published = False
             if (
-                transcode_config.face_detection_config
-                and transcode_config.face_detection_config.get("enabled", False)
+                    transcode_config.face_detection_config
+                    and getattr(transcode_config.face_detection_config, "enabled", False)
             ):
                 try:
-                    from ..models.schemas import FaceDetectionMessage
-
                     logger.info(f"Publishing face detection task for {task_id}")
 
                     # Set face detection status to processing
@@ -474,8 +470,8 @@ async def create_transcode_task(
             raise HTTPException(
                 500,
                 f"Failed to create transcode task: {
-                    str(e)}",
-            )
+                str(e)}",
+            ) from e
 
         return {
             "task_id": task_id,
@@ -486,7 +482,7 @@ async def create_transcode_task(
             "media_detection": filter_summary,
             "face_detection_enabled": bool(
                 transcode_config.face_detection_config
-                and transcode_config.face_detection_config.enabled
+                and getattr(transcode_config.face_detection_config, "enabled", False)
             ),
             "face_detection_published": locals().get("face_detection_published", False),
         }
@@ -501,7 +497,7 @@ async def create_transcode_task(
                 s3_service.delete_file(source_key)
             except BaseException:
                 pass
-        raise HTTPException(500, str(e))
+        raise HTTPException(500, str(e)) from e
 
 
 @app.get("/task/{task_id}")
@@ -561,12 +557,12 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                 if vc.get("max_width") or vc.get("max_height"):
                     config_summary.append(
                         f"Max: {
-                            vc.get(
-                                'max_width',
-                                'auto')}x{
-                            vc.get(
-                                'max_height',
-                                'auto')}"
+                        vc.get(
+                            'max_width',
+                            'auto')}x{
+                        vc.get(
+                            'max_height',
+                            'auto')}"
                     )
                 if vc.get("bitrate"):
                     config_summary.append(f"Bitrate: {vc['bitrate']}")
@@ -585,12 +581,12 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                 if ic.get("max_width") or ic.get("max_height"):
                     config_summary.append(
                         f"Max: {
-                            ic.get(
-                                'max_width',
-                                'auto')}x{
-                            ic.get(
-                                'max_height',
-                                'auto')}"
+                        ic.get(
+                            'max_width',
+                            'auto')}x{
+                        ic.get(
+                            'max_height',
+                            'auto')}"
                     )
 
         elif output_type == "gif":
@@ -601,12 +597,12 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                 if gc.get("width") or gc.get("height"):
                     config_summary.append(
                         f"Size: {
-                            gc.get(
-                                'width',
-                                'auto')}x{
-                            gc.get(
-                                'height',
-                                'auto')}"
+                        gc.get(
+                            'width',
+                            'auto')}x{
+                        gc.get(
+                            'height',
+                            'auto')}"
                     )
                 if gc.get("duration"):
                     config_summary.append(f"Duration: {gc['duration']}s")
@@ -711,11 +707,11 @@ async def resend_callback(task_id: str, db: AsyncSession = Depends(get_db)) -> D
 
 @app.get("/tasks")
 async def list_tasks(
-    status: TaskStatus = None,
-    limit: int = 50,
-    offset: int = 0,
-    include_details: bool = False,
-    db: AsyncSession = Depends(get_db),
+        status: TaskStatus = None,
+        limit: int = 50,
+        offset: int = 0,
+        include_details: bool = False,
+        db: AsyncSession = Depends(get_db),
 ) -> Dict:
     """List tasks by status with pagination and optional details"""
     # Use optimized method
@@ -788,10 +784,6 @@ async def list_tasks(
 @app.get("/tasks/summary")
 async def get_tasks_summary(db: AsyncSession = Depends(get_db)) -> Dict:
     """Get tasks summary with counts by status - very fast endpoint"""
-    from sqlalchemy import func, select
-
-    from ..core.db.models import TranscodeTaskDB
-
     # Get status counts in single query
     result = await db.execute(
         select(TranscodeTaskDB.status, func.count(TranscodeTaskDB.task_id).label("count")).group_by(
@@ -915,10 +907,10 @@ async def get_task_result(task_id: str, db: AsyncSession = Depends(get_db)) -> D
 
 @app.delete("/task/{task_id}")
 async def delete_task(
-    task_id: str,
-    delete_files: bool = False,
-    delete_faces: bool = False,
-    db: AsyncSession = Depends(get_db),
+        task_id: str,
+        delete_files: bool = False,
+        delete_faces: bool = False,
+        db: AsyncSession = Depends(get_db),
 ) -> Dict:
     """Delete task from database with optional S3 file deletion"""
     task = await TaskCRUD.get_task(db, task_id)
@@ -1002,7 +994,7 @@ async def delete_task(
                         failed_deletions.append(f"face_avatar: {face['avatar_url']} - {str(e)}")
                         logger.error(
                             f"Error deleting face avatar {
-                                face['avatar_url']}: {e}"
+                            face['avatar_url']}: {e}"
                         )
 
                 # Delete face image URL
@@ -1027,7 +1019,7 @@ async def delete_task(
                         failed_deletions.append(f"face_image: {face['face_image_url']} - {str(e)}")
                         logger.error(
                             f"Error deleting face image {
-                                face['face_image_url']}: {e}"
+                            face['face_image_url']}: {e}"
                         )
 
     # Delete from database
@@ -1037,8 +1029,8 @@ async def delete_task(
     if delete_files:
         logger.info(
             f"Task {task_id} deleted successfully. Deleted {
-                len(deleted_files)} files, {
-                len(failed_deletions)} failed"
+            len(deleted_files)} files, {
+            len(failed_deletions)} failed"
         )
         return {
             "message": "Task deleted successfully",
@@ -1046,18 +1038,17 @@ async def delete_task(
             "deleted_files": deleted_files,
             "failed_deletions": failed_deletions,
         }
-    else:
-        logger.info(f"Task {task_id} deleted from database successfully (S3 files preserved)")
-        return {
-            "message": "Task deleted successfully from database",
-            "files_deleted": False,
-            "note": "S3 files are preserved and not deleted",
-        }
+    logger.info(f"Task {task_id} deleted from database successfully (S3 files preserved)")
+    return {
+        "message": "Task deleted successfully from database",
+        "files_deleted": False,
+        "note": "S3 files are preserved and not deleted",
+    }
 
 
 @app.post("/task/{task_id}/retry")
 async def retry_task(
-    task_id: str, delete_files: bool = False, db: AsyncSession = Depends(get_db)
+        task_id: str, delete_files: bool = False, db: AsyncSession = Depends(get_db)
 ) -> Dict:
     """Retry task - clear results and restart processing with optional S3 file deletion"""
     task = await TaskCRUD.get_task(db, task_id)
@@ -1142,14 +1133,14 @@ async def retry_task(
                 published_count += 1
                 logger.info(
                     f"✅ RETRY: Published v2 profile {
-                        profile.id_profile}, message_id: {message_id}"
+                    profile.id_profile}, message_id: {message_id}"
                 )
 
             except Exception as e:
                 logger.error(
                     f"❌ RETRY: Failed to publish v2 profile {
-                        profile.id_profile}: {
-                        str(e)}"
+                    profile.id_profile}: {
+                    str(e)}"
                 )
 
                 # Mark this profile as failed immediately
@@ -1163,7 +1154,7 @@ async def retry_task(
 
         # Re-publish face detection task if enabled
         face_detection_published = False
-        if config.face_detection_config and config.face_detection_config.get("enabled", False):
+        if config.face_detection_config and getattr(config.face_detection_config, "enabled", False):
             try:
                 from ..models.schemas import FaceDetectionMessage
 
@@ -1333,7 +1324,7 @@ async def get_config_template(template_id: str, db: AsyncSession = Depends(get_d
 
 @app.post("/config-templates")
 async def create_config_template(
-    request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
+        request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
 ) -> Dict:
     """Create new config template"""
     try:
@@ -1353,7 +1344,7 @@ async def create_config_template(
 
 @app.put("/config-templates/{template_id}")
 async def update_config_template(
-    template_id: str, request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
+        template_id: str, request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
 ) -> Dict:
     """Update existing config template"""
     try:
@@ -1394,6 +1385,5 @@ async def delete_config_template(template_id: str, db: AsyncSession = Depends(ge
     except Exception as e:
         logger.error(f"Error deleting config template: {e}")
         raise HTTPException(500, "Failed to delete config template")
-
 
 # Legacy profile endpoints removed - use /config-templates instead

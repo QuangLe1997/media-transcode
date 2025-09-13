@@ -1,6 +1,3 @@
-from ..services.face_detect_service import FaceProcessor
-from ..services import pubsub_service, s3_service
-from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
 import json
 import logging.handlers
 import os
@@ -9,7 +6,14 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List
+
+from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
+from ..services.face_detect_service import FaceProcessor
+from ..services.model_downloader import ensure_face_detection_models
+from ..services.pubsub_service import pubsub_service
+from ..services.s3_service import s3_service
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -35,7 +39,6 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-
 logger = logging.getLogger("face_detect_consumer")
 
 
@@ -44,7 +47,7 @@ class FaceDetectionWorker:
         self.temp_dir = tempfile.mkdtemp(prefix="face_detect_")
         logger.info(
             f"Initialized FaceDetectionWorker with temp dir: {
-                self.temp_dir}"
+            self.temp_dir}"
         )
 
         # Auto check and download models on startup
@@ -53,9 +56,6 @@ class FaceDetectionWorker:
     def _ensure_models_ready(self):
         """Ensure all required models are available before starting worker"""
         try:
-            from pathlib import Path
-
-            from ..services.model_downloader import ensure_face_detection_models
 
             # Get project root and models directory
             project_root = Path(__file__).parent.parent.absolute()
@@ -189,7 +189,7 @@ class FaceDetectionWorker:
             task_temp_dir = os.path.join(
                 self.temp_dir,
                 f"task_{
-                    message.task_id}",
+                message.task_id}",
             )
             os.makedirs(task_temp_dir, exist_ok=True)
             logger.info(f"Created task-specific temp directory: {task_temp_dir}")
@@ -200,7 +200,7 @@ class FaceDetectionWorker:
             if not temp_input or not os.path.exists(temp_input):
                 raise Exception(
                     f"Failed to download input media from {
-                        message.source_url}"
+                    message.source_url}"
                 )
 
             # Determine media type
@@ -246,7 +246,7 @@ class FaceDetectionWorker:
         except Exception as e:
             logger.error(
                 f"Error processing face detection task {
-                    message.task_id}: {e}"
+                message.task_id}: {e}"
             )
 
             # Create failure result
@@ -262,7 +262,7 @@ class FaceDetectionWorker:
             try:
                 logger.info(
                     f"Publishing face detection result for task {
-                        message.task_id}"
+                    message.task_id}"
                 )
                 message_id = pubsub_service.publish_face_detection_result(result)
                 logger.info(f"✅ Face detection result published with message_id: {message_id}")
@@ -432,11 +432,11 @@ class FaceDetectionWorker:
             raise
 
     def _upload_face_avatars(
-        self,
-        detection_result: dict,
-        task_id: str,
-        s3_config: dict = None,
-        task_temp_dir: str = None,
+            self,
+            detection_result: dict,
+            task_id: str,
+            s3_config: dict = None,
+            task_temp_dir: str = None,
     ) -> Dict[str, List[str]]:
         """Upload face avatars and images to S3 and return URLs"""
         output_data = {
@@ -540,9 +540,9 @@ def main():
         logger.error("Worker is unhealthy, cannot start")
         logger.error(
             f"Health check error: {
-                health_status.get(
-                    'error',
-                    'Unknown error')}"
+            health_status.get(
+                'error',
+                'Unknown error')}"
         )
         return
     elif health_status["status"] == "degraded":
@@ -552,8 +552,8 @@ def main():
             if not model_info["available"] or not model_info["valid"]:
                 logger.warning(
                     f"Model {model_name}: available={
-                        model_info['available']}, valid={
-                        model_info['valid']}"
+                    model_info['available']}, valid={
+                    model_info['valid']}"
                 )
 
     def message_handler(message_data):

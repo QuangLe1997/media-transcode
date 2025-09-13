@@ -55,10 +55,10 @@ class MediaDetectionService:
 
     @classmethod
     def detect_media_type(
-        cls,
-        filename: Optional[str] = None,
-        content_type: Optional[str] = None,
-        url: Optional[str] = None,
+            cls,
+            filename: Optional[str] = None,
+            content_type: Optional[str] = None,
+            url: Optional[str] = None,
     ) -> str:
         """
         Detect media type from filename, content type, or URL
@@ -112,7 +112,7 @@ class MediaDetectionService:
 
     @classmethod
     def filter_profiles_by_input_type(
-        cls, profiles: List[TranscodeProfile], media_type: str
+            cls, profiles: List[TranscodeProfile], media_type: str
     ) -> Tuple[List[TranscodeProfile], List[str]]:
         """
         Filter profiles based on detected media type
@@ -140,34 +140,34 @@ class MediaDetectionService:
                 filtered_profiles.append(profile)
                 logger.debug(
                     f"Profile {
-                        profile.id_profile} has no input_type, including"
+                    profile.id_profile} has no input_type, including"
                 )
             elif profile_input_type == media_type:
                 # Input type matches, include this profile
                 filtered_profiles.append(profile)
                 logger.debug(
                     f"Profile {
-                        profile.id_profile} matches input_type: {media_type}"
+                    profile.id_profile} matches input_type: {media_type}"
                 )
             else:
                 # Input type doesn't match, skip this profile
                 skipped_profiles.append(profile.id_profile)
                 logger.info(
                     f"Skipping profile {
-                        profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
+                    profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
                 )
 
         logger.info(
             f"Filtered {
-                len(filtered_profiles)} profiles for {media_type} input, skipped {
-                len(skipped_profiles)} profiles"
+            len(filtered_profiles)} profiles for {media_type} input, skipped {
+            len(skipped_profiles)} profiles"
         )
 
         return filtered_profiles, skipped_profiles
 
     @classmethod
     def get_profile_summary(
-        cls, original_count: int, filtered_count: int, skipped_profiles: List[str], media_type: str
+            cls, original_count: int, filtered_count: int, skipped_profiles: List[str], media_type: str
     ) -> dict:
         """Get filtering summary for logging/response"""
         return {

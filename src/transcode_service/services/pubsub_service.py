@@ -36,8 +36,8 @@ class PubSubService:
 
         # Check if credentials paths are empty
         if (
-            not settings.pubsub_publisher_credentials_path
-            or not settings.pubsub_subscriber_credentials_path
+                not settings.pubsub_publisher_credentials_path
+                or not settings.pubsub_subscriber_credentials_path
         ):
             logger.info("PubSub credentials not configured, skipping initialization")
             self._initialized = True
@@ -116,7 +116,6 @@ class PubSubService:
         """Check if PubSub is disabled"""
         return settings.disable_pubsub or not settings.pubsub_publisher_credentials_path
 
-
     def publish_universal_transcode_task(self, message: UniversalTranscodeMessage) -> str:
         """Publish universal transcode task to Pub/Sub v2"""
         try:
@@ -136,7 +135,7 @@ class PubSubService:
             message_id = future.result()
             logger.info(
                 f"Published universal transcode task: {
-                    message.task_id}, message_id: {message_id}"
+                message.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -163,7 +162,7 @@ class PubSubService:
             message_id = future.result()
             logger.info(
                 f"Published universal transcode result: {
-                    result.task_id}, message_id: {message_id}"
+                result.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -231,7 +230,6 @@ class PubSubService:
                 streaming_pull_future.cancel()
                 streaming_pull_future.result()
 
-
     def publish_face_detection_task(self, message: FaceDetectionMessage) -> str:
         """Publish face detection task to Pub/Sub"""
         try:
@@ -239,12 +237,12 @@ class PubSubService:
 
             logger.info(
                 f"🔤 Publishing face detection task to topic: {
-                    self.face_detection_tasks_topic_path}"
+                self.face_detection_tasks_topic_path}"
             )
             logger.info(
                 f"📋 Face detection task details - task_id: {
-                    message.task_id}, source_url: {
-                    message.source_url}"
+                message.task_id}, source_url: {
+                message.source_url}"
             )
             logger.info(f"⚙️ Face detection config: {message.config}")
 
@@ -255,8 +253,8 @@ class PubSubService:
             message_id = future.result()
             logger.info(
                 f"✅ Published face detection task: {
-                    message.task_id}, message_id: {message_id}, topic: {
-                    self.face_detection_tasks_topic_path}"
+                message.task_id}, message_id: {message_id}, topic: {
+                self.face_detection_tasks_topic_path}"
             )
             return message_id
 
@@ -276,7 +274,7 @@ class PubSubService:
             message_id = future.result()
             logger.info(
                 f"Published face detection result: {
-                    result.task_id}, message_id: {message_id}"
+                result.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -310,7 +308,7 @@ class PubSubService:
             return False
 
     def listen_for_face_detection_messages(
-        self, subscription_name: str, callback: Callable, timeout: Optional[float] = None
+            self, subscription_name: str, callback: Callable, timeout: Optional[float] = None
     ):
         """Subscribe to face detection messages"""
         if self._is_disabled():
@@ -331,7 +329,7 @@ class PubSubService:
         logger.info(f"🔗 Full subscription path: {subscription_path}")
         logger.info(
             f"📨 Face detection tasks topic: {
-                self.face_detection_tasks_topic_path}"
+            self.face_detection_tasks_topic_path}"
         )
 
         def message_callback(message):
@@ -341,11 +339,11 @@ class PubSubService:
 
                 logger.info(
                     f"📥 Received face detection task: {
-                        face_detection_message.task_id}"
+                    face_detection_message.task_id}"
                 )
                 logger.info(
                     f"🔗 Source URL: {
-                        face_detection_message.source_url}"
+                    face_detection_message.source_url}"
                 )
                 logger.info(f"⚙️ Config: {face_detection_message.config}")
 
@@ -354,7 +352,7 @@ class PubSubService:
                 message.ack()
                 logger.info(
                     f"✅ Acknowledged face detection message: {
-                        face_detection_message.task_id}"
+                    face_detection_message.task_id}"
                 )
 
             except Exception as e:

@@ -62,15 +62,15 @@ class S3OutputConfig(BaseModel):
             config_data.update(
                 {
                     "bucket": data.get("bucket")
-                    or getattr(fallback_settings, "aws_bucket_name", None),
+                              or getattr(fallback_settings, "aws_bucket_name", None),
                     "aws_access_key_id": data.get("aws_access_key_id")
-                    or getattr(fallback_settings, "aws_access_key_id", None),
+                                         or getattr(fallback_settings, "aws_access_key_id", None),
                     "aws_secret_access_key": data.get("aws_secret_access_key")
-                    or getattr(fallback_settings, "aws_secret_access_key", None),
+                                             or getattr(fallback_settings, "aws_secret_access_key", None),
                     "aws_endpoint_url": data.get("aws_endpoint_url")
-                    or getattr(fallback_settings, "aws_endpoint_url", None),
+                                        or getattr(fallback_settings, "aws_endpoint_url", None),
                     "aws_endpoint_public_url": data.get("aws_endpoint_public_url")
-                    or getattr(fallback_settings, "aws_endpoint_public_url", None),
+                                               or getattr(fallback_settings, "aws_endpoint_public_url", None),
                 }
             )
         else:

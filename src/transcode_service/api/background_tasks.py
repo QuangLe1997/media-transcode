@@ -1,11 +1,13 @@
 import asyncio
 import logging
 
-from ..core.db import TaskCRUD, get_db
+from ..core.db.crud import TaskCRUD
+from ..core.db.database import get_db
 from ..models.schemas import FaceDetectionResult, TaskStatus
 from ..models.schemas_v2 import UniversalTranscodeResult
-from ..services import pubsub_service, s3_service
 from ..services.callback_service import callback_service
+from ..services.pubsub_service import pubsub_service
+from ..services.s3_service import s3_service
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +26,14 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
     """Handle transcode result from Pub/Sub"""
     logger.info(
         f"📥 === BACKGROUND PROCESSING RESULT: task {
-            result.task_id}, profile {
-            result.profile_id} ==="
+        result.task_id}, profile {
+        result.profile_id} ==="
     )
     logger.info(
         f"Result status: {
-            result.status}, URLs count: {
-            len(
-                result.output_urls) if result.output_urls else 0}"
+        result.status}, URLs count: {
+        len(
+            result.output_urls) if result.output_urls else 0}"
     )
 
     try:
@@ -44,16 +46,16 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
 
             logger.info(
                 f"Found task with status: {
-                    task.status}, current outputs: {
-                    len(
-                        task.outputs) if task.outputs else 0}"
+                task.status}, current outputs: {
+                len(
+                    task.outputs) if task.outputs else 0}"
             )
 
             # Ignore results for FAILED tasks (don't reset them)
             if task.status == TaskStatus.FAILED:
                 logger.info(
                     f"Task {
-                        result.task_id} is FAILED, ignoring transcode result"
+                    result.task_id} is FAILED, ignoring transcode result"
                 )
                 return
 
@@ -62,14 +64,14 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                 await TaskCRUD.update_task_status(db, result.task_id, TaskStatus.PROCESSING)
                 logger.info(
                     f"🔄 Task {
-                        result.task_id} status updated to PROCESSING"
+                    result.task_id} status updated to PROCESSING"
                 )
 
             if result.status == "completed" and result.output_urls:
                 logger.info(
                     f"Adding outputs for profile {
-                        result.profile_id}: {
-                        result.output_urls}"
+                    result.profile_id}: {
+                    result.output_urls}"
                 )
                 # Add output URLs and metadata to task
                 await TaskCRUD.add_task_output(
@@ -77,7 +79,7 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                 )
                 logger.info(
                     f"✅ Successfully added outputs for profile {
-                        result.profile_id}"
+                    result.profile_id}"
                 )
 
                 # Check if all profiles are completed - get from task config
@@ -93,7 +95,7 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                 # completion)
                 logger.info(
                     f"🔄 Checking if task {
-                        result.task_id} should be completed..."
+                    result.task_id} should be completed..."
                 )
                 updated_task = await TaskCRUD.mark_task_completed_check_all(db, result.task_id)
 
@@ -106,7 +108,7 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                             s3_service.delete_file(updated_task.source_key)
                             logger.info(
                                 f"Deleted source file: {
-                                    updated_task.source_key}"
+                                updated_task.source_key}"
                             )
                         except Exception as e:
                             logger.error(f"Error deleting source file: {e}")
@@ -116,7 +118,7 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                         await callback_service.retry_callback(updated_task)
                         logger.info(
                             f"Callback sent for completed task: {
-                                updated_task.task_id}"
+                            updated_task.task_id}"
                         )
 
             elif result.status == "failed":
@@ -164,7 +166,7 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                             s3_service.delete_file(updated_task.source_key)
                             logger.info(
                                 f"Deleted source file: {
-                                    updated_task.source_key}"
+                                updated_task.source_key}"
                             )
                         except Exception as e:
                             logger.error(f"Error deleting source file: {e}")
@@ -174,20 +176,20 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                         await callback_service.retry_callback(updated_task)
                         logger.info(
                             f"Callback sent for processed task: {
-                                updated_task.task_id}"
+                            updated_task.task_id}"
                         )
 
             logger.info(
                 f"✅ === BACKGROUND PROCESSING COMPLETE: task {
-                    result.task_id}, profile {
-                    result.profile_id} ==="
+                result.task_id}, profile {
+                result.profile_id} ==="
             )
 
     except Exception as e:
         logger.error(
             f"❌ === BACKGROUND PROCESSING ERROR: task {
-                result.task_id}, profile {
-                result.profile_id} ==="
+            result.task_id}, profile {
+            result.profile_id} ==="
         )
         logger.error(f"Error details: {str(e)}")
 
@@ -196,7 +198,7 @@ async def handle_face_detection_result(result: FaceDetectionResult):
     """Handle face detection result from Pub/Sub"""
     logger.info(
         f"📥 === BACKGROUND PROCESSING FACE DETECTION RESULT: task {
-            result.task_id} ==="
+        result.task_id} ==="
     )
     logger.info(f"Face detection status: {result.status}")
 
@@ -210,15 +212,15 @@ async def handle_face_detection_result(result: FaceDetectionResult):
 
             logger.info(
                 f"Found task with face detection status: {
-                    task.face_detection_status}"
+                task.face_detection_status}"
             )
 
             # Face detection results should not reset existing tasks or delete S3 files
             # They should only update face detection status and results
             logger.info(
                 f"Processing face detection result for existing task {
-                    result.task_id} (status: {
-                    task.status})"
+                result.task_id} (status: {
+                task.status})"
             )
 
             # Update task status to PROCESSING
@@ -226,13 +228,13 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                 await TaskCRUD.update_task_status(db, result.task_id, TaskStatus.PROCESSING)
                 logger.info(
                     f"🔄 Task {
-                        result.task_id} status updated to PROCESSING"
+                    result.task_id} status updated to PROCESSING"
                 )
 
             if result.status == "completed":
                 logger.info(
                     f"Face detection completed for task {
-                        result.task_id}"
+                    result.task_id}"
                 )
                 # Add face detection results to task
                 face_results = {
@@ -245,7 +247,7 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                 }
 
                 await TaskCRUD.add_face_detection_results(db, result.task_id, face_results)
-                logger.info(f"✅ Successfully added face detection results")
+                logger.info("✅ Successfully added face detection results")
 
                 # Check if task is fully completed
                 updated_task = await TaskCRUD.mark_task_completed_check_all(db, result.task_id)
@@ -260,7 +262,7 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                             s3_service.delete_file(updated_task.source_key)
                             logger.info(
                                 f"Deleted source file: {
-                                    updated_task.source_key}"
+                                updated_task.source_key}"
                             )
                         except Exception as e:
                             logger.error(f"Error deleting source file: {e}")
@@ -270,14 +272,14 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                         await callback_service.retry_callback(updated_task)
                         logger.info(
                             f"Callback sent for completed task: {
-                                updated_task.task_id}"
+                            updated_task.task_id}"
                         )
 
             elif result.status == "failed":
                 logger.error(
                     f"Face detection failed for task {
-                        result.task_id}: {
-                        result.error_message}"
+                    result.task_id}: {
+                    result.error_message}"
                 )
                 # Update face detection status to failed
                 await TaskCRUD.update_face_detection_status(
@@ -304,18 +306,18 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                         await callback_service.retry_callback(task)
                         logger.info(
                             f"Callback sent for partially completed task: {
-                                task.task_id}"
+                            task.task_id}"
                         )
 
             logger.info(
                 f"✅ === FACE DETECTION PROCESSING COMPLETE: task {
-                    result.task_id} ==="
+                result.task_id} ==="
             )
 
     except Exception as e:
         logger.error(
             f"❌ === FACE DETECTION PROCESSING ERROR: task {
-                result.task_id} ==="
+            result.task_id} ==="
         )
         logger.error(f"Error details: {str(e)}")
 
@@ -335,13 +337,13 @@ async def face_detection_subscriber():
             if results:
                 logger.info(
                     f"🔄 FACE DETECTION SUBSCRIBER: Processing {
-                        len(results)} face detection results"
+                    len(results)} face detection results"
                 )
                 for result in results:
                     await handle_face_detection_result(result)
                 logger.info(
                     f"✅ FACE DETECTION SUBSCRIBER: Completed processing {
-                        len(results)} face detection results"
+                    len(results)} face detection results"
                 )
 
             # Wait before next pull - shorter if we had results
@@ -376,13 +378,13 @@ async def universal_transcode_result_subscriber():
             if results:
                 logger.info(
                     f"🔄 UNIVERSAL TRANSCODE SUBSCRIBER: Processing {
-                        len(results)} v2 results"
+                    len(results)} v2 results"
                 )
                 for result in results:
                     await handle_universal_transcode_result(result)
                 logger.info(
                     f"✅ UNIVERSAL TRANSCODE SUBSCRIBER: Completed processing {
-                        len(results)} v2 results"
+                    len(results)} v2 results"
                 )
 
             # Wait before next pull

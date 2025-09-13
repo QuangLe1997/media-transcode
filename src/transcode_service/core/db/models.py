@@ -1,7 +1,7 @@
 import uuid
 
-from sqlalchemy import JSON, Column, DateTime
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import JSON, Column, DateTime
 from sqlalchemy import String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func

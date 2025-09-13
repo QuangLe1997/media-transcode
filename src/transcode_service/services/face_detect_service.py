@@ -3,10 +3,12 @@ import logging
 import os
 import statistics
 from base64 import b64encode
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
+import onnxruntime
 from sklearn.cluster import DBSCAN
 from tqdm import tqdm
 
@@ -58,14 +60,14 @@ _face_analyser_instance = None
 
 class Face:
     def __init__(
-        self,
-        bounding_box: BoundingBox,
-        landmarks: Dict[str, np.ndarray],
-        scores: Dict[str, float],
-        embedding: np.ndarray,
-        normed_embedding: np.ndarray,
-        gender: Optional[int] = None,
-        age: Optional[int] = None,
+            self,
+            bounding_box: BoundingBox,
+            landmarks: Dict[str, np.ndarray],
+            scores: Dict[str, float],
+            embedding: np.ndarray,
+            normed_embedding: np.ndarray,
+            gender: Optional[int] = None,
+            age: Optional[int] = None,
     ):
         self.bounding_box = bounding_box
         self.landmarks = landmarks
@@ -78,7 +80,7 @@ class Face:
 
 # Helper functions for face analysis
 def estimate_matrix_by_face_landmark_5(
-    face_landmark_5: FaceLandmark5, warp_template: str, crop_size: Tuple[int, int]
+        face_landmark_5: FaceLandmark5, warp_template: str, crop_size: Tuple[int, int]
 ) -> Matrix:
     normed_warp_template = WARP_TEMPLATES.get(warp_template) * crop_size
     affine_matrix = cv2.estimateAffinePartial2D(
@@ -88,10 +90,10 @@ def estimate_matrix_by_face_landmark_5(
 
 
 def warp_face_by_translation(
-    temp_vision_frame: VisionFrame,
-    translation: Tuple[float, float],
-    scale: float,
-    crop_size: Tuple[int, int],
+        temp_vision_frame: VisionFrame,
+        translation: Tuple[float, float],
+        scale: float,
+        crop_size: Tuple[int, int],
 ) -> Tuple[VisionFrame, Matrix]:
     affine_matrix = np.array([[scale, 0, translation[0]], [0, scale, translation[1]]])
     crop_vision_frame = cv2.warpAffine(temp_vision_frame, affine_matrix, crop_size)
@@ -99,7 +101,7 @@ def warp_face_by_translation(
 
 
 def detect_with_yoloface(
-    vision_frame: VisionFrame, face_detector_size: str, face_detector_score_threshold: float = 0.5
+        vision_frame: VisionFrame, face_detector_size: str, face_detector_score_threshold: float = 0.5
 ) -> Tuple[List[BoundingBox], List[FaceLandmark5], List[Score]]:
     """
     Detect faces using the YOLOFace model
@@ -220,12 +222,6 @@ def get_face_analyser():
     if _face_analyser_instance is not None:
         return _face_analyser_instance
 
-    import os
-    from pathlib import Path
-
-    import numpy as np
-    import onnxruntime
-
     # Suppress ONNX Runtime warnings about CUDA
     onnxruntime.set_default_logger_severity(3)
 
@@ -280,7 +276,7 @@ def get_face_analyser():
     if missing_files:
         logger.warning(
             f"Missing model files after download attempt: {
-                ', '.join(missing_files)}"
+            ', '.join(missing_files)}"
         )
         return _create_mock_face_analyser()
 
@@ -415,13 +411,13 @@ def get_face_analyser():
 
 
 def create_faces(
-    vision_frame: VisionFrame,
-    bounding_box_list: List[BoundingBox],
-    face_landmark_5_list: List[FaceLandmark5],
-    score_list: List[Score],
-    face_detector_score_threshold: float = 0.5,
-    face_landmarker_score_threshold: float = 0.85,
-    iou_threshold: float = 0.4,
+        vision_frame: VisionFrame,
+        bounding_box_list: List[BoundingBox],
+        face_landmark_5_list: List[FaceLandmark5],
+        score_list: List[Score],
+        face_detector_score_threshold: float = 0.5,
+        face_landmarker_score_threshold: float = 0.85,
+        iou_threshold: float = 0.4,
 ) -> List[Face]:
     """
     Create Face objects from detection results without gender and age detection
@@ -560,7 +556,7 @@ def expand_face_landmark_68_from_5(face_landmark_5: FaceLandmark5) -> FaceLandma
 
 
 def detect_face_landmark_68(
-    temp_vision_frame: VisionFrame, bounding_box: BoundingBox
+        temp_vision_frame: VisionFrame, bounding_box: BoundingBox
 ) -> Tuple[FaceLandmark68, Score]:
     """
     Detect 68-point face landmarks
@@ -642,10 +638,10 @@ def convert_face_landmark_68_to_5(face_landmark_68: FaceLandmark68) -> FaceLandm
 
 
 def warp_face_by_face_landmark_5(
-    temp_vision_frame: VisionFrame,
-    face_landmark_5: FaceLandmark5,
-    warp_template: str,
-    crop_size: Tuple[int, int],
+        temp_vision_frame: VisionFrame,
+        face_landmark_5: FaceLandmark5,
+        warp_template: str,
+        crop_size: Tuple[int, int],
 ) -> Tuple[VisionFrame, Matrix]:
     """
     Warp face by 5-point landmarks to align with a standard template
@@ -675,7 +671,7 @@ def warp_face_by_face_landmark_5(
 
 
 def calc_embedding(
-    temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark5
+        temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark5
 ) -> Tuple[Embedding, Embedding]:
     """
     Calculate face embedding for recognition
@@ -746,7 +742,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         if temp_vision_frame.shape[0] <= 0 or temp_vision_frame.shape[1] <= 0:
             logger.warning(
                 f"Invalid frame dimensions: {
-                    temp_vision_frame.shape}"
+                temp_vision_frame.shape}"
             )
             return 1, 30
 
@@ -784,7 +780,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         if crop_vision_frame is None or crop_vision_frame.shape != (96, 96, 3):
             logger.warning(
                 f"Invalid cropped frame shape: {
-                    crop_vision_frame.shape if crop_vision_frame is not None else None}"
+                crop_vision_frame.shape if crop_vision_frame is not None else None}"
             )
             return 1, 30
 
@@ -796,7 +792,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         if crop_vision_frame.shape != (1, 3, 96, 96):
             logger.warning(
                 f"Invalid preprocessed frame shape: {
-                    crop_vision_frame.shape}"
+                crop_vision_frame.shape}"
             )
             return 1, 30
 
@@ -988,7 +984,7 @@ class FaceProcessor:
         # issues
         logger.info(
             f"Processing {
-                len(frames_to_process)} frames with face detection"
+            len(frames_to_process)} frames with face detection"
         )
 
         # Calculate optimal batch size based on available memory
@@ -1012,11 +1008,11 @@ class FaceProcessor:
         logger.info("Processing frames sequentially for optimal GPU utilization")
 
         for i, (frame, idx) in enumerate(
-            tqdm(
-                zip(frames_to_process, frame_indices),
-                total=len(frames_to_process),
-                desc="Detecting faces",
-            )
+                tqdm(
+                    zip(frames_to_process, frame_indices),
+                    total=len(frames_to_process),
+                    desc="Detecting faces",
+                )
         ):
             try:
                 frame_faces = self._process_single_frame(frame, idx)
@@ -1037,7 +1033,7 @@ class FaceProcessor:
         processed_frames = len(set(f["frame_number"] for f in faces_with_metadata))
         logger.info(
             f"Found {
-                len(faces_with_metadata)} faces in {processed_frames} frames"
+            len(faces_with_metadata)} faces in {processed_frames} frames"
         )
 
         # Continue with clustering and result creation
@@ -1219,9 +1215,9 @@ class FaceProcessor:
 
         for face_data in group:
             quality_score = (
-                face_data["face"].scores["detector"] * 0.4
-                + face_data["face"].scores["landmarker"] * 0.3
-                + face_data["quality"] * 0.3
+                    face_data["face"].scores["detector"] * 0.4
+                    + face_data["face"].scores["landmarker"] * 0.3
+                    + face_data["quality"] * 0.3
             )
 
             if quality_score > best_score:
@@ -1253,7 +1249,7 @@ class FaceProcessor:
                 statistics.stdev([f["face"].age for f in group]) if len(group) > 1 else 0
             ),
             "temporal_spread": max(f["frame_number"] for f in group)
-            - min(f["frame_number"] for f in group),
+                               - min(f["frame_number"] for f in group),
             # Pose variation metrics
             "pose_yaw_variance": statistics.stdev(yaws) if len(yaws) > 1 else 0,
             "pose_pitch_variance": statistics.stdev(pitches) if len(pitches) > 1 else 0,
@@ -1273,11 +1269,11 @@ class FaceProcessor:
         }
 
     def get_face_avatar(
-        self,
-        frame: np.ndarray,
-        bbox,
-        size: Optional[int] = None,
-        padding_percent: Optional[float] = None,
+            self,
+            frame: np.ndarray,
+            bbox,
+            size: Optional[int] = None,
+            padding_percent: Optional[float] = None,
     ) -> str:
         """
         Extract face region as square and convert to base64
@@ -1325,7 +1321,7 @@ class FaceProcessor:
                 # Crop to square from center
                 start_y = (face_img.shape[0] - min_dim) // 2
                 start_x = (face_img.shape[1] - min_dim) // 2
-                face_img = face_img[start_y : start_y + min_dim, start_x : start_x + min_dim]
+                face_img = face_img[start_y: start_y + min_dim, start_x: start_x + min_dim]
 
             # Resize to final size
             face_img = cv2.resize(face_img, (size, size))
@@ -1342,12 +1338,12 @@ class FaceProcessor:
             return ""
 
     def save_face_images(
-        self,
-        frame: np.ndarray,
-        bbox,
-        group_name: str,
-        save_avatar: bool = True,
-        save_full: bool = True,
+            self,
+            frame: np.ndarray,
+            bbox,
+            group_name: str,
+            save_avatar: bool = True,
+            save_full: bool = True,
     ) -> Dict[str, str]:
         """
         Save face avatar and full face image to disk
@@ -1432,7 +1428,7 @@ class FaceProcessor:
         return paths
 
     def _create_result(
-        self, video_path: str, groups: List[List[Dict]], processed_frames: int
+            self, video_path: str, groups: List[List[Dict]], processed_frames: int
     ) -> Dict:
         """Create final result dictionary with face groups"""
         groups_data = []
@@ -1487,19 +1483,19 @@ class FaceProcessor:
         if len(groups_data_filtered) != len(groups_data):
             logger.info(
                 f"Filtered groups: {
-                    len(groups_data) -
-                    len(groups_data_filtered)}"
+                len(groups_data) -
+                len(groups_data_filtered)}"
             )
             is_change_index = True
 
         return {"is_change_index": is_change_index, "faces": groups_data_filtered}
 
     def _filter_quality_groups(
-        self,
-        groups: List[dict],
-        processed_frames: int,
-        min_appearance_ratio: Optional[float] = None,
-        min_frontality: Optional[float] = None,
+            self,
+            groups: List[dict],
+            processed_frames: int,
+            min_appearance_ratio: Optional[float] = None,
+            min_frontality: Optional[float] = None,
     ) -> List[dict]:
         """
         Filter groups based on quality metrics with configurable thresholds
@@ -1616,7 +1612,7 @@ class FaceProcessor:
             return {"yaw": 0.0, "pitch": 0.0, "frontality_score": 1.0}
 
     def _calculate_pose_quality_score(
-        self, frontality_scores: List[float], yaw_variance: float, pitch_variance: float
+            self, frontality_scores: List[float], yaw_variance: float, pitch_variance: float
     ) -> float:
         """
         Calculate overall pose quality score for group

@@ -86,9 +86,9 @@ class S3Service:
             # Determine content type if not provided
             if not content_type:
                 content_type = (
-                    self._get_content_type_by_extension(key)
-                    or mimetypes.guess_type(key)[0]
-                    or "application/octet-stream"
+                        self._get_content_type_by_extension(key)
+                        or mimetypes.guess_type(key)[0]
+                        or "application/octet-stream"
                 )
 
             # Set content disposition for proper browser handling
@@ -127,11 +127,11 @@ class S3Service:
             raise
 
     def upload_file_from_path(
-        self,
-        file_path: str,
-        key: str,
-        custom_base_folder: str = None,
-        skip_base_folder: bool = False,
+            self,
+            file_path: str,
+            key: str,
+            custom_base_folder: str = None,
+            skip_base_folder: bool = False,
     ) -> str:
         """Upload file from local path to S3"""
         try:
@@ -142,9 +142,9 @@ class S3Service:
 
             # Determine content type
             content_type = (
-                self._get_content_type_by_extension(file_path)
-                or mimetypes.guess_type(file_path)[0]
-                or "application/octet-stream"
+                    self._get_content_type_by_extension(file_path)
+                    or mimetypes.guess_type(file_path)[0]
+                    or "application/octet-stream"
             )
 
             # Set content disposition for proper browser handling
@@ -307,7 +307,7 @@ class S3Service:
                 try:
                     logger.info(
                         f"Downloading from URL (attempt {
-                            attempt + 1}): {url}"
+                        attempt + 1}): {url}"
                     )
 
                     response = requests.get(url, stream=True, timeout=timeout)
@@ -324,10 +324,10 @@ class S3Service:
                 except Exception as e:
                     logger.warning(
                         f"Download attempt {
-                            attempt + 1} failed: {e}"
+                        attempt + 1} failed: {e}"
                     )
                     if attempt < max_retries - 1:
-                        delay = 2 * (2**attempt)  # 2s, 4s, 8s
+                        delay = 2 * (2 ** attempt)  # 2s, 4s, 8s
                         logger.info(f"Waiting {delay} seconds before retry...")
                         time.sleep(delay)
                     else:
@@ -338,7 +338,7 @@ class S3Service:
             return False
 
     def download_file(
-        self, bucket_name_or_key: str, key_or_local_path: str, local_path: str = None
+            self, bucket_name_or_key: str, key_or_local_path: str, local_path: str = None
     ) -> bool:
         """Download file from S3 to local path"""
         try:
@@ -398,13 +398,13 @@ class S3Service:
             return False
 
     def generate_output_key(
-        self,
-        task_id: str,
-        profile_id: str,
-        filename: str,
-        s3_config: dict = None,
-        prefix: str = None,
-        face_type: str = None,
+            self,
+            task_id: str,
+            profile_id: str,
+            filename: str,
+            s3_config: dict = None,
+            prefix: str = None,
+            face_type: str = None,
     ) -> str:
         """Generate output key based on folder structure config"""
         if s3_config is None:
