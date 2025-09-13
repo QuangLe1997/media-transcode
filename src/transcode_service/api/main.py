@@ -18,7 +18,7 @@ from ..core.config import settings
 from ..core.db.crud import TaskCRUD, ConfigTemplateCRUD
 from ..core.db.database import get_db, init_db
 from ..core.db.models import TranscodeTaskDB
-from ..models.schemas import CallbackAuth, ConfigTemplateRequest, FaceDetectionMessage, TaskStatus
+from ..models.schemas_v2 import CallbackAuth, ConfigTemplateRequest, FaceDetectionMessage, TaskStatus
 from ..models.schemas_v2 import (
     S3OutputConfig,
     UniversalConverterConfig,
@@ -1156,7 +1156,7 @@ async def retry_task(
         face_detection_published = False
         if config.face_detection_config and getattr(config.face_detection_config, "enabled", False):
             try:
-                from ..models.schemas import FaceDetectionMessage
+                from ..models.schemas_v2 import FaceDetectionMessage
 
                 logger.info(f"RETRY: Publishing face detection task for {task_id}")
 

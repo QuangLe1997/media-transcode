@@ -11,7 +11,9 @@ import logging
 import os
 import signal
 import sys
+from pathlib import Path
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 from google.cloud import pubsub_v1
 
@@ -30,6 +32,7 @@ from ..models.schemas_v2 import (
 )
 from ..services.media_detection_service import media_detection_service
 from ..services.pubsub_service import pubsub_service
+from ..services.s3_service import s3_service
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +207,36 @@ class PubSubTaskListenerV2:
                         pubsub_topic=pubsub_topic,
                     )
 
+                # Download source file to shared volume ONCE
+                shared_file_path = None
+                try:
+                    # Create shared volume path from settings
+                    shared_volume_dir = settings.shared_volume_path
+                    os.makedirs(shared_volume_dir, exist_ok=True)
+
+                    # Generate filename from URL
+                    parsed_url = urlparse(media_url)
+                    file_extension = Path(parsed_url.path).suffix or ""
+                    if not file_extension:
+                        # Try to detect from content-type or default to .tmp
+                        file_extension = ".tmp"
+
+                    shared_filename = f"{task_id}_{detected_media_type}{file_extension}"
+                    shared_file_path = os.path.join(shared_volume_dir, shared_filename)
+
+                    logger.info(f"📥 Downloading source file to shared volume: {shared_file_path}")
+
+                    # Download to shared volume
+                    if not s3_service.download_file_from_url(media_url, shared_file_path):
+                        raise Exception(f"Failed to download source file to shared volume: {media_url}")
+
+                    logger.info(f"✅ Downloaded to shared volume: {shared_file_path}")
+
+                except Exception as e:
+                    logger.error(f"❌ Failed to download to shared volume: {e}")
+                    # Fallback: use URL directly in messages
+                    shared_file_path = None
+
                 # Publish UniversalTranscodeMessage for each profile
                 published_count = 0
                 failed_profiles = []
@@ -220,13 +253,27 @@ class PubSubTaskListenerV2:
                         profile.id_profile}"
                         logger.info(f"Publishing v2 {profile_info} for task {task_id}")
 
-                        message = UniversalTranscodeMessage(
-                            task_id=task_id,
-                            source_url=media_url,
-                            profile=profile,
-                            s3_output_config=enhanced_s3_config,
-                            source_key=None,
-                        )
+                        # Use shared file path if available, otherwise fallback to URL
+                        if shared_file_path:
+                            message = UniversalTranscodeMessage(
+                                task_id=task_id,
+                                source_url=None,
+                                source_path=shared_file_path,
+                                profile=profile,
+                                s3_output_config=enhanced_s3_config,
+                                source_key=None,
+                            )
+                            logger.info(f"📁 Using shared file path: {shared_file_path}")
+                        else:
+                            message = UniversalTranscodeMessage(
+                                task_id=task_id,
+                                source_url=media_url,
+                                source_path=None,
+                                profile=profile,
+                                s3_output_config=enhanced_s3_config,
+                                source_key=None,
+                            )
+                            logger.info(f"🔗 Using source URL: {media_url}")
 
                         # Publish to v2 topic (need to implement this in
                         # pubsub_service)
@@ -265,9 +312,23 @@ class PubSubTaskListenerV2:
                         face_detection_config_copy = dict(face_config)
                         face_detection_config_copy["s3_output_config"] = enhanced_s3_config
 
-                        face_message = FaceDetectionMessage(
-                            task_id=task_id, source_url=media_url, config=face_detection_config_copy
-                        )
+                        # Use shared file path if available, otherwise URL
+                        if shared_file_path:
+                            face_message = FaceDetectionMessage(
+                                task_id=task_id,
+                                source_path=shared_file_path,
+                                source_url=None,
+                                config=face_detection_config_copy
+                            )
+                            logger.info(f"📁 Face detection using shared file: {shared_file_path}")
+                        else:
+                            face_message = FaceDetectionMessage(
+                                task_id=task_id,
+                                source_url=media_url,
+                                source_path=None,
+                                config=face_detection_config_copy
+                            )
+                            logger.info(f"🔗 Face detection using URL: {media_url}")
 
                         face_message_id = pubsub_service.publish_face_detection_task(face_message)
                         logger.info(

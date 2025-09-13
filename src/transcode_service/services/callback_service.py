@@ -5,7 +5,7 @@ import logging
 import httpx
 
 from ..core.db.models import TranscodeTaskDB
-from ..models.schemas import TranscodeConfig
+from ..models.schemas_v2 import TranscodeConfig
 
 # Import will be done locally where needed to avoid circular import
 

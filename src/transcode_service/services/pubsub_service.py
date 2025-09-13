@@ -7,7 +7,7 @@ from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 
 from ..core.config import settings
-from ..models.schemas import (
+from ..models.schemas_v2 import (
     FaceDetectionMessage,
     FaceDetectionResult,
 )

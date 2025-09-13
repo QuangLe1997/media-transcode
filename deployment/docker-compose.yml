@@ -47,6 +47,9 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONHASHSEED=random
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -76,6 +79,7 @@ services:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
       - /tmp/transcode:/tmp/transcode  # Shared temp directory
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
 
     # Resource limits
@@ -123,6 +127,9 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONHASHSEED=random
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -152,6 +159,7 @@ services:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
       - /tmp/transcode:/tmp/transcode  # Shared temp directory
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     # GPU runtime (will be ignored if not available)
     # GPU runtime for face detection
@@ -191,6 +199,9 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONHASHSEED=random
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -224,6 +235,7 @@ services:
       - ./logs:/app/logs
       - ./models_faces:/app/models_faces  # Mount face detection models (read-write for auto-download)
       - /tmp/transcode:/tmp/transcode  # Shared temp directory
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     # GPU runtime for face detection
     runtime: nvidia
@@ -258,6 +270,9 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONHASHSEED=random
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -290,6 +305,7 @@ services:
     volumes:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     # Resource limits
     deploy:
@@ -330,4 +346,6 @@ services:
 
 volumes:
   postgres_data:
+  shared-media:
+    driver: local
 

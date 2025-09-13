@@ -2,6 +2,7 @@ import logging
 import mimetypes
 import os
 from typing import BinaryIO, Optional
+from urllib.parse import urlparse
 
 import boto3
 from botocore.exceptions import ClientError
@@ -449,6 +450,34 @@ class S3Service:
         key = parts[1]
 
         return bucket_name, key
+
+    def extract_s3_key_from_url(self, url: str) -> Optional[str]:
+        """Extract S3 key from public URL or S3 URL"""
+        try:
+            if url.startswith("s3://"):
+                # S3 URL format: s3://bucket/key
+                _, key = self.parse_s3_url(url)
+                return key
+
+            # Public URL format - extract key from path
+            parsed = urlparse(url)
+            path = parsed.path
+
+            # Remove leading slash
+            if path.startswith("/"):
+                path = path[1:]
+
+            # If using base folder, remove it from the beginning
+            if self.base_folder and path.startswith(f"{self.base_folder}/"):
+                key = path[len(f"{self.base_folder}/"):]
+                return key
+
+            # Return path as-is if no base folder
+            return path if path else None
+
+        except Exception as e:
+            logger.warning(f"Failed to extract S3 key from URL {url}: {e}")
+            return None
 
 
 s3_service = S3Service()

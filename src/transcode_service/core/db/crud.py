@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import ConfigTemplateDB, TranscodeTaskDB
-from ...models.schemas import (
+from ...models.schemas_v2 import (
     ConfigTemplateRequest,
     ConfigTemplateResponse,
     MediaMetadata,
@@ -178,6 +178,16 @@ class TaskCRUD:
 
         query = query.order_by(TranscodeTaskDB.created_at.desc()).limit(limit).offset(offset)
 
+        result = await db.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_old_tasks(db: AsyncSession, cutoff_time: datetime) -> List[TranscodeTaskDB]:
+        """Get tasks older than cutoff_time that are not DELETED"""
+        query = select(TranscodeTaskDB).where(
+            TranscodeTaskDB.created_at < cutoff_time,
+            TranscodeTaskDB.status != TaskStatus.DELETED
+        ).order_by(TranscodeTaskDB.created_at.asc())
         result = await db.execute(query)
         return result.scalars().all()
 

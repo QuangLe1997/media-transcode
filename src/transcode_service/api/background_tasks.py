@@ -1,9 +1,10 @@
 import asyncio
 import logging
+from datetime import datetime, timezone, timedelta
 
 from ..core.db.crud import TaskCRUD
 from ..core.db.database import get_db
-from ..models.schemas import FaceDetectionResult, TaskStatus
+from ..models.schemas_v2 import FaceDetectionResult, TaskStatus
 from ..models.schemas_v2 import UniversalTranscodeResult
 from ..services.callback_service import callback_service
 from ..services.pubsub_service import pubsub_service
@@ -101,17 +102,17 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
 
                 if updated_task and updated_task.status == TaskStatus.COMPLETED:
                     logger.info(f"🎉 Task fully completed: {result.task_id}")
-                    # Delete source file only if it was uploaded (has
-                    # source_key)
+
+                    # Delete source file only if it was uploaded (has source_key)
                     if updated_task.source_key:
                         try:
                             s3_service.delete_file(updated_task.source_key)
-                            logger.info(
-                                f"Deleted source file: {
-                                updated_task.source_key}"
-                            )
+                            logger.info(f"Deleted source file: {updated_task.source_key}")
                         except Exception as e:
                             logger.error(f"Error deleting source file: {e}")
+
+                    # Cleanup shared volume file if all profiles are done
+                    await _cleanup_shared_file(updated_task)
 
                     # Send callback if configured
                     if updated_task.callback_url:
@@ -396,13 +397,151 @@ async def universal_transcode_result_subscriber():
             await asyncio.sleep(10)
 
 
+async def _cleanup_shared_file(task):
+    """Cleanup shared volume file after task completion"""
+    try:
+        import os
+        from ..core.config import settings
+        from pathlib import Path
+        from urllib.parse import urlparse
+
+        # Generate the expected shared file path
+        task_id = task.task_id
+
+        # Try to determine media type from URL (if available)
+        source_url = task.source_url
+        if source_url:
+            parsed_url = urlparse(source_url)
+            file_extension = Path(parsed_url.path).suffix or ""
+            if not file_extension:
+                file_extension = ".tmp"
+        else:
+            file_extension = ".tmp"
+
+        # Try different possible media types
+        possible_types = ["video", "image", "unknown"]
+        shared_volume_dir = settings.shared_volume_path
+
+        for media_type in possible_types:
+            shared_filename = f"{task_id}_{media_type}{file_extension}"
+            shared_file_path = os.path.join(shared_volume_dir, shared_filename)
+
+            if os.path.exists(shared_file_path):
+                try:
+                    os.remove(shared_file_path)
+                    logger.info(f"🗑️ Cleaned up shared file: {shared_file_path}")
+                    return  # Found and cleaned up
+                except Exception as e:
+                    logger.error(f"Error cleaning up shared file {shared_file_path}: {e}")
+
+        logger.info(f"🔍 No shared file found to cleanup for task {task_id}")
+
+    except Exception as e:
+        logger.error(f"Error in shared file cleanup: {e}")
+
+
+async def cleanup_old_tasks():
+    """Background task to cleanup old tasks every 15 minutes"""
+    logger.info("Starting task cleanup background service")
+
+    while True:
+        try:
+            logger.info("🧹 Running scheduled task cleanup...")
+
+            # Calculate cutoff time (30 minutes ago)
+            cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+            async for db in get_db():
+                # Get old tasks (created more than 30 minutes ago)
+                old_tasks = await TaskCRUD.get_old_tasks(db, cutoff_time)
+
+                if not old_tasks:
+                    logger.info("No old tasks found for cleanup")
+                    break
+
+                logger.info(f"Found {len(old_tasks)} old tasks for cleanup")
+
+                for task in old_tasks:
+                    try:
+                        task_id = task.task_id
+                        logger.info(f"🗑️ Cleaning up old task: {task_id}")
+
+                        # Delete S3 files
+                        deleted_s3_files = 0
+
+                        # Delete source file if uploaded
+                        if task.source_key:
+                            try:
+                                s3_service.delete_file(task.source_key)
+                                deleted_s3_files += 1
+                                logger.info(f"   ✅ Deleted source file: {task.source_key}")
+                            except Exception as e:
+                                logger.warning(f"   ⚠️ Failed to delete source file {task.source_key}: {e}")
+
+                        # Delete output files
+                        if task.outputs:
+                            for output in task.outputs:
+                                if isinstance(output, dict) and 'urls' in output:
+                                    urls = output['urls']
+                                    if isinstance(urls, list):
+                                        for url in urls:
+                                            try:
+                                                # Extract S3 key from URL
+                                                s3_key = s3_service.extract_s3_key_from_url(url)
+                                                if s3_key:
+                                                    s3_service.delete_file(s3_key)
+                                                    deleted_s3_files += 1
+                                                    logger.info(f"   ✅ Deleted output file: {s3_key}")
+                                            except Exception as e:
+                                                logger.warning(f"   ⚠️ Failed to delete output file {url}: {e}")
+
+                        # Delete face detection outputs
+                        if task.face_detection_results and isinstance(task.face_detection_results, dict):
+                            face_outputs = task.face_detection_results.get('output_urls', [])
+                            if isinstance(face_outputs, list):
+                                for url in face_outputs:
+                                    try:
+                                        s3_key = s3_service.extract_s3_key_from_url(url)
+                                        if s3_key:
+                                            s3_service.delete_file(s3_key)
+                                            deleted_s3_files += 1
+                                            logger.info(f"   ✅ Deleted face detection file: {s3_key}")
+                                    except Exception as e:
+                                        logger.warning(f"   ⚠️ Failed to delete face detection file {url}: {e}")
+
+                        # Cleanup shared volume file
+                        await _cleanup_shared_file(task)
+
+                        # Mark task as deleted
+                        await TaskCRUD.update_task_status(
+                            db, task_id, TaskStatus.DELETED,
+                            error_message=f"Auto-deleted after 30 minutes. Cleaned up {deleted_s3_files} S3 files."
+                        )
+
+                        logger.info(f"   ✅ Task {task_id} marked as DELETED (cleaned {deleted_s3_files} S3 files)")
+
+                    except Exception as e:
+                        logger.error(f"   ❌ Failed to cleanup task {task.task_id}: {e}")
+
+                await db.commit()
+                logger.info(f"🧹 Task cleanup completed: processed {len(old_tasks)} tasks")
+                break
+
+        except Exception as e:
+            logger.error(f"Error in task cleanup service: {e}")
+
+        # Wait 15 minutes before next cleanup
+        await asyncio.sleep(15 * 60)
+
+
 async def result_subscriber():
     """Background task to subscribe to all result types"""
     logger.info("Starting result subscriber background task")
 
-    # Run v2 and face detection subscribers only (v1 disabled)
+    # Run v2, face detection subscribers, and cleanup task
     await asyncio.gather(
         universal_transcode_result_subscriber(),  # v2 results only
         face_detection_subscriber(),  # face detection results
+        cleanup_old_tasks(),  # scheduled cleanup every 15 minutes
         return_exceptions=True,
     )

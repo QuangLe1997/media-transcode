@@ -81,6 +81,7 @@ class Settings(BaseSettings):
 
     # Storage
     temp_storage_path: str = "/tmp/transcode"
+    shared_volume_path: str = "/shared/media"
 
     # Legacy attribute names for backward compatibility
     @property

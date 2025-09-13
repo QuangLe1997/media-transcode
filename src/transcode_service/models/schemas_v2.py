@@ -10,6 +10,7 @@ class TaskStatus(str, Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    DELETED = "deleted"
 
 
 class OutputFormat(str, Enum):
@@ -22,12 +23,16 @@ class OutputFormat(str, Enum):
 
 
 class S3OutputConfig(BaseModel):
-    """Same as original S3OutputConfig"""
+    """Configuration for S3 output storage"""
 
     # Core S3 configuration
     bucket: Optional[str] = None  # If None, uses default from settings
     base_path: str = "transcode-outputs"
     folder_structure: str = "{task_id}/profiles/{profile_id}"
+
+    # Face detection specific paths
+    face_avatar_path: str = "{task_id}/faces/avatars"
+    face_image_path: str = "{task_id}/faces/images"
 
     # AWS credentials override (optional - falls back to settings)
     aws_access_key_id: Optional[str] = None
@@ -54,6 +59,8 @@ class S3OutputConfig(BaseModel):
             {
                 "base_path": data.get("base_path", "transcode-outputs"),
                 "folder_structure": data.get("folder_structure", "{task_id}/profiles/{profile_id}"),
+                "face_avatar_path": data.get("face_avatar_path", "{task_id}/faces/avatars"),
+                "face_image_path": data.get("face_image_path", "{task_id}/faces/images"),
             }
         )
 
@@ -194,10 +201,18 @@ class UniversalTranscodeMessage(BaseModel):
     """Message for UniversalMediaConverter processing"""
 
     task_id: str
-    source_url: str
+    source_url: Optional[str] = None  # For downloading from URL
+    source_path: Optional[str] = None  # For shared volume file path
     profile: UniversalTranscodeProfile
     s3_output_config: S3OutputConfig
     source_key: Optional[str] = None
+
+    def model_post_init(self, __context) -> None:
+        """Validate that either source_url or source_path is provided"""
+        if not self.source_url and not self.source_path:
+            raise ValueError("Either source_url or source_path must be provided")
+        if self.source_url and self.source_path:
+            raise ValueError("Only one of source_url or source_path should be provided")
 
 
 class MediaMetadata(BaseModel):
@@ -235,3 +250,106 @@ class CallbackAuth(BaseModel):
     username: Optional[str] = Field(default=None, description="Username for basic auth")
     password: Optional[str] = Field(default=None, description="Password for basic auth")
     headers: Optional[Dict[str, str]] = Field(default=None, description="Custom headers")
+
+
+# ============ Additional classes merged from schemas.py (v1) ============
+
+class OutputType(str, Enum):
+    """Legacy output types from v1"""
+    VIDEO = "video"
+    IMAGE = "image"
+    GIF = "gif"
+    WEBP = "webp"
+
+
+class FaceDetectionConfig(BaseModel):
+    """Configuration for face detection"""
+    enabled: bool = Field(default=False, description="Enable face detection for this task")
+    similarity_threshold: float = Field(
+        default=0.6, description="Similarity threshold for face clustering"
+    )
+    min_faces_in_group: int = Field(default=1, description="Minimum faces required for a group")
+    sample_interval: int = Field(default=5, description="Process every Nth frame")
+    ignore_frames: List[int] = Field(default=[], description="List of frame numbers to ignore")
+    ignore_ranges: List[List[int]] = Field(default=[], description="List of frame ranges to ignore")
+    start_frame: int = Field(default=0, description="Frame number to start processing from")
+    end_frame: Optional[int] = Field(default=None, description="Frame number to end processing at")
+    face_detector_size: str = Field(default="640x640", description="Size for face detector input")
+    face_detector_score_threshold: float = Field(
+        default=0.5, description="Confidence threshold for detection"
+    )
+    face_landmarker_score_threshold: float = Field(
+        default=0.85, description="Threshold for landmarker"
+    )
+    iou_threshold: float = Field(default=0.4, description="IOU threshold for NMS")
+    min_appearance_ratio: float = Field(
+        default=0.25, description="Min ratio of group size to frames"
+    )
+    min_frontality: float = Field(default=0.2, description="Minimum acceptable frontality")
+    avatar_size: int = Field(default=112, description="Size of face avatar")
+    avatar_padding: float = Field(default=0.07, description="Padding percentage for face avatar")
+    avatar_quality: int = Field(default=85, description="JPEG quality for avatars")
+    save_faces: bool = Field(default=True, description="Save face avatars to S3")
+    max_workers: int = Field(default=4, description="Maximum worker threads")
+
+
+class FaceDetectionMessage(BaseModel):
+    """Message for face detection tasks"""
+    task_id: str
+    source_url: Optional[str] = None  # For downloading from URL
+    source_path: Optional[str] = None  # For shared volume file path
+    config: Dict
+
+    def model_post_init(self, __context) -> None:
+        """Validate that either source_url or source_path is provided"""
+        if not self.source_url and not self.source_path:
+            raise ValueError("Either source_url or source_path must be provided")
+        if self.source_url and self.source_path:
+            raise ValueError("Only one of source_url or source_path should be provided")
+
+
+class FaceDetectionResult(BaseModel):
+    """Result of face detection task"""
+    task_id: str
+    status: str
+    faces: Optional[List[Dict]] = None
+    is_change_index: Optional[bool] = None
+    output_urls: Optional[List[str]] = None
+    error_message: Optional[str] = None
+    completed_at: datetime
+
+
+# ============ Config Template Classes (for v1 compatibility) ============
+
+class TranscodeProfile(BaseModel):
+    """Legacy v1 transcode profile - kept for backward compatibility"""
+    id_profile: str
+    output_type: OutputType
+    input_type: Optional[str] = None
+    ffmpeg_args: Optional[List[str]] = None
+    video_config: Optional[Dict] = None
+    image_config: Optional[Dict] = None
+    gif_config: Optional[Dict] = None
+    webp_config: Optional[Dict] = None
+
+
+class TranscodeConfig(BaseModel):
+    """Legacy v1 transcode configuration"""
+    profiles: List[TranscodeProfile]
+    s3_output_config: S3OutputConfig
+    face_detection_config: Optional[FaceDetectionConfig] = None
+
+
+class ConfigTemplateRequest(BaseModel):
+    """Request to create/update config template"""
+    name: str
+    config: List[TranscodeProfile]
+
+
+class ConfigTemplateResponse(BaseModel):
+    """Response for config template operations"""
+    template_id: str
+    name: str
+    config: List[TranscodeProfile]
+    created_at: datetime
+    updated_at: Optional[datetime] = None

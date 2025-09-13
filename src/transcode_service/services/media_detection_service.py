@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
-from ..models.schemas import TranscodeProfile
+from ..models.schemas_v2 import TranscodeProfile
 
 logger = logging.getLogger(__name__)
 

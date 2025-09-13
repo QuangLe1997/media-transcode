@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
+from ..models.schemas_v2 import FaceDetectionMessage, FaceDetectionResult
 from ..services.face_detect_service import FaceProcessor
 from ..services.model_downloader import ensure_face_detection_models
 from ..services.pubsub_service import pubsub_service
@@ -193,15 +193,25 @@ class FaceDetectionWorker:
             )
             os.makedirs(task_temp_dir, exist_ok=True)
             logger.info(f"Created task-specific temp directory: {task_temp_dir}")
-            # Download input media to task-specific directory
-            logger.info(f"Downloading input media from {message.source_url}")
-            temp_input = self._download_media(message.source_url, message.task_id, task_temp_dir)
+            # Handle input media - use shared path or download
+            if message.source_path:
+                # Use shared volume file directly
+                temp_input = message.source_path
+                logger.info(f"📁 Using shared file: {temp_input}")
 
-            if not temp_input or not os.path.exists(temp_input):
-                raise Exception(
-                    f"Failed to download input media from {
-                    message.source_url}"
-                )
+                # Verify shared file exists
+                if not os.path.exists(temp_input):
+                    raise Exception(f"Shared file not found: {temp_input}")
+
+            elif message.source_url:
+                # Fallback: download from URL
+                logger.info(f"🔗 Downloading input media from {message.source_url}")
+                temp_input = self._download_media(message.source_url, message.task_id, task_temp_dir)
+
+                if not temp_input or not os.path.exists(temp_input):
+                    raise Exception(f"Failed to download input media from {message.source_url}")
+            else:
+                raise Exception("No source URL or source path provided")
 
             # Determine media type
             media_type = self._detect_media_type(temp_input)

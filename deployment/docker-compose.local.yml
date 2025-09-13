@@ -25,6 +25,9 @@ services:
       - FFMPEG_HWACCEL=none
       - FFMPEG_GPU_ENABLED=false
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration (optional for local)
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
@@ -53,6 +56,7 @@ services:
     volumes:
       - /tmp/transcode:/tmp/transcode
       - ../src/transcode_service/key.json:/app/key.json:ro
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     # Health check
     healthcheck:
@@ -89,6 +93,9 @@ services:
       - FFMPEG_HWACCEL=none
       - FFMPEG_GPU_ENABLED=false
       
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
+      
       # AWS S3 Configuration (optional for local)
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
@@ -111,6 +118,7 @@ services:
       - ./logs:/app/logs
       - /tmp/transcode:/tmp/transcode
       - ../src/transcode_service/key.json:/app/key.json:ro
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     deploy:
       resources:
@@ -148,6 +156,9 @@ services:
       # Disable GPU for local development, but enable PubSub with credentials
       - NVIDIA_VISIBLE_DEVICES=
       - NVIDIA_DRIVER_CAPABILITIES=
+      
+      # Shared Volume Configuration
+      - SHARED_VOLUME_PATH=/shared/media
       - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-}
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-}
       - PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${PUBSUB_FACE_DETECTION_RESULTS_TOPIC:-}
@@ -162,6 +173,7 @@ services:
       - ./models_faces:/app/models_faces
       - /tmp/transcode:/tmp/transcode
       - ../src/transcode_service/key.json:/app/key.json:ro
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     deploy:
       resources:
@@ -209,6 +221,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ../src/transcode_service/key.json:/app/key.json:ro
+      - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
     deploy:
       resources:
@@ -237,4 +250,8 @@ services:
         limits:
           memory: 128M
           cpus: '0.5'
+
+volumes:
+  shared-media:
+    driver: local
 

@@ -193,23 +193,28 @@ class TranscodeWorkerV2:
         temp_outputs = []
 
         try:
-            # Handle source file - download from URL
-            temp_input = os.path.join(
-                self.temp_dir,
-                f"{
-                message.task_id}_{
-                message.profile.id_profile}_input",
-            )
+            # Handle source file - use shared path or download from URL
+            if message.source_path:
+                # Use shared volume file directly - no download needed!
+                temp_input = message.source_path
+                logger.info(f"📁 Using shared file: {temp_input}")
 
-            if message.source_url:
-                # Download from public URL
+                # Verify shared file exists
+                if not os.path.exists(temp_input):
+                    raise Exception(f"Shared file not found: {temp_input}")
+
+            elif message.source_url:
+                # Fallback: download from URL (backward compatibility)
+                temp_input = os.path.join(
+                    self.temp_dir,
+                    f"{message.task_id}_{message.profile.id_profile}_input",
+                )
+
+                logger.info(f"🔗 Downloading from URL: {message.source_url}")
                 if not s3_service.download_file_from_url(message.source_url, temp_input):
-                    raise Exception(
-                        f"Failed to download source file from URL: {
-                        message.source_url}"
-                    )
+                    raise Exception(f"Failed to download source file from URL: {message.source_url}")
             else:
-                raise Exception("No source URL provided")
+                raise Exception("No source URL or source path provided")
 
             # Process using UniversalMediaConverter
             output_urls = self._process_with_universal_converter(message, temp_input, temp_outputs)
@@ -283,10 +288,17 @@ class TranscodeWorkerV2:
 
             if cleanup_enabled:
                 cleanup_count = 0
-                if temp_input and temp_input != message.source_url and os.path.exists(temp_input):
+
+                # Only cleanup downloaded files, NOT shared volume files
+                if (temp_input and
+                        temp_input != message.source_url and  # Not a URL
+                        not message.source_path and  # Not using shared volume
+                        os.path.exists(temp_input)):
                     os.remove(temp_input)
                     cleanup_count += 1
-                    logger.info(f"   ✅ Cleaned up temp input file: {temp_input}")
+                    logger.info(f"   ✅ Cleaned up downloaded input file: {temp_input}")
+                elif message.source_path:
+                    logger.info(f"   ⏭️  Skipped cleanup of shared file: {temp_input}")
 
                 for temp_output in temp_outputs:
                     if os.path.exists(temp_output):
