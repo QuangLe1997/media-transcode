@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 class DeviceType(str, Enum):
     """Loại thiết bị mobile"""
+
     LOW_END = "low_end"  # Máy yếu, mạng chậm
     MID_RANGE = "mid_range"  # Máy trung bình, mạng ổn
     HIGH_END = "high_end"  # Máy mạnh, mạng nhanh
@@ -21,6 +22,7 @@ class DeviceType(str, Enum):
 
 class MediaType(str, Enum):
     """Loại media đầu vào"""
+
     VIDEO = "video"
     IMAGE = "image"
 
@@ -38,8 +40,10 @@ class ProfileType(str, Enum):
 # CORE PROFILE CONFIG ATTRIBUTES
 # =============================================================================
 
+
 class VideoConfig(BaseModel):
     """Cấu hình video transcoding"""
+
     # Video codec
     codec: str = Field(description="Video codec")
 
@@ -71,11 +75,14 @@ class VideoConfig(BaseModel):
     duration: Optional[int] = Field(default=None, description="Duration in seconds (for previews)")
     start_time: Optional[int] = Field(default=0, description="Start time in seconds")
     remove_audio: bool = Field(default=False, description="Remove audio track")
-    speed: Optional[float] = Field(default=None, description="Playback speed (2.0 = 2x faster, 0.5 = 2x slower)")
+    speed: Optional[float] = Field(
+        default=None, description="Playback speed (2.0 = 2x faster, 0.5 = 2x slower)"
+    )
 
 
 class ImageConfig(BaseModel):
     """Cấu hình image processing"""
+
     # Resolution
     max_width: Optional[int] = Field(default=None, description="Chiều rộng tối đa")
     max_height: Optional[int] = Field(default=None, description="Chiều cao tối đa")
@@ -88,11 +95,14 @@ class ImageConfig(BaseModel):
 
     # Processing
     thumbnail_mode: bool = Field(default=False, description="Use thumbnail selection")
-    extract_time: Optional[float] = Field(default=None, description="Time to extract frame (for video input)")
+    extract_time: Optional[float] = Field(
+        default=None, description="Time to extract frame (for video input)"
+    )
 
 
 class ProfileConfig(BaseModel):
     """Complete profile configuration"""
+
     id: str = Field(description="Profile identifier")
     name: str = Field(description="Human-readable name")
     device_type: DeviceType = Field(description="Target device type")
@@ -129,11 +139,10 @@ MOBILE_VIDEO_PROFILES = {
             level="3.0",
             max_fps=24,
             audio_codec="aac",
-            audio_bitrate="64k"
+            audio_bitrate="64k",
         ),
-        description="Cho máy yếu, mạng 2G/3G chậm"
+        description="Cho máy yếu, mạng 2G/3G chậm",
     ),
-
     "main_mid_360p": ProfileConfig(
         id="main_mid_360p",
         name="360p Mid-range Mobile",
@@ -149,11 +158,10 @@ MOBILE_VIDEO_PROFILES = {
             level="3.1",
             max_fps=30,
             audio_codec="aac",
-            audio_bitrate="96k"
+            audio_bitrate="96k",
         ),
-        description="Cho máy trung bình, mạng 3G/4G"
+        description="Cho máy trung bình, mạng 3G/4G",
     ),
-
     "main_high_720p": ProfileConfig(
         id="main_high_720p",
         name="720p High-end Mobile",
@@ -169,11 +177,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.0",
             max_fps=30,
             audio_codec="aac",
-            audio_bitrate="128k"
+            audio_bitrate="128k",
         ),
-        description="Cho máy mạnh, mạng 4G/5G"
+        description="Cho máy mạnh, mạng 4G/5G",
     ),
-
     "main_premium_1080p": ProfileConfig(
         id="main_premium_1080p",
         name="1080p Premium Mobile",
@@ -189,11 +196,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.1",
             max_fps=60,
             audio_codec="aac",
-            audio_bitrate="192k"
+            audio_bitrate="192k",
         ),
-        description="Cho máy cao cấp, mạng 5G"
+        description="Cho máy cao cấp, mạng 5G",
     ),
-
     # GPU-accelerated profiles
     "main_gpu_720p_h264": ProfileConfig(
         id="main_gpu_720p_h264",
@@ -210,11 +216,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.0",
             max_fps=30,
             audio_codec="aac",
-            audio_bitrate="128k"
+            audio_bitrate="128k",
         ),
-        description="GPU-accelerated H.264 cho máy có NVIDIA GPU"
+        description="GPU-accelerated H.264 cho máy có NVIDIA GPU",
     ),
-
     "main_gpu_1080p_h264": ProfileConfig(
         id="main_gpu_1080p_h264",
         name="1080p GPU H.264",
@@ -230,11 +235,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.1",
             max_fps=60,
             audio_codec="aac",
-            audio_bitrate="192k"
+            audio_bitrate="192k",
         ),
-        description="GPU-accelerated H.264 1080p cho server có GPU"
+        description="GPU-accelerated H.264 1080p cho server có GPU",
     ),
-
     "main_gpu_720p_h265": ProfileConfig(
         id="main_gpu_720p_h265",
         name="720p GPU H.265",
@@ -250,11 +254,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.0",
             max_fps=30,
             audio_codec="aac",
-            audio_bitrate="128k"
+            audio_bitrate="128k",
         ),
-        description="GPU-accelerated H.265 cho bandwidth thấp"
+        description="GPU-accelerated H.265 cho bandwidth thấp",
     ),
-
     "main_gpu_1080p_h265": ProfileConfig(
         id="main_gpu_1080p_h265",
         name="1080p GPU H.265",
@@ -270,10 +273,10 @@ MOBILE_VIDEO_PROFILES = {
             level="4.1",
             max_fps=60,
             audio_codec="aac",
-            audio_bitrate="192k"
+            audio_bitrate="192k",
         ),
-        description="GPU-accelerated H.265 1080p cho chất lượng cao"
-    )
+        description="GPU-accelerated H.265 1080p cho chất lượng cao",
+    ),
 }
 
 # Preview video profiles (ngắn, không âm thanh)
@@ -291,11 +294,10 @@ PREVIEW_VIDEO_PROFILES = {
             profile="baseline",
             max_fps=15,
             duration=3,  # 3 giây
-            remove_audio=True
+            remove_audio=True,
         ),
-        description="Preview 3s cho máy yếu"
+        description="Preview 3s cho máy yếu",
     ),
-
     "preview_mid_360p": ProfileConfig(
         id="preview_mid_360p",
         name="360p Preview Mid-range",
@@ -309,11 +311,10 @@ PREVIEW_VIDEO_PROFILES = {
             profile="main",
             max_fps=20,
             duration=5,  # 5 giây
-            remove_audio=True
+            remove_audio=True,
         ),
-        description="Preview 5s cho máy trung bình"
+        description="Preview 5s cho máy trung bình",
     ),
-
     "preview_high_720p": ProfileConfig(
         id="preview_high_720p",
         name="720p Preview High-end",
@@ -327,11 +328,10 @@ PREVIEW_VIDEO_PROFILES = {
             profile="high",
             max_fps=30,
             duration=8,  # 8 giây
-            remove_audio=True
+            remove_audio=True,
         ),
-        description="Preview 8s cho máy mạnh"
+        description="Preview 8s cho máy mạnh",
     ),
-
     # GPU-accelerated preview profiles
     "preview_gpu_480p": ProfileConfig(
         id="preview_gpu_480p",
@@ -346,11 +346,10 @@ PREVIEW_VIDEO_PROFILES = {
             profile="main",
             max_fps=24,
             duration=5,  # 5 giây
-            remove_audio=True
+            remove_audio=True,
         ),
-        description="GPU-accelerated preview cho server có GPU"
+        description="GPU-accelerated preview cho server có GPU",
     ),
-
     "preview_gpu_720p": ProfileConfig(
         id="preview_gpu_720p",
         name="720p GPU Preview",
@@ -364,10 +363,10 @@ PREVIEW_VIDEO_PROFILES = {
             profile="high",
             max_fps=30,
             duration=8,  # 8 giây
-            remove_audio=True
+            remove_audio=True,
         ),
-        description="GPU-accelerated 720p preview cho performance cao"
-    )
+        description="GPU-accelerated 720p preview cho performance cao",
+    ),
 }
 
 # Thumbnail image profiles
@@ -378,59 +377,40 @@ THUMBNAIL_IMAGE_PROFILES = {
         device_type=DeviceType.LOW_END,
         profile_type=ProfileType.THUMBNAIL_IMAGE,
         image_config=ImageConfig(
-            max_width=160,
-            max_height=120,
-            quality=70,
-            format="jpeg",
-            thumbnail_mode=True
+            max_width=160, max_height=120, quality=70, format="jpeg", thumbnail_mode=True
         ),
-        description="Thumbnail nhỏ cho list view"
+        description="Thumbnail nhỏ cho list view",
     ),
-
     "thumb_medium": ProfileConfig(
         id="thumb_medium",
         name="Medium Thumbnail",
         device_type=DeviceType.MID_RANGE,
         profile_type=ProfileType.THUMBNAIL_IMAGE,
         image_config=ImageConfig(
-            max_width=320,
-            max_height=240,
-            quality=75,
-            format="jpeg",
-            thumbnail_mode=True
+            max_width=320, max_height=240, quality=75, format="jpeg", thumbnail_mode=True
         ),
-        description="Thumbnail trung bình"
+        description="Thumbnail trung bình",
     ),
-
     "thumb_large": ProfileConfig(
         id="thumb_large",
         name="Large Thumbnail",
         device_type=DeviceType.HIGH_END,
         profile_type=ProfileType.THUMBNAIL_IMAGE,
         image_config=ImageConfig(
-            max_width=640,
-            max_height=480,
-            quality=80,
-            format="jpeg",
-            thumbnail_mode=True
+            max_width=640, max_height=480, quality=80, format="jpeg", thumbnail_mode=True
         ),
-        description="Thumbnail lớn cho detail view"
+        description="Thumbnail lớn cho detail view",
     ),
-
     "thumb_webp": ProfileConfig(
         id="thumb_webp",
         name="WebP Thumbnail",
         device_type=DeviceType.PREMIUM,
         profile_type=ProfileType.THUMBNAIL_IMAGE,
         image_config=ImageConfig(
-            max_width=640,
-            max_height=480,
-            quality=85,
-            format="webp",
-            thumbnail_mode=True
+            max_width=640, max_height=480, quality=85, format="webp", thumbnail_mode=True
         ),
-        description="Thumbnail WebP cho browser hiện đại"
-    )
+        description="Thumbnail WebP cho browser hiện đại",
+    ),
 }
 
 # Image optimization profiles (cho input image)
@@ -440,58 +420,36 @@ IMAGE_OPTIMIZATION_PROFILES = {
         name="Mobile Small Image",
         device_type=DeviceType.LOW_END,
         profile_type=ProfileType.OPTIMIZED_IMAGE,
-        image_config=ImageConfig(
-            max_width=480,
-            max_height=360,
-            quality=75,
-            format="jpeg"
-        )
+        image_config=ImageConfig(max_width=480, max_height=360, quality=75, format="jpeg"),
     ),
-
     "img_mobile_medium": ProfileConfig(
         id="img_mobile_medium",
         name="Mobile Medium Image",
         device_type=DeviceType.MID_RANGE,
         profile_type=ProfileType.OPTIMIZED_IMAGE,
-        image_config=ImageConfig(
-            max_width=720,
-            max_height=540,
-            quality=80,
-            format="jpeg"
-        )
+        image_config=ImageConfig(max_width=720, max_height=540, quality=80, format="jpeg"),
     ),
-
     "img_mobile_large": ProfileConfig(
         id="img_mobile_large",
         name="Mobile Large Image",
         device_type=DeviceType.HIGH_END,
         profile_type=ProfileType.OPTIMIZED_IMAGE,
-        image_config=ImageConfig(
-            max_width=1080,
-            max_height=810,
-            quality=85,
-            format="jpeg"
-        )
+        image_config=ImageConfig(max_width=1080, max_height=810, quality=85, format="jpeg"),
     ),
-
     "img_webp_optimized": ProfileConfig(
         id="img_webp_optimized",
         name="WebP Optimized",
         device_type=DeviceType.PREMIUM,
         profile_type=ProfileType.OPTIMIZED_IMAGE,
-        image_config=ImageConfig(
-            max_width=1080,
-            max_height=810,
-            quality=90,
-            format="webp"
-        )
-    )
+        image_config=ImageConfig(max_width=1080, max_height=810, quality=90, format="webp"),
+    ),
 }
 
 
 # =============================================================================
 # PROFILE SETS BY INPUT TYPE
 # =============================================================================
+
 
 def get_profiles_for_video_input() -> List[ProfileConfig]:
     """Trả về tất cả profiles cần thiết cho video input"""
@@ -509,7 +467,9 @@ def get_profiles_for_image_input() -> List[ProfileConfig]:
     return profiles
 
 
-def get_profiles_by_device_type(device_type: DeviceType, media_type: MediaType) -> List[ProfileConfig]:
+def get_profiles_by_device_type(
+    device_type: DeviceType, media_type: MediaType
+) -> List[ProfileConfig]:
     """Trả về profiles phù hợp với device type và media type"""
     if media_type == MediaType.VIDEO:
         all_profiles = get_profiles_for_video_input()
@@ -523,71 +483,75 @@ def get_profiles_by_device_type(device_type: DeviceType, media_type: MediaType) 
 # GPU CODEC DETECTION AND FALLBACK
 # =============================================================================
 
+
 def _check_gpu_codec_availability() -> dict:
     """Check which GPU codecs are available in FFmpeg"""
     try:
-        result = subprocess.run(['ffmpeg', '-encoders'], 
-                              capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True, timeout=10)
         encoders = result.stdout.lower()
-        
+
         return {
-            'h264_nvenc': 'h264_nvenc' in encoders,
-            'h265_nvenc': 'h265_nvenc' in encoders or 'hevc_nvenc' in encoders,
-            'hevc_nvenc': 'hevc_nvenc' in encoders,
+            "h264_nvenc": "h264_nvenc" in encoders,
+            "h265_nvenc": "h265_nvenc" in encoders or "hevc_nvenc" in encoders,
+            "hevc_nvenc": "hevc_nvenc" in encoders,
         }
     except Exception as e:
         logging.warning(f"Could not check GPU codec availability: {e}")
         return {
-            'h264_nvenc': False,
-            'h265_nvenc': False,
-            'hevc_nvenc': False,
+            "h264_nvenc": False,
+            "h265_nvenc": False,
+            "hevc_nvenc": False,
         }
+
 
 def _get_fallback_codec(gpu_codec: str) -> str:
     """Get CPU fallback codec for GPU codec"""
     fallback_map = {
-        'h264_nvenc': 'libx264',
-        'h265_nvenc': 'libx265',
-        'hevc_nvenc': 'libx265',
+        "h264_nvenc": "libx264",
+        "h265_nvenc": "libx265",
+        "hevc_nvenc": "libx265",
     }
-    return fallback_map.get(gpu_codec, 'libx264')
+    return fallback_map.get(gpu_codec, "libx264")
 
-def _adapt_profile_for_cpu(profile: 'ProfileConfig') -> 'ProfileConfig':
+
+def _adapt_profile_for_cpu(profile: "ProfileConfig") -> "ProfileConfig":
     """Adapt GPU profile for CPU by changing codec and settings"""
     if not profile.video_config:
         return profile
-    
+
     # Create a copy of the profile with CPU codec
     video_config = profile.video_config.copy()
-    
+
     # Change GPU codec to CPU codec
-    if video_config.codec in ['h264_nvenc', 'h265_nvenc', 'hevc_nvenc']:
+    if video_config.codec in ["h264_nvenc", "h265_nvenc", "hevc_nvenc"]:
         video_config.codec = _get_fallback_codec(video_config.codec)
-        
+
         # Adjust preset for CPU (GPU presets don't work with CPU)
         preset_map = {
-            'slow': 'slow',
-            'medium': 'medium', 
-            'fast': 'fast',
-            'hp': 'fast',
-            'hq': 'slow',
-            'bd': 'slow',
-            'll': 'ultrafast',
-            'llhq': 'fast',
-            'llhp': 'ultrafast',
+            "slow": "slow",
+            "medium": "medium",
+            "fast": "fast",
+            "hp": "fast",
+            "hq": "slow",
+            "bd": "slow",
+            "ll": "ultrafast",
+            "llhq": "fast",
+            "llhp": "ultrafast",
         }
-        video_config.preset = preset_map.get(video_config.preset, 'medium')
-    
+        video_config.preset = preset_map.get(video_config.preset, "medium")
+
     # Create new profile with adapted config
     adapted_profile = profile.copy()
     adapted_profile.video_config = video_config
     adapted_profile.description += " (CPU fallback)"
-    
+
     return adapted_profile
+
 
 # =============================================================================
 # FFMPEG COMMAND BUILDER
 # =============================================================================
+
 
 def _ensure_even_dimensions(width: int, height: int) -> tuple[int, int]:
     """Ensure dimensions are even numbers for H.264 encoder compatibility"""
@@ -601,12 +565,12 @@ def _ensure_even_dimensions(width: int, height: int) -> tuple[int, int]:
 def _parse_bitrate_to_kbps(bitrate_str: str) -> int:
     """Parse bitrate string to kbps value (handles 'k', 'M' suffixes)"""
     bitrate_str = bitrate_str.lower()
-    if bitrate_str.endswith('m'):
+    if bitrate_str.endswith("m"):
         # Convert M to k (multiply by 1000)
-        return int(float(bitrate_str.rstrip('m')) * 1000)
-    elif bitrate_str.endswith('k'):
+        return int(float(bitrate_str.rstrip("m")) * 1000)
+    elif bitrate_str.endswith("k"):
         # Already in k format
-        return int(float(bitrate_str.rstrip('k')))
+        return int(float(bitrate_str.rstrip("k")))
     else:
         # Assume it's in bits per second, convert to k
         return int(float(bitrate_str) / 1000)
@@ -619,20 +583,27 @@ def _create_fps_filter(max_fps: int) -> str:
     return f"fps={max_fps}"
 
 
-def build_ffmpeg_args(profile: ProfileConfig, keep_aspect_ratio: bool = True, 
-                     check_gpu_availability: bool = True) -> List[str]:
+def build_ffmpeg_args(
+    profile: ProfileConfig, keep_aspect_ratio: bool = True, check_gpu_availability: bool = True
+) -> List[str]:
     """Build FFmpeg arguments from profile config with GPU codec fallback"""
     args = []
 
     if profile.video_config:
         # Check GPU codec availability and fallback if needed
-        if check_gpu_availability and profile.video_config.codec in ['h264_nvenc', 'h265_nvenc', 'hevc_nvenc']:
+        if check_gpu_availability and profile.video_config.codec in [
+            "h264_nvenc",
+            "h265_nvenc",
+            "hevc_nvenc",
+        ]:
             gpu_codecs = _check_gpu_codec_availability()
             if not gpu_codecs.get(profile.video_config.codec, False):
-                logging.warning(f"GPU codec {profile.video_config.codec} not available, falling back to CPU")
+                logging.warning(
+                    f"GPU codec {profile.video_config.codec} not available, falling back to CPU"
+                )
                 adapted_profile = _adapt_profile_for_cpu(profile)
                 return _build_video_args(adapted_profile.video_config, keep_aspect_ratio)
-        
+
         return _build_video_args(profile.video_config, keep_aspect_ratio)
     elif profile.image_config:
         return _build_image_args(profile.image_config, keep_aspect_ratio)
@@ -646,9 +617,9 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
 
     # Video filters
     filters = []
-    
+
     # Speed adjustment (before other filters)
-    if hasattr(config, 'speed') and config.speed and config.speed != 1.0:
+    if hasattr(config, "speed") and config.speed and config.speed != 1.0:
         # Use setpts filter to change playback speed
         # For 2x speed: setpts=0.5*PTS (inverse relationship)
         pts_multiplier = 1.0 / config.speed
@@ -659,7 +630,9 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
         if keep_aspect_ratio:
             if config.max_width and config.max_height:
                 # Use aspect ratio scaling first, then force even dimensions
-                even_width, even_height = _ensure_even_dimensions(config.max_width, config.max_height)
+                even_width, even_height = _ensure_even_dimensions(
+                    config.max_width, config.max_height
+                )
                 scale = f"scale={even_width}:{even_height}:force_original_aspect_ratio=decrease"
                 # Add a second filter to ensure final dimensions are even
                 filters.append(scale)
@@ -707,8 +680,8 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
     args.extend(["-c:v", config.codec])
 
     # GPU codec optimizations
-    is_gpu_codec = config.codec in ['h264_nvenc', 'h265_nvenc', 'hevc_nvenc']
-    
+    is_gpu_codec = config.codec in ["h264_nvenc", "h265_nvenc", "hevc_nvenc"]
+
     # Quality control
     if config.crf:
         if is_gpu_codec:
@@ -721,10 +694,10 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
 
     if config.max_bitrate:
         args.extend(["-maxrate", config.max_bitrate])
-        
+
         # Calculate bufsize as 2x max_bitrate (FFmpeg best practice)
         bitrate_kbps = _parse_bitrate_to_kbps(config.max_bitrate)
-        bufsize = str(bitrate_kbps * 2) + 'k'
+        bufsize = str(bitrate_kbps * 2) + "k"
         args.extend(["-bufsize", bufsize])
 
     # Encoding preset - GPU codecs have different presets
@@ -732,18 +705,18 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
         # NVENC presets: slow, medium, fast, hp, hq, bd, ll, llhq, llhp, lossless
         nvenc_preset_map = {
             "ultrafast": "fast",
-            "superfast": "fast", 
+            "superfast": "fast",
             "veryfast": "fast",
             "faster": "fast",
             "fast": "fast",
             "medium": "medium",
             "slow": "slow",
             "slower": "slow",
-            "veryslow": "slow"
+            "veryslow": "slow",
         }
         nvenc_preset = nvenc_preset_map.get(config.preset, "medium")
         args.extend(["-preset", nvenc_preset])
-        
+
         # Add GPU-specific optimizations
         args.extend(["-rc", "vbr"])  # Variable bitrate for better quality
         args.extend(["-rc-lookahead", "20"])  # Lookahead for better encoding

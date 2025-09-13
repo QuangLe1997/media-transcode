@@ -13,13 +13,13 @@ class Settings(BaseSettings):
     pubsub_subscriber_credentials_path: str = ""
     disable_pubsub: bool = False
     google_application_credentials: str = ""
-    
+
     # Face Detection PubSub
     face_detection_subscription: str = ""
     pubsub_face_detection_tasks_topic: str = ""
     pubsub_face_detection_results_topic: str = ""
     pubsub_face_detection_results_subscription: str = ""
-    
+
     # AWS S3
     aws_endpoint_public_url: str = ""
     aws_endpoint_url: str = ""
@@ -29,7 +29,9 @@ class Settings(BaseSettings):
     aws_base_folder: str = ""
 
     # Database
-    database_url: str = "postgresql+asyncpg://transcode_user:transcode_pass@localhost:5433/transcode_db"
+    database_url: str = (
+        "postgresql+asyncpg://transcode_user:transcode_pass@localhost:5433/transcode_db"
+    )
 
     # PostgreSQL specific settings (Docker services)
     postgres_host: str = "localhost"
@@ -47,73 +49,71 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    
-    # FFmpeg Configuration  
+    # FFmpeg Configuration
     ffmpeg_path: str = "/usr/bin/ffmpeg"
     ffprobe_path: str = "/usr/bin/ffprobe"
     ffmpeg_hwaccel: str = "none"
     ffmpeg_gpu_enabled: str = "false"  # Can be "true", "false", or "auto"
     gpu_enabled: bool = False
     gpu_type: str = "none"
-    
-    @field_validator('ffmpeg_gpu_enabled')
+
+    @field_validator("ffmpeg_gpu_enabled")
     @classmethod
     def validate_ffmpeg_gpu_enabled(cls, v):
         if isinstance(v, bool):
             return str(v).lower()
-        if isinstance(v, str) and v.lower() in ['true', 'false', 'auto']:
+        if isinstance(v, str) and v.lower() in ["true", "false", "auto"]:
             return v.lower()
         raise ValueError('ffmpeg_gpu_enabled must be "true", "false", or "auto"')
-    
+
     @property
     def is_gpu_enabled(self) -> bool:
         """Check if GPU is enabled (handles auto detection)"""
-        if self.ffmpeg_gpu_enabled == 'auto':
+        if self.ffmpeg_gpu_enabled == "auto":
             # Auto-detect GPU availability (simplified logic)
             return self.gpu_enabled
-        return self.ffmpeg_gpu_enabled == 'true'
-    
+        return self.ffmpeg_gpu_enabled == "true"
+
     # Storage
     temp_storage_path: str = "/tmp/transcode"
-    
+
     # Legacy attribute names for backward compatibility
     @property
     def AWS_ACCESS_KEY_ID(self) -> str:
         return self.aws_access_key_id
-        
+
     @property
     def AWS_SECRET_ACCESS_KEY(self) -> str:
         return self.aws_secret_access_key
-        
+
     @property
     def AWS_REGION(self) -> str:
         return "us-east-1"  # Default region
-        
-    @property 
+
+    @property
     def S3_BUCKET(self) -> str:
         return self.aws_bucket_name
-        
+
     @property
     def TEMP_STORAGE_PATH(self) -> str:
         return self.temp_storage_path
-        
-        
+
     @property
     def FFMPEG_PATH(self) -> str:
         return self.ffmpeg_path
-        
+
     @property
     def FFPROBE_PATH(self) -> str:
         return self.ffprobe_path
-        
+
     @property
     def GPU_ENABLED(self) -> bool:
         return self.gpu_enabled
-        
+
     @property
     def GPU_TYPE(self) -> str:
         return self.gpu_type
-        
+
     # Flask configuration
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
@@ -121,20 +121,20 @@ class Settings(BaseSettings):
         if self.database_url:
             return self.database_url
         return self.postgres_url
-        
+
     @property
     def SQLALCHEMY_TRACK_MODIFICATIONS(self) -> bool:
         return False
-        
+
     @property
     def DEBUG(self) -> bool:
         return True
-        
+
     @property
     def UPLOAD_FOLDER(self) -> str:
         return "uploads"
-        
-    @property 
+
+    @property
     def SECRET_KEY(self) -> str:
         return "dev-secret-key-change-in-production"
 

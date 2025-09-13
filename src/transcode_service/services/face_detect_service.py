@@ -12,30 +12,33 @@ from tqdm import tqdm
 
 # Constants for face landmarks and face analysis
 WARP_TEMPLATES = {
-    'arcface_112_v1': np.array(
+    "arcface_112_v1": np.array(
         [
             [0.35473214, 0.45658929],
             [0.64526786, 0.45658929],
             [0.50000000, 0.61154464],
             [0.37913393, 0.77687500],
-            [0.62086607, 0.77687500]
-        ]),
-    'arcface_112_v2': np.array(
+            [0.62086607, 0.77687500],
+        ]
+    ),
+    "arcface_112_v2": np.array(
         [
             [0.34191607, 0.46157411],
             [0.65653393, 0.45983393],
             [0.50022500, 0.64050536],
             [0.37097589, 0.82469196],
-            [0.63151696, 0.82325089]
-        ]),
-    'ffhq_512': np.array(
+            [0.63151696, 0.82325089],
+        ]
+    ),
+    "ffhq_512": np.array(
         [
             [0.37691676, 0.46864664],
             [0.62285697, 0.46912813],
             [0.50123859, 0.61331904],
             [0.39308822, 0.72541100],
-            [0.61150205, 0.72490465]
-        ])
+            [0.61150205, 0.72490465],
+        ]
+    ),
 }
 
 logger = logging.getLogger(__name__)
@@ -52,15 +55,18 @@ Embedding = np.ndarray
 # Global variable để lưu trữ face analyser instance
 _face_analyser_instance = None
 
+
 class Face:
-    def __init__(self,
-                 bounding_box: BoundingBox,
-                 landmarks: Dict[str, np.ndarray],
-                 scores: Dict[str, float],
-                 embedding: np.ndarray,
-                 normed_embedding: np.ndarray,
-                 gender: Optional[int] = None,
-                 age: Optional[int] = None):
+    def __init__(
+        self,
+        bounding_box: BoundingBox,
+        landmarks: Dict[str, np.ndarray],
+        scores: Dict[str, float],
+        embedding: np.ndarray,
+        normed_embedding: np.ndarray,
+        gender: Optional[int] = None,
+        age: Optional[int] = None,
+    ):
         self.bounding_box = bounding_box
         self.landmarks = landmarks
         self.scores = scores
@@ -71,26 +77,30 @@ class Face:
 
 
 # Helper functions for face analysis
-def estimate_matrix_by_face_landmark_5(face_landmark_5: FaceLandmark5, warp_template: str,
-                                       crop_size: Tuple[int, int]) -> Matrix:
+def estimate_matrix_by_face_landmark_5(
+    face_landmark_5: FaceLandmark5, warp_template: str, crop_size: Tuple[int, int]
+) -> Matrix:
     normed_warp_template = WARP_TEMPLATES.get(warp_template) * crop_size
-    affine_matrix = \
-        cv2.estimateAffinePartial2D(face_landmark_5, normed_warp_template, method=cv2.RANSAC,
-                                    ransacReprojThreshold=100)[0]
+    affine_matrix = cv2.estimateAffinePartial2D(
+        face_landmark_5, normed_warp_template, method=cv2.RANSAC, ransacReprojThreshold=100
+    )[0]
     return affine_matrix
 
 
-def warp_face_by_translation(temp_vision_frame: VisionFrame, translation: Tuple[float, float], scale: float,
-                             crop_size: Tuple[int, int]) -> Tuple[VisionFrame, Matrix]:
+def warp_face_by_translation(
+    temp_vision_frame: VisionFrame,
+    translation: Tuple[float, float],
+    scale: float,
+    crop_size: Tuple[int, int],
+) -> Tuple[VisionFrame, Matrix]:
     affine_matrix = np.array([[scale, 0, translation[0]], [0, scale, translation[1]]])
     crop_vision_frame = cv2.warpAffine(temp_vision_frame, affine_matrix, crop_size)
     return crop_vision_frame, affine_matrix
 
 
-def detect_with_yoloface(vision_frame: VisionFrame,
-                         face_detector_size: str,
-                         face_detector_score_threshold: float = 0.5) -> Tuple[
-    List[BoundingBox], List[FaceLandmark5], List[Score]]:
+def detect_with_yoloface(
+    vision_frame: VisionFrame, face_detector_size: str, face_detector_score_threshold: float = 0.5
+) -> Tuple[List[BoundingBox], List[FaceLandmark5], List[Score]]:
     """
     Detect faces using the YOLOFace model
 
@@ -104,9 +114,11 @@ def detect_with_yoloface(vision_frame: VisionFrame,
     """
     try:
         # Get face detector from global analyzer
-        face_detector = get_face_analyser().get('face_detectors').get('yoloface')
-        face_detector_width, face_detector_height = face_detector_size.split('x')
-        face_detector_width, face_detector_height = int(face_detector_width), int(face_detector_height)
+        face_detector = get_face_analyser().get("face_detectors").get("yoloface")
+        face_detector_width, face_detector_height = face_detector_size.split("x")
+        face_detector_width, face_detector_height = int(face_detector_width), int(
+            face_detector_height
+        )
 
         # Resize input frame to model size
         temp_vision_frame = cv2.resize(vision_frame, (face_detector_width, face_detector_height))
@@ -122,9 +134,9 @@ def detect_with_yoloface(vision_frame: VisionFrame,
         detect_vision_frame = prepare_detect_frame(temp_vision_frame, face_detector_size)
 
         # Run detection
-        detections = face_detector.run(None, {
-            face_detector.get_inputs()[0].name: detect_vision_frame
-        })
+        detections = face_detector.run(
+            None, {face_detector.get_inputs()[0].name: detect_vision_frame}
+        )
 
         # Process detections
         detections = np.squeeze(detections).T
@@ -134,17 +146,24 @@ def detect_with_yoloface(vision_frame: VisionFrame,
         keep_indices = np.where(score_raw > face_detector_score_threshold)[0]
 
         if keep_indices.any():
-            bounding_box_raw, face_landmark_5_raw, score_raw = bounding_box_raw[keep_indices], face_landmark_5_raw[
-                keep_indices], score_raw[keep_indices]
+            bounding_box_raw, face_landmark_5_raw, score_raw = (
+                bounding_box_raw[keep_indices],
+                face_landmark_5_raw[keep_indices],
+                score_raw[keep_indices],
+            )
 
             # Convert bounding box coordinates and scale to original frame size
             for bounding_box in bounding_box_raw:
-                bounding_box_list.append(np.array([
-                    (bounding_box[0] - bounding_box[2] / 2) * ratio_width,
-                    (bounding_box[1] - bounding_box[3] / 2) * ratio_height,
-                    (bounding_box[0] + bounding_box[2] / 2) * ratio_width,
-                    (bounding_box[1] + bounding_box[3] / 2) * ratio_height
-                ]))
+                bounding_box_list.append(
+                    np.array(
+                        [
+                            (bounding_box[0] - bounding_box[2] / 2) * ratio_width,
+                            (bounding_box[1] - bounding_box[3] / 2) * ratio_height,
+                            (bounding_box[0] + bounding_box[2] / 2) * ratio_width,
+                            (bounding_box[1] + bounding_box[3] / 2) * ratio_height,
+                        ]
+                    )
+                )
 
             # Convert landmarks and scale to original frame size
             face_landmark_5_raw[:, 0::3] = (face_landmark_5_raw[:, 0::3]) * ratio_width
@@ -174,13 +193,17 @@ def prepare_detect_frame(temp_vision_frame: VisionFrame, face_detector_size: str
     Returns:
         Preprocessed frame ready for model input
     """
-    face_detector_width, face_detector_height = face_detector_size.split('x')
+    face_detector_width, face_detector_height = face_detector_size.split("x")
     face_detector_width, face_detector_height = int(face_detector_width), int(face_detector_height)
 
     detect_vision_frame = np.zeros((face_detector_height, face_detector_width, 3))
-    detect_vision_frame[:temp_vision_frame.shape[0], :temp_vision_frame.shape[1], :] = temp_vision_frame
+    detect_vision_frame[: temp_vision_frame.shape[0], : temp_vision_frame.shape[1], :] = (
+        temp_vision_frame
+    )
     detect_vision_frame = (detect_vision_frame - 127.5) / 128.0
-    detect_vision_frame = np.expand_dims(detect_vision_frame.transpose(2, 0, 1), axis=0).astype(np.float32)
+    detect_vision_frame = np.expand_dims(detect_vision_frame.transpose(2, 0, 1), axis=0).astype(
+        np.float32
+    )
     return detect_vision_frame
 
 
@@ -216,8 +239,13 @@ def get_face_analyser():
 
     # Models should already be downloaded during worker initialization
     # Just check if they exist
-    required_models = ["yoloface.onnx", "arcface_w600k_r50.onnx", "face_landmarker_68.onnx",
-                       "face_landmarker_68_5.onnx", "gender_age.onnx"]
+    required_models = [
+        "yoloface.onnx",
+        "arcface_w600k_r50.onnx",
+        "face_landmarker_68.onnx",
+        "face_landmarker_68_5.onnx",
+        "gender_age.onnx",
+    ]
 
     for model_name in required_models:
         model_path = os.path.join(models_dir, model_name)
@@ -240,7 +268,7 @@ def get_face_analyser():
         (arcface_path, "ArcFace"),
         (landmarker_68_path, "Landmarker 68"),
         (landmarker_68_5_path, "Landmarker 68.5"),
-        (gender_age_path, "Gender Age")
+        (gender_age_path, "Gender Age"),
     ]
 
     missing_files = []
@@ -259,7 +287,7 @@ def get_face_analyser():
     options.inter_op_num_threads = 2
 
     # Memory optimization settings
-    options.enable_cpu_mem_arena = False  # Disable memory arena to reduce fragmentation  
+    options.enable_cpu_mem_arena = False  # Disable memory arena to reduce fragmentation
     options.enable_mem_pattern = True  # Enable for better GPU memory pattern
     options.enable_mem_reuse = True  # Enable memory reuse between runs
 
@@ -267,34 +295,42 @@ def get_face_analyser():
     options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL  # Better GPU utilization
 
     # GPU configuration - test CUDA context first
-    providers = ['CPUExecutionProvider']  # Default to CPU
+    providers = ["CPUExecutionProvider"]  # Default to CPU
 
     # Check if running in Docker with GPU support
-    if os.path.exists('/dev/nvidia0') or os.environ.get('NVIDIA_VISIBLE_DEVICES'):
+    if os.path.exists("/dev/nvidia0") or os.environ.get("NVIDIA_VISIBLE_DEVICES"):
         try:
             import subprocess
+
             # Check nvidia-smi
-            result = subprocess.run(['nvidia-smi', '-L'], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0 and 'GPU' in result.stdout:
+            result = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and "GPU" in result.stdout:
                 # GPU detected, test CUDA context
                 # Test CUDA with explicit device configuration
-                if 'CUDAExecutionProvider' in onnxruntime.get_available_providers():
+                if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
                     try:
                         # Optimized CUDA provider settings for better GPU utilization
                         cuda_options = {
-                            'device_id': 0,
-                            'arena_extend_strategy': 'kSameAsRequested',  # Better memory management
-                            'gpu_mem_limit': 2147483648,  # 2GB limit to prevent OOM
-                            'cudnn_conv_algo_search': 'EXHAUSTIVE',  # Better performance
-                            'do_copy_in_default_stream': True,  # Better performance
+                            "device_id": 0,
+                            "arena_extend_strategy": "kSameAsRequested",  # Better memory management
+                            "gpu_mem_limit": 2147483648,  # 2GB limit to prevent OOM
+                            "cudnn_conv_algo_search": "EXHAUSTIVE",  # Better performance
+                            "do_copy_in_default_stream": True,  # Better performance
                         }
-                        providers = [('CUDAExecutionProvider', cuda_options), 'CPUExecutionProvider']
-                        logger.info("✅ GPU detected and CUDA provider available, using GPU for face detection")
+                        providers = [
+                            ("CUDAExecutionProvider", cuda_options),
+                            "CPUExecutionProvider",
+                        ]
+                        logger.info(
+                            "✅ GPU detected and CUDA provider available, using GPU for face detection"
+                        )
                         logger.info(f"🎯 Active providers: {providers}")
-                        logger.info(f"🚀 CUDA optimization enabled: arena_extend_strategy, memory limit 2GB")
+                        logger.info(
+                            f"🚀 CUDA optimization enabled: arena_extend_strategy, memory limit 2GB"
+                        )
                     except Exception as cuda_error:
                         logger.warning(f"CUDA provider failed with explicit config: {cuda_error}")
-                        providers = ['CPUExecutionProvider']
+                        providers = ["CPUExecutionProvider"]
                         logger.info(f"🎯 Active providers: {providers}")
                 else:
                     logger.info("GPU detected but CUDA provider not available, using CPU")
@@ -312,29 +348,19 @@ def get_face_analyser():
     try:
         # Nếu model tồn tại, load nó
         face_detector = onnxruntime.InferenceSession(
-            yoloface_path,
-            providers=providers,
-            sess_options=options
+            yoloface_path, providers=providers, sess_options=options
         )
         face_recognizer = onnxruntime.InferenceSession(
-            arcface_path,
-            providers=providers,
-            sess_options=options
+            arcface_path, providers=providers, sess_options=options
         )
         face_landmarker_68 = onnxruntime.InferenceSession(
-            landmarker_68_path,
-            providers=providers,
-            sess_options=options
+            landmarker_68_path, providers=providers, sess_options=options
         )
         face_landmarker_68_5 = onnxruntime.InferenceSession(
-            landmarker_68_5_path,
-            providers=providers,
-            sess_options=options
+            landmarker_68_5_path, providers=providers, sess_options=options
         )
         gender_age = onnxruntime.InferenceSession(
-            gender_age_path,
-            providers=providers,
-            sess_options=options
+            gender_age_path, providers=providers, sess_options=options
         )
 
         logger.info("Successfully loaded all face analysis models")
@@ -350,41 +376,46 @@ def get_face_analyser():
         gender_age = MagicMock()
 
         # Cấu hình mock behavior
-        face_detector.get_inputs.return_value = [MagicMock(name='input')]
+        face_detector.get_inputs.return_value = [MagicMock(name="input")]
         face_detector.run.return_value = [np.zeros((1, 17640, 16))]
 
-        face_recognizer.get_inputs.return_value = [MagicMock(name='input')]
+        face_recognizer.get_inputs.return_value = [MagicMock(name="input")]
         face_recognizer.run.return_value = [np.random.random((1, 512))]
 
-        face_landmarker_68.get_inputs.return_value = [MagicMock(name='input')]
-        face_landmarker_68.run.return_value = [np.random.random((1, 68, 2)), np.random.random((1, 68, 64, 64))]
+        face_landmarker_68.get_inputs.return_value = [MagicMock(name="input")]
+        face_landmarker_68.run.return_value = [
+            np.random.random((1, 68, 2)),
+            np.random.random((1, 68, 64, 64)),
+        ]
 
-        face_landmarker_68_5.get_inputs.return_value = [MagicMock(name='input')]
+        face_landmarker_68_5.get_inputs.return_value = [MagicMock(name="input")]
         face_landmarker_68_5.run.return_value = [np.random.random((1, 68, 2))]
 
-        gender_age.get_inputs.return_value = [MagicMock(name='input')]
-        gender_age.run.return_value = [np.array([[0.3, 0.7, 0.35]])]  # [male_prob, female_prob, age_factor]
+        gender_age.get_inputs.return_value = [MagicMock(name="input")]
+        gender_age.run.return_value = [
+            np.array([[0.3, 0.7, 0.35]])
+        ]  # [male_prob, female_prob, age_factor]
 
     # Tạo và lưu trữ face analyser
     _face_analyser_instance = {
-        'face_detectors': {'yoloface': face_detector},
-        'face_recognizer': face_recognizer,
-        'face_landmarkers': {
-            '68': face_landmarker_68,
-            '68_5': face_landmarker_68_5
-        },
-        'gender_age': gender_age
+        "face_detectors": {"yoloface": face_detector},
+        "face_recognizer": face_recognizer,
+        "face_landmarkers": {"68": face_landmarker_68, "68_5": face_landmarker_68_5},
+        "gender_age": gender_age,
     }
 
     return _face_analyser_instance
 
-def create_faces(vision_frame: VisionFrame,
-                 bounding_box_list: List[BoundingBox],
-                 face_landmark_5_list: List[FaceLandmark5],
-                 score_list: List[Score],
-                 face_detector_score_threshold: float = 0.5,
-                 face_landmarker_score_threshold: float = 0.85,
-                 iou_threshold: float = 0.4) -> List[Face]:
+
+def create_faces(
+    vision_frame: VisionFrame,
+    bounding_box_list: List[BoundingBox],
+    face_landmark_5_list: List[FaceLandmark5],
+    score_list: List[Score],
+    face_detector_score_threshold: float = 0.5,
+    face_landmarker_score_threshold: float = 0.85,
+    iou_threshold: float = 0.4,
+) -> List[Face]:
     """
     Create Face objects from detection results without gender and age detection
 
@@ -427,35 +458,36 @@ def create_faces(vision_frame: VisionFrame,
 
         # Detect more precise 68-point landmarks if needed
         if face_landmarker_score_threshold > 0:
-            face_landmark_68, face_landmark_68_score = detect_face_landmark_68(vision_frame, bounding_box)
+            face_landmark_68, face_landmark_68_score = detect_face_landmark_68(
+                vision_frame, bounding_box
+            )
             if face_landmark_68_score > face_landmarker_score_threshold:
                 face_landmark_5_68 = convert_face_landmark_68_to_5(face_landmark_68)
 
         # Create landmark set
         landmarks = {
-            '5': face_landmark_5_list[index],
-            '5/68': face_landmark_5_68,
-            '68': face_landmark_68,
-            '68/5': face_landmark_68_5
+            "5": face_landmark_5_list[index],
+            "5/68": face_landmark_5_68,
+            "68": face_landmark_68,
+            "68/5": face_landmark_68_5,
         }
 
         # Create score set
-        scores = {
-            'detector': score_list[index],
-            'landmarker': face_landmark_68_score
-        }
+        scores = {"detector": score_list[index], "landmarker": face_landmark_68_score}
 
         # Calculate face embedding for recognition
-        embedding, normed_embedding = calc_embedding(vision_frame, landmarks.get('5/68'))
+        embedding, normed_embedding = calc_embedding(vision_frame, landmarks.get("5/68"))
 
         # Create the Face object with all attributes except gender and age
-        faces.append(Face(
-            bounding_box=bounding_box,
-            landmarks=landmarks,
-            scores=scores,
-            embedding=embedding,
-            normed_embedding=normed_embedding
-        ))
+        faces.append(
+            Face(
+                bounding_box=bounding_box,
+                landmarks=landmarks,
+                scores=scores,
+                embedding=embedding,
+                normed_embedding=normed_embedding,
+            )
+        )
 
     return faces
 
@@ -487,20 +519,23 @@ def expand_face_landmark_68_from_5(face_landmark_5: FaceLandmark5) -> FaceLandma
     # In real implementation, this would use a pretrained model
     # Here we'll generate a simple approximation
     try:
-        face_landmarker = get_face_analyser().get('face_landmarkers').get('68_5')
+        face_landmarker = get_face_analyser().get("face_landmarkers").get("68_5")
 
         # Transform landmarks to standardized space
-        affine_matrix = estimate_matrix_by_face_landmark_5(face_landmark_5, 'ffhq_512', (1, 1))
-        face_landmark_5_transformed = cv2.transform(face_landmark_5.reshape(1, -1, 2), affine_matrix).reshape(-1, 2)
+        affine_matrix = estimate_matrix_by_face_landmark_5(face_landmark_5, "ffhq_512", (1, 1))
+        face_landmark_5_transformed = cv2.transform(
+            face_landmark_5.reshape(1, -1, 2), affine_matrix
+        ).reshape(-1, 2)
 
         # Generate 68-point landmarks
-        face_landmark_68_5 = face_landmarker.run(None, {
-            face_landmarker.get_inputs()[0].name: [face_landmark_5_transformed]
-        })[0][0]
+        face_landmark_68_5 = face_landmarker.run(
+            None, {face_landmarker.get_inputs()[0].name: [face_landmark_5_transformed]}
+        )[0][0]
 
         # Transform back to original space
-        face_landmark_68_5 = cv2.transform(face_landmark_68_5.reshape(1, -1, 2),
-                                           cv2.invertAffineTransform(affine_matrix)).reshape(-1, 2)
+        face_landmark_68_5 = cv2.transform(
+            face_landmark_68_5.reshape(1, -1, 2), cv2.invertAffineTransform(affine_matrix)
+        ).reshape(-1, 2)
 
         return face_landmark_68_5
 
@@ -517,7 +552,9 @@ def expand_face_landmark_68_from_5(face_landmark_5: FaceLandmark5) -> FaceLandma
         return expanded
 
 
-def detect_face_landmark_68(temp_vision_frame: VisionFrame, bounding_box: BoundingBox) -> Tuple[FaceLandmark68, Score]:
+def detect_face_landmark_68(
+    temp_vision_frame: VisionFrame, bounding_box: BoundingBox
+) -> Tuple[FaceLandmark68, Score]:
     """
     Detect 68-point face landmarks
 
@@ -529,28 +566,32 @@ def detect_face_landmark_68(temp_vision_frame: VisionFrame, bounding_box: Boundi
         Tuple of 68-point landmarks and confidence score
     """
     try:
-        face_landmarker = get_face_analyser().get('face_landmarkers').get('68')
+        face_landmarker = get_face_analyser().get("face_landmarkers").get("68")
 
         # Calculate scale and translation
         scale = 195 / np.subtract(bounding_box[2:], bounding_box[:2]).max()
         translation = (256 - np.add(bounding_box[2:], bounding_box[:2]) * scale) * 0.5
 
         # Warp face
-        crop_vision_frame, affine_matrix = warp_face_by_translation(temp_vision_frame, translation, scale, (256, 256))
+        crop_vision_frame, affine_matrix = warp_face_by_translation(
+            temp_vision_frame, translation, scale, (256, 256)
+        )
 
         # Apply CLAHE for better feature detection
         crop_vision_frame = cv2.cvtColor(crop_vision_frame, cv2.COLOR_RGB2Lab)
         if np.mean(crop_vision_frame[:, :, 0]) < 30:
-            crop_vision_frame[:, :, 0] = cv2.createCLAHE(clipLimit=2).apply(crop_vision_frame[:, :, 0])
+            crop_vision_frame[:, :, 0] = cv2.createCLAHE(clipLimit=2).apply(
+                crop_vision_frame[:, :, 0]
+            )
         crop_vision_frame = cv2.cvtColor(crop_vision_frame, cv2.COLOR_Lab2RGB)
 
         # Prepare input
         crop_vision_frame = crop_vision_frame.transpose(2, 0, 1).astype(np.float32) / 255.0
 
         # Run model
-        face_landmark_68, face_heatmap = face_landmarker.run(None, {
-            face_landmarker.get_inputs()[0].name: [crop_vision_frame]
-        })
+        face_landmark_68, face_heatmap = face_landmarker.run(
+            None, {face_landmarker.get_inputs()[0].name: [crop_vision_frame]}
+        )
 
         # Process landmarks
         face_landmark_68 = face_landmark_68[:, :, :2][0] / 64
@@ -581,18 +622,24 @@ def convert_face_landmark_68_to_5(face_landmark_68: FaceLandmark68) -> FaceLandm
     Returns:
         5-point face landmarks
     """
-    face_landmark_5 = np.array([
-        np.mean(face_landmark_68[36:42], axis=0),  # left eye
-        np.mean(face_landmark_68[42:48], axis=0),  # right eye
-        face_landmark_68[30],  # nose
-        face_landmark_68[48],  # left mouth
-        face_landmark_68[54]  # right mouth
-    ])
+    face_landmark_5 = np.array(
+        [
+            np.mean(face_landmark_68[36:42], axis=0),  # left eye
+            np.mean(face_landmark_68[42:48], axis=0),  # right eye
+            face_landmark_68[30],  # nose
+            face_landmark_68[48],  # left mouth
+            face_landmark_68[54],  # right mouth
+        ]
+    )
     return face_landmark_5
 
 
-def warp_face_by_face_landmark_5(temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark5,
-                                 warp_template: str, crop_size: Tuple[int, int]) -> Tuple[VisionFrame, Matrix]:
+def warp_face_by_face_landmark_5(
+    temp_vision_frame: VisionFrame,
+    face_landmark_5: FaceLandmark5,
+    warp_template: str,
+    crop_size: Tuple[int, int],
+) -> Tuple[VisionFrame, Matrix]:
     """
     Warp face by 5-point landmarks to align with a standard template
 
@@ -609,14 +656,20 @@ def warp_face_by_face_landmark_5(temp_vision_frame: VisionFrame, face_landmark_5
     affine_matrix = estimate_matrix_by_face_landmark_5(face_landmark_5, warp_template, crop_size)
 
     # Apply the affine transformation to warp the face
-    crop_vision_frame = cv2.warpAffine(temp_vision_frame, affine_matrix, crop_size,
-                                       borderMode=cv2.BORDER_REPLICATE,  # Replicate border pixels
-                                       flags=cv2.INTER_AREA)  # Area interpolation for downsampling
+    crop_vision_frame = cv2.warpAffine(
+        temp_vision_frame,
+        affine_matrix,
+        crop_size,
+        borderMode=cv2.BORDER_REPLICATE,  # Replicate border pixels
+        flags=cv2.INTER_AREA,
+    )  # Area interpolation for downsampling
 
     return crop_vision_frame, affine_matrix
 
 
-def calc_embedding(temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark5) -> Tuple[Embedding, Embedding]:
+def calc_embedding(
+    temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark5
+) -> Tuple[Embedding, Embedding]:
     """
     Calculate face embedding for recognition
 
@@ -628,11 +681,11 @@ def calc_embedding(temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark
         Tuple of raw embedding and normalized embedding
     """
     try:
-        face_recognizer = get_face_analyser().get('face_recognizer')
+        face_recognizer = get_face_analyser().get("face_recognizer")
 
         # Align and crop face
         crop_vision_frame, matrix = warp_face_by_face_landmark_5(
-            temp_vision_frame, face_landmark_5, 'arcface_112_v2', (112, 112)
+            temp_vision_frame, face_landmark_5, "arcface_112_v2", (112, 112)
         )
 
         # Preprocess image
@@ -641,9 +694,9 @@ def calc_embedding(temp_vision_frame: VisionFrame, face_landmark_5: FaceLandmark
         crop_vision_frame = np.expand_dims(crop_vision_frame, axis=0)
 
         # Calculate embedding
-        embedding = face_recognizer.run(None, {
-            face_recognizer.get_inputs()[0].name: crop_vision_frame
-        })[0]
+        embedding = face_recognizer.run(
+            None, {face_recognizer.get_inputs()[0].name: crop_vision_frame}
+        )[0]
 
         # Process embedding
         embedding = embedding.ravel()
@@ -671,7 +724,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         Tuple of gender (0=female, 1=male) and age in years
     """
     try:
-        gender_age_model = get_face_analyser().get('gender_age')
+        gender_age_model = get_face_analyser().get("gender_age")
 
         # Validate inputs
         if temp_vision_frame is None or bounding_box is None:
@@ -704,7 +757,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         if not np.isfinite(scale) or scale <= 0 or scale > 100:
             logger.warning(f"Invalid scale value: {scale}")
             return 1, 30
-            
+
         translation = 48 - bounding_box.sum(axis=0) * scale * 0.5
 
         # Check translation values
@@ -720,7 +773,8 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         # Validate cropped frame
         if crop_vision_frame is None or crop_vision_frame.shape != (96, 96, 3):
             logger.warning(
-                f"Invalid cropped frame shape: {crop_vision_frame.shape if crop_vision_frame is not None else None}")
+                f"Invalid cropped frame shape: {crop_vision_frame.shape if crop_vision_frame is not None else None}"
+            )
             return 1, 30
 
         # Preprocess image
@@ -733,9 +787,9 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
             return 1, 30
 
         # Run inference
-        prediction = gender_age_model.run(None, {
-            gender_age_model.get_inputs()[0].name: crop_vision_frame
-        })[0][0]
+        prediction = gender_age_model.run(
+            None, {gender_age_model.get_inputs()[0].name: crop_vision_frame}
+        )[0][0]
 
         # Process results
         gender = int(np.argmax(prediction[:2]))
@@ -811,32 +865,27 @@ class FaceProcessor:
             # Clustering parameters
             "similarity_threshold": 0.6,
             "min_faces_in_group": 1,
-
             # Frame sampling parameters
             "sample_interval": 5,
             "ignore_frames": [],
             "ignore_ranges": [],
             "start_frame": 0,
             "end_frame": None,
-
             # Face detection parameters
             "face_detector_size": "640x640",
             "face_detector_score_threshold": 0.5,
             "face_landmarker_score_threshold": 0.85,
             "iou_threshold": 0.4,
-
             # Group filtering parameters
             "min_appearance_ratio": 0.25,
             "min_frontality": 0.2,
-
             # Avatar parameters
             "avatar_size": 112,
             "avatar_padding": 0.07,
             "avatar_quality": 85,
             "output_path": "./faces",
-
             # Processing parameters
-            "max_workers": min(8, os.cpu_count() or 4)
+            "max_workers": min(8, os.cpu_count() or 4),
         }
 
         # Apply user config over defaults
@@ -926,12 +975,15 @@ class FaceProcessor:
 
         # Calculate optimal batch size based on available memory
         import psutil
+
         available_memory = psutil.virtual_memory().available
         # Conservative estimate: each frame processing needs ~100MB
         memory_per_frame = 100 * 1024 * 1024  # 100MB
         max_concurrent = min(
             self.max_workers,
-            max(1, int(available_memory * 0.5 / memory_per_frame))  # Use only 50% of available memory
+            max(
+                1, int(available_memory * 0.5 / memory_per_frame)
+            ),  # Use only 50% of available memory
         )
 
         logger.info(f"Using {max_concurrent} concurrent workers based on available memory")
@@ -940,9 +992,13 @@ class FaceProcessor:
         # GPU models work better with sequential batch processing than concurrent threading
         logger.info("Processing frames sequentially for optimal GPU utilization")
 
-        for i, (frame, idx) in enumerate(tqdm(zip(frames_to_process, frame_indices),
-                                              total=len(frames_to_process),
-                                              desc="Detecting faces")):
+        for i, (frame, idx) in enumerate(
+            tqdm(
+                zip(frames_to_process, frame_indices),
+                total=len(frames_to_process),
+                desc="Detecting faces",
+            )
+        ):
             try:
                 frame_faces = self._process_single_frame(frame, idx)
                 if frame_faces:
@@ -951,6 +1007,7 @@ class FaceProcessor:
                 # Periodic garbage collection to prevent memory buildup
                 if (i + 1) % 50 == 0:
                     import gc
+
                     gc.collect()
 
             except Exception as e:
@@ -958,7 +1015,7 @@ class FaceProcessor:
                 continue
 
         # Process detected faces
-        processed_frames = len(set(f['frame_number'] for f in faces_with_metadata))
+        processed_frames = len(set(f["frame_number"] for f in faces_with_metadata))
         logger.info(f"Found {len(faces_with_metadata)} faces in {processed_frames} frames")
 
         # Continue with clustering and result creation
@@ -996,14 +1053,13 @@ class FaceProcessor:
 
             # Detect gender and age for representative face
             gender, age = detect_gender_age(
-                best_face_data['frame'],
-                best_face_data['face'].bounding_box
+                best_face_data["frame"], best_face_data["face"].bounding_box
             )
 
             # Update all faces in group with same gender and age
             for face_data in group:
-                face_data['face'].gender = gender
-                face_data['face'].age = age
+                face_data["face"].gender = gender
+                face_data["face"].age = age
 
         return groups
 
@@ -1013,9 +1069,7 @@ class FaceProcessor:
         try:
             # Detect faces using face detector with configurable params
             bounding_box_list, face_landmark_5_list, score_list = detect_with_yoloface(
-                frame,
-                self.face_detector_size,
-                self.face_detector_score_threshold
+                frame, self.face_detector_size, self.face_detector_score_threshold
             )
 
             # Create Face objects without gender and age detection
@@ -1026,20 +1080,22 @@ class FaceProcessor:
                 score_list,
                 self.face_detector_score_threshold,
                 self.face_landmarker_score_threshold,
-                self.iou_threshold
+                self.iou_threshold,
             )
 
             # Sort faces by x-coordinate
             frame_faces = sorted(frame_faces, key=lambda f: f.bounding_box[0])
 
             for index_f, face in enumerate(frame_faces):
-                result.append({
-                    'face': face,
-                    'frame_number': frame_number,
-                    'frame': frame.copy(),
-                    'index': index_f,
-                    'quality': self._assess_face_quality(frame, face.bounding_box)
-                })
+                result.append(
+                    {
+                        "face": face,
+                        "frame_number": frame_number,
+                        "frame": frame.copy(),
+                        "index": index_f,
+                        "quality": self._assess_face_quality(frame, face.bounding_box),
+                    }
+                )
         except Exception as e:
             logger.error(f"Error processing frame {frame_number}: {e}")
 
@@ -1050,23 +1106,15 @@ class FaceProcessor:
         frame = cv2.imread(image_path)
         if frame is None:
             logger.error(f"Could not read image: {image_path}")
-            return {
-                "is_change_index": False,
-                "faces": []
-            }
+            return {"is_change_index": False, "faces": []}
 
         # Detect faces using face detector with configurable params
         bounding_box_list, face_landmark_5_list, score_list = detect_with_yoloface(
-            frame,
-            self.face_detector_size,
-            self.face_detector_score_threshold
+            frame, self.face_detector_size, self.face_detector_score_threshold
         )
 
         if not bounding_box_list:
-            return {
-                "is_change_index": False,
-                "faces": []
-            }
+            return {"is_change_index": False, "faces": []}
 
         # Create Face objects without gender and age detection
         frame_faces = create_faces(
@@ -1076,14 +1124,11 @@ class FaceProcessor:
             score_list,
             self.face_detector_score_threshold,
             self.face_landmarker_score_threshold,
-            self.iou_threshold
+            self.iou_threshold,
         )
 
         if not frame_faces:
-            return {
-                "is_change_index": False,
-                "faces": []
-            }
+            return {"is_change_index": False, "faces": []}
 
         # Detect gender and age for each face immediately (since we're not clustering in single image mode)
         for face in frame_faces:
@@ -1094,36 +1139,28 @@ class FaceProcessor:
         data_faces = []
         for index, face in enumerate(frame_faces):
             # Save face image and get base64
-            avatar_base64 = self.get_face_avatar(
-                frame,
-                face.bounding_box
-            )
+            avatar_base64 = self.get_face_avatar(frame, face.bounding_box)
 
             # Save face images to disk for upload
             group_name = f"image_{index:02d}"
-            face_paths = self.save_face_images(
-                frame,
-                face.bounding_box,
-                group_name
+            face_paths = self.save_face_images(frame, face.bounding_box, group_name)
+
+            data_faces.append(
+                {
+                    "name": group_name,
+                    "avatar": avatar_base64,
+                    "avatar_path": face_paths.get("avatar_path"),
+                    "face_image_path": face_paths.get("face_image_path"),
+                    "index": index,
+                    "bounding_box": face.bounding_box.tolist(),
+                    "detector": float(face.scores["detector"]),
+                    "landmarker": float(face.scores["landmarker"]),
+                    "normed_embedding": face.normed_embedding.tolist(),
+                    "gender": int(float(face.gender)),
+                    "age": int(float(face.age)),
+                }
             )
-            
-            data_faces.append({
-                "name": group_name,
-                "avatar": avatar_base64,
-                "avatar_path": face_paths.get("avatar_path"),
-                "face_image_path": face_paths.get("face_image_path"),
-                "index": index,
-                "bounding_box": face.bounding_box.tolist(),
-                "detector": float(face.scores['detector']),
-                "landmarker": float(face.scores['landmarker']),
-                "normed_embedding": face.normed_embedding.tolist(),
-                "gender": int(float(face.gender)),
-                "age": int(float(face.age))
-            })
-        return {
-            "is_change_index": False,
-            "faces": data_faces
-        }
+        return {"is_change_index": False, "faces": data_faces}
 
     def _cluster_faces(self, faces_with_metadata: List[Dict]) -> List[List[Dict]]:
         """Cluster faces using DBSCAN with configurable parameters"""
@@ -1131,13 +1168,11 @@ class FaceProcessor:
             return []
 
         # Extract embeddings
-        embeddings = np.array([f['face'].normed_embedding for f in faces_with_metadata])
+        embeddings = np.array([f["face"].normed_embedding for f in faces_with_metadata])
 
         # Perform clustering
         clustering = DBSCAN(
-            eps=self.similarity_threshold,
-            min_samples=self.min_faces_in_group,
-            metric='cosine'
+            eps=self.similarity_threshold, min_samples=self.min_faces_in_group, metric="cosine"
         ).fit(embeddings)
 
         # Group faces by cluster
@@ -1156,14 +1191,14 @@ class FaceProcessor:
         if not group:
             return None
 
-        best_score = float('-inf')
+        best_score = float("-inf")
         best_face_data = None
 
         for face_data in group:
             quality_score = (
-                    face_data['face'].scores['detector'] * 0.4 +
-                    face_data['face'].scores['landmarker'] * 0.3 +
-                    face_data['quality'] * 0.3
+                face_data["face"].scores["detector"] * 0.4
+                + face_data["face"].scores["landmarker"] * 0.3
+                + face_data["quality"] * 0.3
             )
 
             if quality_score > best_score:
@@ -1174,45 +1209,53 @@ class FaceProcessor:
 
     def _calculate_group_metrics(self, group: List[Dict]) -> Dict[str, float]:
         """Calculate variance metrics for group"""
-        embeddings = np.array([f['face'].normed_embedding for f in group])
+        embeddings = np.array([f["face"].normed_embedding for f in group])
         centroid = np.mean(embeddings, axis=0)
 
         distances = [1 - np.dot(emb, centroid) for emb in embeddings]
         pose_metrics = []
         for face_data in group:
-            pose = self._analyze_pose(face_data['face'].landmarks)
+            pose = self._analyze_pose(face_data["face"].landmarks)
             pose_metrics.append(pose)
         # Calculate pose statistics
-        yaws = [p['yaw'] for p in pose_metrics]
-        pitches = [p['pitch'] for p in pose_metrics]
-        frontality_scores = [p['frontality_score'] for p in pose_metrics]
+        yaws = [p["yaw"] for p in pose_metrics]
+        pitches = [p["pitch"] for p in pose_metrics]
+        frontality_scores = [p["frontality_score"] for p in pose_metrics]
         return {
             "mean_distance": statistics.mean(distances),
             "std_distance": statistics.stdev(distances) if len(distances) > 1 else 0,
             "max_distance": max(distances),
             "min_distance": min(distances),
-            "age_variance": statistics.stdev([f['face'].age for f in group]) if len(group) > 1 else 0,
-            "temporal_spread": max(f['frame_number'] for f in group) - min(f['frame_number'] for f in group),
+            "age_variance": (
+                statistics.stdev([f["face"].age for f in group]) if len(group) > 1 else 0
+            ),
+            "temporal_spread": max(f["frame_number"] for f in group)
+            - min(f["frame_number"] for f in group),
             # Pose variation metrics
-            'pose_yaw_variance': statistics.stdev(yaws) if len(yaws) > 1 else 0,
-            'pose_pitch_variance': statistics.stdev(pitches) if len(pitches) > 1 else 0,
+            "pose_yaw_variance": statistics.stdev(yaws) if len(yaws) > 1 else 0,
+            "pose_pitch_variance": statistics.stdev(pitches) if len(pitches) > 1 else 0,
             # Average pose metrics
-            'pose_avg_yaw': statistics.mean(yaws),
-            'pose_avg_pitch': statistics.mean(pitches),
+            "pose_avg_yaw": statistics.mean(yaws),
+            "pose_avg_pitch": statistics.mean(pitches),
             # Frontality metrics
-            'pose_avg_frontality': statistics.mean(frontality_scores),
-            'pose_min_frontality': min(frontality_scores),
-            'pose_max_frontality': max(frontality_scores),
+            "pose_avg_frontality": statistics.mean(frontality_scores),
+            "pose_min_frontality": min(frontality_scores),
+            "pose_max_frontality": max(frontality_scores),
             # Overall pose quality score (0-1, higher is better)
-            'pose_quality_score': self._calculate_pose_quality_score(
+            "pose_quality_score": self._calculate_pose_quality_score(
                 frontality_scores,
                 statistics.stdev(yaws) if len(yaws) > 1 else 0,
-                statistics.stdev(pitches) if len(pitches) > 1 else 0
-            )
+                statistics.stdev(pitches) if len(pitches) > 1 else 0,
+            ),
         }
 
-    def get_face_avatar(self, frame: np.ndarray, bbox, size: Optional[int] = None,
-                        padding_percent: Optional[float] = None) -> str:
+    def get_face_avatar(
+        self,
+        frame: np.ndarray,
+        bbox,
+        size: Optional[int] = None,
+        padding_percent: Optional[float] = None,
+    ) -> str:
         """
         Extract face region as square and convert to base64
         Args:
@@ -1259,15 +1302,15 @@ class FaceProcessor:
                 # Crop to square from center
                 start_y = (face_img.shape[0] - min_dim) // 2
                 start_x = (face_img.shape[1] - min_dim) // 2
-                face_img = face_img[start_y:start_y + min_dim, start_x:start_x + min_dim]
+                face_img = face_img[start_y : start_y + min_dim, start_x : start_x + min_dim]
 
             # Resize to final size
             face_img = cv2.resize(face_img, (size, size))
 
             # Compress with quality from config
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality]
-            _, buffer = cv2.imencode('.jpg', face_img, encode_param)
-            base64_image = b64encode(buffer).decode('utf-8')
+            _, buffer = cv2.imencode(".jpg", face_img, encode_param)
+            base64_image = b64encode(buffer).decode("utf-8")
 
             return base64_image
 
@@ -1275,8 +1318,14 @@ class FaceProcessor:
             logger.error(f"Error generating avatar: {e}")
             return ""
 
-    def save_face_images(self, frame: np.ndarray, bbox, group_name: str,
-                         save_avatar: bool = True, save_full: bool = True) -> Dict[str, str]:
+    def save_face_images(
+        self,
+        frame: np.ndarray,
+        bbox,
+        group_name: str,
+        save_avatar: bool = True,
+        save_full: bool = True,
+    ) -> Dict[str, str]:
         """
         Save face avatar and full face image to disk
         Args:
@@ -1289,11 +1338,11 @@ class FaceProcessor:
             Dict with paths: {"avatar_path": str, "face_image_path": str}
         """
         paths = {}
-        
+
         try:
             # Ensure output directory exists
             os.makedirs(self.output_path, exist_ok=True)
-            
+
             # Convert bbox coordinates to integers
             x1, y1, x2, y2 = map(int, map(float, bbox))
 
@@ -1324,7 +1373,9 @@ class FaceProcessor:
 
                 # Save avatar
                 avatar_path = os.path.join(self.output_path, f"{group_name}_avatar.jpg")
-                cv2.imwrite(avatar_path, avatar_img, [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality])
+                cv2.imwrite(
+                    avatar_path, avatar_img, [int(cv2.IMWRITE_JPEG_QUALITY), self.avatar_quality]
+                )
                 paths["avatar_path"] = avatar_path
 
             if save_full:
@@ -1351,16 +1402,14 @@ class FaceProcessor:
                 face_path = os.path.join(self.output_path, f"{group_name}_face.jpg")
                 cv2.imwrite(face_path, face_img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
                 paths["face_image_path"] = face_path
-                
+
         except Exception as e:
             logger.error(f"Error saving face images: {e}")
 
         return paths
 
     def _create_result(
-            self, video_path: str,
-            groups: List[List[Dict]],
-            processed_frames: int
+        self, video_path: str, groups: List[List[Dict]], processed_frames: int
     ) -> Dict:
         """Create final result dictionary with face groups"""
         groups_data = []
@@ -1369,7 +1418,7 @@ class FaceProcessor:
         for group_id, group in enumerate(groups):
             # Check if face index changes in any group
             if not is_change_index:
-                all_index = [f['index'] for f in group]
+                all_index = [f["index"] for f in group]
                 if len(set(all_index)) > 1:
                     is_change_index = True
 
@@ -1380,20 +1429,17 @@ class FaceProcessor:
                 continue
 
             # Get frame number
-            frame_num = best_face_data['frame_number']
+            frame_num = best_face_data["frame_number"]
 
             # Save face image and get base64
             avatar_base64 = self.get_face_avatar(
-                best_face_data['frame'],
-                best_face_data['face'].bounding_box
+                best_face_data["frame"], best_face_data["face"].bounding_box
             )
 
             # Save face images and get paths
             group_name = f"{frame_num:06d}_{group_id:02d}"
             face_paths = self.save_face_images(
-                best_face_data['frame'],
-                best_face_data['face'].bounding_box,
-                group_name
+                best_face_data["frame"], best_face_data["face"].bounding_box, group_name
             )
 
             group_data = {
@@ -1403,36 +1449,31 @@ class FaceProcessor:
                 "avatar": avatar_base64,
                 "avatar_path": face_paths.get("avatar_path"),
                 "face_image_path": face_paths.get("face_image_path"),
-                "bounding_box": best_face_data['face'].bounding_box.tolist(),
-                "detector": float(best_face_data['face'].scores['detector']),
-                "landmarker": float(best_face_data['face'].scores['landmarker']),
-                "normed_embedding": best_face_data['face'].normed_embedding.tolist(),
-                "gender": int(float(best_face_data['face'].gender)),
-                "age": int(float(best_face_data['face'].age)),
-                "metrics": self._calculate_group_metrics(group)
+                "bounding_box": best_face_data["face"].bounding_box.tolist(),
+                "detector": float(best_face_data["face"].scores["detector"]),
+                "landmarker": float(best_face_data["face"].scores["landmarker"]),
+                "normed_embedding": best_face_data["face"].normed_embedding.tolist(),
+                "gender": int(float(best_face_data["face"].gender)),
+                "age": int(float(best_face_data["face"].age)),
+                "metrics": self._calculate_group_metrics(group),
             }
             groups_data.append(group_data)
 
-        groups_data_filtered = self._filter_quality_groups(
-            groups_data,
-            processed_frames
-        )
+        groups_data_filtered = self._filter_quality_groups(groups_data, processed_frames)
 
         if len(groups_data_filtered) != len(groups_data):
             logger.info(f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}")
             is_change_index = True
 
-        return {
-            "is_change_index": is_change_index,
-            "faces": groups_data_filtered
-        }
+        return {"is_change_index": is_change_index, "faces": groups_data_filtered}
 
     def _filter_quality_groups(
-            self,
-            groups: List[dict],
-            processed_frames: int,
-            min_appearance_ratio: Optional[float] = None,
-            min_frontality: Optional[float] = None) -> List[dict]:
+        self,
+        groups: List[dict],
+        processed_frames: int,
+        min_appearance_ratio: Optional[float] = None,
+        min_frontality: Optional[float] = None,
+    ) -> List[dict]:
         """
         Filter groups based on quality metrics with configurable thresholds
 
@@ -1446,16 +1487,17 @@ class FaceProcessor:
             List[dict]: Filtered high quality groups
         """
         # Use config values if not specified
-        min_appearance_ratio = min_appearance_ratio if min_appearance_ratio is not None else self.min_appearance_ratio
+        min_appearance_ratio = (
+            min_appearance_ratio if min_appearance_ratio is not None else self.min_appearance_ratio
+        )
         min_frontality = min_frontality if min_frontality is not None else self.min_frontality
 
         filtered_groups = []
 
         for group in groups:
-            appearance_ratio = group['group_size'] / processed_frames
-            min_frontality_score = group['metrics']['pose_min_frontality']
-            if (appearance_ratio >= min_appearance_ratio and
-                    min_frontality_score >= min_frontality):
+            appearance_ratio = group["group_size"] / processed_frames
+            min_frontality_score = group["metrics"]["pose_min_frontality"]
+            if appearance_ratio >= min_appearance_ratio and min_frontality_score >= min_frontality:
                 filtered_groups.append(group)
 
         return filtered_groups
@@ -1490,9 +1532,7 @@ class FaceProcessor:
             size_score = min(size / (frame.shape[0] * frame.shape[1] * 0.25), 1.0)
 
             # Combine scores
-            quality_score = (brightness_score * 0.3 +
-                             contrast_score * 0.3 +
-                             size_score * 0.4)
+            quality_score = brightness_score * 0.3 + contrast_score * 0.3 + size_score * 0.4
 
             return float(quality_score)
 
@@ -1507,9 +1547,9 @@ class FaceProcessor:
         """
         try:
             # Get key facial landmarks (assuming 68 point format)
-            landmarks_68 = landmarks.get('68')
+            landmarks_68 = landmarks.get("68")
             if landmarks_68 is None:
-                return {'yaw': 0.0, 'pitch': 0.0, 'frontality_score': 1.0}
+                return {"yaw": 0.0, "pitch": 0.0, "frontality_score": 1.0}
 
             # Convert to numpy array if needed
             if not isinstance(landmarks_68, np.ndarray):
@@ -1539,19 +1579,18 @@ class FaceProcessor:
             frontality_score = 1.0 - (normalized_yaw * 0.6 + normalized_pitch * 0.4)
 
             return {
-                'yaw': float(yaw),
-                'pitch': float(pitch),
-                'frontality_score': float(frontality_score)
+                "yaw": float(yaw),
+                "pitch": float(pitch),
+                "frontality_score": float(frontality_score),
             }
 
         except Exception as e:
             logger.error(f"Error in analyze_pose: {e}")
-            return {'yaw': 0.0, 'pitch': 0.0, 'frontality_score': 1.0}
+            return {"yaw": 0.0, "pitch": 0.0, "frontality_score": 1.0}
 
-    def _calculate_pose_quality_score(self,
-                                      frontality_scores: List[float],
-                                      yaw_variance: float,
-                                      pitch_variance: float) -> float:
+    def _calculate_pose_quality_score(
+        self, frontality_scores: List[float], yaw_variance: float, pitch_variance: float
+    ) -> float:
         """
         Calculate overall pose quality score for group
         Returns: float 0-1 where 1 is best (mostly frontal poses with low variance)
@@ -1565,7 +1604,7 @@ class FaceProcessor:
             normalized_yaw_var = max(0, 1 - (yaw_variance / 45.0))  # 45 degrees variance as max
             normalized_pitch_var = max(0, 1 - (pitch_variance / 30.0))  # 30 degrees variance as max
 
-            variance_component = (normalized_yaw_var * 0.3 + normalized_pitch_var * 0.3)
+            variance_component = normalized_yaw_var * 0.3 + normalized_pitch_var * 0.3
 
             # Combine scores
             final_score = frontality_component + variance_component
@@ -1580,7 +1619,7 @@ class FaceProcessor:
 def _create_mock_face_analyser():
     """
     Create a mock face analyser for testing/development when models are not available
-    
+
     Returns:
         Dictionary containing mock models that return empty results
     """
@@ -1609,9 +1648,9 @@ def _create_mock_face_analyser():
                 return [np.array([[]], dtype=np.float32)]
 
     return {
-        'face_detector': MockSession('yoloface'),
-        'face_recognizer': MockSession('arcface'),
-        'face_landmarker_68': MockSession('landmarker_68'),
-        'face_landmarker_68_5': MockSession('landmarker_68_5'),
-        'gender_age': MockSession('gender_age')
+        "face_detector": MockSession("yoloface"),
+        "face_recognizer": MockSession("arcface"),
+        "face_landmarker_68": MockSession("landmarker_68"),
+        "face_landmarker_68_5": MockSession("landmarker_68_5"),
+        "gender_age": MockSession("gender_age"),
     }

@@ -17,8 +17,13 @@ from ..core.config import settings
 from ..core.db import init_db, get_db, TaskCRUD
 from ..core.logging_config import setup_logging
 from ..models.schemas_v2 import (
-    UniversalTranscodeConfig, UniversalTranscodeMessage, UniversalTranscodeProfile,
-    UniversalConverterConfig, S3OutputConfig, CallbackAuth, TaskStatus
+    UniversalTranscodeConfig,
+    UniversalTranscodeMessage,
+    UniversalTranscodeProfile,
+    UniversalConverterConfig,
+    S3OutputConfig,
+    CallbackAuth,
+    TaskStatus,
 )
 from ..services import pubsub_service
 from ..services.media_detection_service import media_detection_service
@@ -28,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class PubSubTaskListenerV2:
     """PubSub task listener for v2 UniversalMediaConverter system"""
-    
+
     def __init__(self):
         self.running = False
         self.tasks = []
@@ -75,13 +80,13 @@ class PubSubTaskListenerV2:
             # Validate required fields
             missing_fields = []
             if not task_id:
-                missing_fields.append('task_id')
+                missing_fields.append("task_id")
             if not media_url:
-                missing_fields.append('media_url/source_url')
+                missing_fields.append("media_url/source_url")
             if not profiles:
-                missing_fields.append('profiles')
+                missing_fields.append("profiles")
             if not s3_output_config:
-                missing_fields.append('s3_output_config')
+                missing_fields.append("s3_output_config")
 
             if missing_fields:
                 logger.error(f"Missing required fields in task message v2: {missing_fields}")
@@ -119,25 +124,27 @@ class PubSubTaskListenerV2:
             for profile_data in profiles:
                 try:
                     # Only support v2 format with 'config' field
-                    if 'config' not in profile_data:
-                        profile_id = profile_data.get('id_profile', 'unknown')
-                        logger.error(f"❌ Profile {profile_id} missing 'config' field - v1 format not supported in v2 system")
+                    if "config" not in profile_data:
+                        profile_id = profile_data.get("id_profile", "unknown")
+                        logger.error(
+                            f"❌ Profile {profile_id} missing 'config' field - v1 format not supported in v2 system"
+                        )
                         continue
 
                     # Parse v2 format
-                    universal_config = UniversalConverterConfig(**profile_data['config'])
+                    universal_config = UniversalConverterConfig(**profile_data["config"])
 
                     universal_profile = UniversalTranscodeProfile(
-                        id_profile=profile_data['id_profile'],
-                        input_type=profile_data.get('input_type'),
-                        output_filename=profile_data.get('output_filename'),
-                        config=universal_config
+                        id_profile=profile_data["id_profile"],
+                        input_type=profile_data.get("input_type"),
+                        output_filename=profile_data.get("output_filename"),
+                        config=universal_config,
                     )
                     universal_profiles.append(universal_profile)
                     logger.info(f"✅ Created universal profile: {universal_profile.id_profile}")
 
                 except Exception as e:
-                    profile_id = profile_data.get('id_profile', 'unknown')
+                    profile_id = profile_data.get("id_profile", "unknown")
                     logger.error(f"❌ Failed to parse v2 profile {profile_id}: {e}")
                     continue
 
@@ -155,7 +162,9 @@ class PubSubTaskListenerV2:
                 else:
                     filtered_profiles.append(profile)
 
-            logger.info(f"Profile filtering: {len(filtered_profiles)} selected, {len(skipped_profiles)} skipped")
+            logger.info(
+                f"Profile filtering: {len(filtered_profiles)} selected, {len(skipped_profiles)} skipped"
+            )
             if skipped_profiles:
                 logger.info(f"Skipped profiles (media type mismatch): {skipped_profiles}")
 
@@ -167,7 +176,7 @@ class PubSubTaskListenerV2:
             transcode_config = UniversalTranscodeConfig(
                 profiles=filtered_profiles,
                 s3_output_config=enhanced_s3_config,
-                face_detection_config=face_detection_config
+                face_detection_config=face_detection_config,
             )
 
             # Create/update task in database (reuse existing database logic)
@@ -193,14 +202,16 @@ class PubSubTaskListenerV2:
                         config=v2_config_dict,
                         callback_url=callback_url,
                         callback_auth=callback_auth_obj.model_dump() if callback_auth_obj else None,
-                        pubsub_topic=pubsub_topic
+                        pubsub_topic=pubsub_topic,
                     )
 
                 # Publish UniversalTranscodeMessage for each profile
                 published_count = 0
                 failed_profiles = []
 
-                logger.info(f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {len(filtered_profiles)} profiles ===")
+                logger.info(
+                    f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {len(filtered_profiles)} profiles ==="
+                )
 
                 for i, profile in enumerate(filtered_profiles, 1):
                     try:
@@ -212,7 +223,7 @@ class PubSubTaskListenerV2:
                             source_url=media_url,
                             profile=profile,
                             s3_output_config=enhanced_s3_config,
-                            source_key=None
+                            source_key=None,
                         )
 
                         # Publish to v2 topic (need to implement this in pubsub_service)
@@ -226,37 +237,44 @@ class PubSubTaskListenerV2:
                         logger.error(f"❌ Failed to publish v2 {error_info}, error: {e}")
                         failed_profiles.append(profile.id_profile)
 
-                complete_info = f"{published_count}/{len(filtered_profiles)} messages for task {task_id}"
+                complete_info = (
+                    f"{published_count}/{len(filtered_profiles)} messages for task {task_id}"
+                )
                 logger.info(f"=== PUBSUB PUBLISHING V2 COMPLETE: {complete_info} ===")
 
                 # Publish face detection task if enabled
                 face_config = transcode_config.face_detection_config
-                if face_config and face_config.get('enabled', False):
+                if face_config and face_config.get("enabled", False):
                     try:
                         from ..models.schemas import FaceDetectionMessage
+
                         logger.info(f"Publishing face detection task for {task_id}")
 
-                        await TaskCRUD.update_face_detection_status(db, task_id, TaskStatus.PROCESSING)
+                        await TaskCRUD.update_face_detection_status(
+                            db, task_id, TaskStatus.PROCESSING
+                        )
 
                         # Combine face detection config with s3 output config
                         face_detection_config_copy = face_config.copy()
                         face_detection_config_copy["s3_output_config"] = enhanced_s3_config
 
                         face_message = FaceDetectionMessage(
-                            task_id=task_id,
-                            source_url=media_url,
-                            config=face_detection_config_copy
+                            task_id=task_id, source_url=media_url, config=face_detection_config_copy
                         )
 
                         face_message_id = pubsub_service.publish_face_detection_task(face_message)
                         face_detection_published = True
-                        logger.info(f"✅ Published face detection task, message_id: {face_message_id}")
+                        logger.info(
+                            f"✅ Published face detection task, message_id: {face_message_id}"
+                        )
 
                     except Exception as e:
                         logger.error(f"❌ Failed to publish face detection task: {e}")
                         await TaskCRUD.update_face_detection_status(
-                            db, task_id, TaskStatus.FAILED,
-                            error_message=f"Failed to publish face detection task: {str(e)}"
+                            db,
+                            task_id,
+                            TaskStatus.FAILED,
+                            error_message=f"Failed to publish face detection task: {str(e)}",
                         )
 
                 # If no messages were published, fail the task
@@ -275,17 +293,28 @@ class PubSubTaskListenerV2:
             logger.error(f"Error creating task v2 from message: {e}")
             return None
 
-
     def _validate_media_url(self, url: str) -> bool:
         """Validate if URL is accessible and points to media file"""
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(url)
             if not parsed.scheme or not parsed.netloc:
                 return False
 
             # Check if URL has media file extension
-            allowed_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.jpg', '.jpeg', '.png', '.gif', '.webp']
+            allowed_extensions = [
+                ".mp4",
+                ".avi",
+                ".mov",
+                ".mkv",
+                ".webm",
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp",
+            ]
             path = parsed.path.lower()
             return any(path.endswith(ext) for ext in allowed_extensions)
         except:
@@ -294,11 +323,11 @@ class PubSubTaskListenerV2:
     def pubsub_message_callback(self, message):
         """Callback for PubSub messages"""
         try:
-            data = json.loads(message.data.decode('utf-8'))
+            data = json.loads(message.data.decode("utf-8"))
             logger.info(f"Received PubSub message v2: {data}")
 
             # Schedule the async handler in the main event loop
-            if hasattr(self, '_main_loop') and self._main_loop and not self._main_loop.is_closed():
+            if hasattr(self, "_main_loop") and self._main_loop and not self._main_loop.is_closed():
                 future = asyncio.run_coroutine_threadsafe(
                     self.handle_task_message(data), self._main_loop
                 )
@@ -345,7 +374,7 @@ class PubSubTaskListenerV2:
                     streaming_pull_future = pubsub_service.subscriber_client.subscribe(
                         subscription_path,
                         callback=self.pubsub_message_callback,
-                        flow_control=flow_control
+                        flow_control=flow_control,
                     )
 
                     logger.info(f"Listening for v2 task messages on {subscription_path}")

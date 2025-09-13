@@ -23,7 +23,7 @@ if "postgresql" in database_url:
         pool_timeout=10,  # Faster timeout
         pool_recycle=1800,  # 30 minutes
         pool_pre_ping=True,  # Test connections
-        pool_reset_on_return='rollback'  # Clean connections
+        pool_reset_on_return="rollback",  # Clean connections
     )
 else:
     # SQLite configuration
@@ -34,16 +34,12 @@ else:
         pool_size=5,
         max_overflow=10,
         pool_timeout=10,
-        pool_pre_ping=True
+        pool_pre_ping=True,
     )
 
 logger.info("Database engine configured")
 
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def init_db():
@@ -54,6 +50,7 @@ async def init_db():
     # Warm up connection pool
     try:
         from sqlalchemy import text
+
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
             await session.commit()

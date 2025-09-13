@@ -27,7 +27,9 @@ class TranscodeTaskDB(Base):
     pubsub_topic = Column(String, nullable=True)  # PubSub topic for notifications
 
     # Face detection fields
-    face_detection_status = Column(SQLEnum(TaskStatus), nullable=True, index=True)  # Status of face detection task
+    face_detection_status = Column(
+        SQLEnum(TaskStatus), nullable=True, index=True
+    )  # Status of face detection task
     face_detection_results = Column(JSON, nullable=True)  # Face detection results
     face_detection_error = Column(Text, nullable=True)  # Face detection error message
 
@@ -48,7 +50,7 @@ class TranscodeTaskDB(Base):
             "pubsub_topic": self.pubsub_topic,
             "face_detection_status": self.face_detection_status,
             "face_detection_results": self.face_detection_results,
-            "face_detection_error": self.face_detection_error
+            "face_detection_error": self.face_detection_error,
         }
 
 
@@ -67,5 +69,5 @@ class ConfigTemplateDB(Base):
             "name": self.name,
             "config": self.config,
             "created_at": self.created_at,
-            "updated_at": self.updated_at
+            "updated_at": self.updated_at,
         }

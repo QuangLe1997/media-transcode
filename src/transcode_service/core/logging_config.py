@@ -7,9 +7,7 @@ def setup_logging():
     """Setup optimized logging configuration for Docker"""
 
     # Simpler formatter for better performance
-    console_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Root logger
     root_logger = logging.getLogger()
