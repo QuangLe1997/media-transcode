@@ -56,15 +56,34 @@ uploads/
 # Docker
 docker-compose.override.yml
 
-# Media files (optional - uncomment if you don't want to track test media)
-# *.mp4
-# *.avi
-# *.mov
-# *.mkv
-# *.jpg
-# *.jpeg
-# *.png
-# *.gif
+# Media files - prevent committing large media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4v
+*.3gp
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+*.ico
+*.raw
+*.psd
+
+# Output directories with media files
+app_local/transcode_output/
+app_local/videos/input/
+app_local/videos/output/
+src/transcode_service/services/faces/
+src/transcode_service/services/output/faces/
 
 # Model files (large binaries)
 *.onnx

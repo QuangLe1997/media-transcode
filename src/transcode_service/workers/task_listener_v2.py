@@ -17,7 +17,7 @@ from ..core.config import settings
 from ..core.db import init_db, get_db, TaskCRUD
 from ..core.logging_config import setup_logging
 from ..models.schemas_v2 import (
-    UniversalTranscodeConfig, UniversalTranscodeMessage, UniversalTranscodeProfile, 
+    UniversalTranscodeConfig, UniversalTranscodeMessage, UniversalTranscodeProfile,
     UniversalConverterConfig, S3OutputConfig, CallbackAuth, TaskStatus
 )
 from ..services import pubsub_service
