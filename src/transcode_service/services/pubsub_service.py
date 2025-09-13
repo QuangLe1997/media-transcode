@@ -259,8 +259,7 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published face detection result: {
-                result.task_id}, message_id: {message_id}"
+                f"Published face detection result: {result.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -314,8 +313,7 @@ class PubSubService:
         logger.info(f"📬 Subscription name: {subscription_name}")
         logger.info(f"🔗 Full subscription path: {subscription_path}")
         logger.info(
-            f"📨 Face detection tasks topic: {
-            self.face_detection_tasks_topic_path}"
+            f"📨 Face detection tasks topic: {self.face_detection_tasks_topic_path}"
         )
 
         def message_callback(message):
@@ -324,12 +322,10 @@ class PubSubService:
                 face_detection_message = FaceDetectionMessage(**data)
 
                 logger.info(
-                    f"📥 Received face detection task: {
-                    face_detection_message.task_id}"
+                    f"📥 Received face detection task: {face_detection_message.task_id}"
                 )
                 logger.info(
-                    f"🔗 Source URL: {
-                    face_detection_message.source_url}"
+                    f"🔗 Source URL: {face_detection_message.source_url}"
                 )
                 logger.info(f"⚙️ Config: {face_detection_message.config}")
 
@@ -337,8 +333,7 @@ class PubSubService:
 
                 message.ack()
                 logger.info(
-                    f"✅ Acknowledged face detection message: {
-                    face_detection_message.task_id}"
+                    f"✅ Acknowledged face detection message: {face_detection_message.task_id}"
                 )
 
             except Exception as e:

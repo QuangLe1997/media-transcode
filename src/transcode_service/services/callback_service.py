@@ -159,9 +159,7 @@ class CallbackService:
                         and auth_config.get("username")
                         and auth_config.get("password")
                 ):
-                    credentials = f"{
-                    auth_config['username']}:{
-                    auth_config['password']}"
+                    credentials = f"{auth_config['username']}:{auth_config['password']}"
                     encoded = base64.b64encode(credentials.encode()).decode()
                     headers["Authorization"] = f"Basic {encoded}"
 

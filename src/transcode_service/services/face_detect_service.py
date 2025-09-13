@@ -275,8 +275,7 @@ def get_face_analyser():
 
     if missing_files:
         logger.warning(
-            f"Missing model files after download attempt: {
-            ', '.join(missing_files)}"
+            f"Missing model files after download attempt: {', '.join(missing_files)}"
         )
         return _create_mock_face_analyser()
 
@@ -741,8 +740,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         # Validate frame dimensions
         if temp_vision_frame.shape[0] <= 0 or temp_vision_frame.shape[1] <= 0:
             logger.warning(
-                f"Invalid frame dimensions: {
-                temp_vision_frame.shape}"
+                f"Invalid frame dimensions: {temp_vision_frame.shape}"
             )
             return 1, 30
 
@@ -779,8 +777,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         # Validate cropped frame
         if crop_vision_frame is None or crop_vision_frame.shape != (96, 96, 3):
             logger.warning(
-                f"Invalid cropped frame shape: {
-                crop_vision_frame.shape if crop_vision_frame is not None else None}"
+                f"Invalid cropped frame shape: {crop_vision_frame.shape if crop_vision_frame is not None else None}"
             )
             return 1, 30
 
@@ -791,8 +788,7 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         # Validate preprocessed frame
         if crop_vision_frame.shape != (1, 3, 96, 96):
             logger.warning(
-                f"Invalid preprocessed frame shape: {
-                crop_vision_frame.shape}"
+                f"Invalid preprocessed frame shape: {crop_vision_frame.shape}"
             )
             return 1, 30
 

@@ -139,28 +139,23 @@ class MediaDetectionService:
                 # compatibility)
                 filtered_profiles.append(profile)
                 logger.debug(
-                    f"Profile {
-                    profile.id_profile} has no input_type, including"
+                    f"Profile {profile.id_profile} has no input_type, including"
                 )
             elif profile_input_type == media_type:
                 # Input type matches, include this profile
                 filtered_profiles.append(profile)
                 logger.debug(
-                    f"Profile {
-                    profile.id_profile} matches input_type: {media_type}"
+                    f"Profile {profile.id_profile} matches input_type: {media_type}"
                 )
             else:
                 # Input type doesn't match, skip this profile
                 skipped_profiles.append(profile.id_profile)
                 logger.info(
-                    f"Skipping profile {
-                    profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
+                    f"Skipping profile {profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
                 )
 
         logger.info(
-            f"Filtered {
-            len(filtered_profiles)} profiles for {media_type} input, skipped {
-            len(skipped_profiles)} profiles"
+            f"Filtered {len(filtered_profiles)} profiles for {media_type} input, skipped {len(skipped_profiles)} profiles"
         )
 
         return filtered_profiles, skipped_profiles

@@ -459,8 +459,7 @@ async def create_transcode_task(
                     pass
             raise HTTPException(
                 500,
-                f"Failed to create transcode task: {
-                str(e)}",
+                f"Failed to create transcode task: {str(e)}",
             ) from e
 
         return {
@@ -546,13 +545,7 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"Codec: {vc['codec']}")
                 if vc.get("max_width") or vc.get("max_height"):
                     config_summary.append(
-                        f"Max: {
-                        vc.get(
-                            'max_width',
-                            'auto')}x{
-                        vc.get(
-                            'max_height',
-                            'auto')}"
+                        f"Max: {vc.get('max_width', 'auto')}x{vc.get('max_height', 'auto')}"
                     )
                 if vc.get("bitrate"):
                     config_summary.append(f"Bitrate: {vc['bitrate']}")
@@ -570,13 +563,7 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"Quality: {ic['quality']}%")
                 if ic.get("max_width") or ic.get("max_height"):
                     config_summary.append(
-                        f"Max: {
-                        ic.get(
-                            'max_width',
-                            'auto')}x{
-                        ic.get(
-                            'max_height',
-                            'auto')}"
+                        f"Max: {ic.get('max_width', 'auto')}x{ic.get('max_height', 'auto')}"
                     )
 
         elif output_type == "gif":
@@ -586,13 +573,7 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"FPS: {gc['fps']}")
                 if gc.get("width") or gc.get("height"):
                     config_summary.append(
-                        f"Size: {
-                        gc.get(
-                            'width',
-                            'auto')}x{
-                        gc.get(
-                            'height',
-                            'auto')}"
+                        f"Size: {gc.get('width', 'auto')}x{gc.get('height', 'auto')}"
                     )
                 if gc.get("duration"):
                     config_summary.append(f"Duration: {gc['duration']}s")
@@ -983,8 +964,7 @@ async def delete_task(
                     except Exception as e:
                         failed_deletions.append(f"face_avatar: {face['avatar_url']} - {str(e)}")
                         logger.error(
-                            f"Error deleting face avatar {
-                            face['avatar_url']}: {e}"
+                            f"Error deleting face avatar {face['avatar_url']}: {e}"
                         )
 
                 # Delete face image URL
@@ -1008,8 +988,7 @@ async def delete_task(
                     except Exception as e:
                         failed_deletions.append(f"face_image: {face['face_image_url']} - {str(e)}")
                         logger.error(
-                            f"Error deleting face image {
-                            face['face_image_url']}: {e}"
+                            f"Error deleting face image {face['face_image_url']}: {e}"
                         )
 
     # Delete from database
@@ -1018,9 +997,7 @@ async def delete_task(
 
     if delete_files:
         logger.info(
-            f"Task {task_id} deleted successfully. Deleted {
-            len(deleted_files)} files, {
-            len(failed_deletions)} failed"
+            f"Task {task_id} deleted successfully. Deleted {len(deleted_files)} files, {len(failed_deletions)} failed"
         )
         return {
             "message": "Task deleted successfully",
@@ -1125,9 +1102,7 @@ async def retry_task(
 
             except Exception as e:
                 logger.error(
-                    f"❌ RETRY: Failed to publish v2 profile {
-                    profile.id_profile}: {
-                    str(e)}"
+                    f"❌ RETRY: Failed to publish v2 profile {profile.id_profile}: {str(e)}"
                 )
 
                 # Mark this profile as failed immediately

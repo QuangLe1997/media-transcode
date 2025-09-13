@@ -545,10 +545,7 @@ def main():
     if health_status["status"] == "unhealthy":
         logger.error("Worker is unhealthy, cannot start")
         logger.error(
-            f"Health check error: {
-            health_status.get(
-                'error',
-                'Unknown error')}"
+            f"Health check error: {health_status.get('error', 'Unknown error')}"
         )
         return
     elif health_status["status"] == "degraded":
@@ -557,9 +554,7 @@ def main():
         for model_name, model_info in health_status["models"].items():
             if not model_info["available"] or not model_info["valid"]:
                 logger.warning(
-                    f"Model {model_name}: available={
-                    model_info['available']}, valid={
-                    model_info['valid']}"
+                    f"Model {model_name}: available={model_info['available']}, valid={model_info['valid']}"
                 )
 
     def message_handler(message_data):

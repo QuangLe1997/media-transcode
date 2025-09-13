@@ -307,8 +307,7 @@ class S3Service:
             for attempt in range(max_retries):
                 try:
                     logger.info(
-                        f"Downloading from URL (attempt {
-                        attempt + 1}): {url}"
+                        f"Downloading from URL (attempt {attempt + 1}): {url}"
                     )
 
                     response = requests.get(url, stream=True, timeout=timeout)
@@ -324,8 +323,7 @@ class S3Service:
 
                 except Exception as e:
                     logger.warning(
-                        f"Download attempt {
-                        attempt + 1} failed: {e}"
+                        f"Download attempt {attempt + 1} failed: {e}"
                     )
                     if attempt < max_retries - 1:
                         delay = 2 * (2 ** attempt)  # 2s, 4s, 8s
