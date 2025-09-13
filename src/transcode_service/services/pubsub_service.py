@@ -242,11 +242,6 @@ class PubSubService:
             )
 
             message_id = future.result()
-            logger.info(
-                f"✅ Published face detection task: {
-                message.task_id}, message_id: {message_id}, topic: {
-                self.face_detection_tasks_topic_path}"
-            )
             return message_id
 
         except Exception as e:

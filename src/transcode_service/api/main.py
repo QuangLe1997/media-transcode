@@ -372,12 +372,7 @@ async def create_transcode_task(
                     )
                     message_id = pubsub_service.publish_universal_transcode_task(message)
                     published_count += 1
-                    logger.info(
-                        f"✅ Published v2 {i}/{
-                        len(
-                            transcode_config.profiles)}: profile {
-                        profile.id_profile}, message_id: {message_id}"
-                    )
+
                 except Exception as e:
                     logger.error(
                         f"❌ Failed to publish v2 {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, error: {e}"
@@ -1126,10 +1121,7 @@ async def retry_task(
 
                 message_id = pubsub_service.publish_universal_transcode_task(message)
                 published_count += 1
-                logger.info(
-                    f"✅ RETRY: Published v2 profile {
-                    profile.id_profile}, message_id: {message_id}"
-                )
+
 
             except Exception as e:
                 logger.error(
