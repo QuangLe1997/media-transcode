@@ -3,10 +3,10 @@ Mobile-optimized profile system for video/image transcoding
 Hệ thống profiles tối ưu cho mobile devices với bandwidth khác nhau
 """
 
+import logging
+import subprocess
 from enum import Enum
 from typing import List, Optional
-import subprocess
-import logging
 
 from pydantic import BaseModel, Field
 
@@ -599,7 +599,8 @@ def build_ffmpeg_args(
             gpu_codecs = _check_gpu_codec_availability()
             if not gpu_codecs.get(profile.video_config.codec, False):
                 logging.warning(
-                    f"GPU codec {profile.video_config.codec} not available, falling back to CPU"
+                    f"GPU codec {
+                        profile.video_config.codec} not available, falling back to CPU"
                 )
                 adapted_profile = _adapt_profile_for_cpu(profile)
                 return _build_video_args(adapted_profile.video_config, keep_aspect_ratio)
@@ -636,17 +637,20 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
                 scale = f"scale={even_width}:{even_height}:force_original_aspect_ratio=decrease"
                 # Add a second filter to ensure final dimensions are even
                 filters.append(scale)
-                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # Force even dimensions
+                # Force even dimensions
+                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
             elif config.max_width:
                 even_width, _ = _ensure_even_dimensions(config.max_width, 0)
                 scale = f"scale={even_width}:-2"  # -2 ensures even height
                 filters.append(scale)
-                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # Force even dimensions
+                # Force even dimensions
+                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
             else:
                 _, even_height = _ensure_even_dimensions(0, config.max_height)
                 scale = f"scale=-2:{even_height}"  # -2 ensures even width
                 filters.append(scale)
-                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # Force even dimensions
+                # Force even dimensions
+                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
         else:
             # For fixed scaling, also ensure even dimensions
             width = config.max_width or -1
@@ -659,12 +663,14 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
                 even_width, _ = _ensure_even_dimensions(width, 0)
                 scale = f"scale={even_width}:-2"
                 filters.append(scale)
-                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # Force even dimensions
+                # Force even dimensions
+                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
             elif height > 0:
                 _, even_height = _ensure_even_dimensions(0, height)
                 scale = f"scale=-2:{even_height}"
                 filters.append(scale)
-                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # Force even dimensions
+                # Force even dimensions
+                filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
             else:
                 scale = f"scale={width}:{height}"
                 filters.append(scale)
@@ -702,7 +708,8 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
 
     # Encoding preset - GPU codecs have different presets
     if is_gpu_codec:
-        # NVENC presets: slow, medium, fast, hp, hq, bd, ll, llhq, llhp, lossless
+        # NVENC presets: slow, medium, fast, hp, hq, bd, ll, llhq, llhp,
+        # lossless
         nvenc_preset_map = {
             "ultrafast": "fast",
             "superfast": "fast",
@@ -734,7 +741,8 @@ def _build_video_args(config: VideoConfig, keep_aspect_ratio: bool = True) -> Li
         # Fixed fps
         args.extend(["-r", str(config.fps)])
     elif config.max_fps:
-        # Max fps limitation - use output option instead of filter for compatibility
+        # Max fps limitation - use output option instead of filter for
+        # compatibility
         args.extend(["-r", str(config.max_fps)])
 
     # Audio
@@ -766,7 +774,9 @@ def _build_image_args(config: ImageConfig, keep_aspect_ratio: bool = True) -> Li
     if config.max_width or config.max_height:
         if keep_aspect_ratio:
             if config.max_width and config.max_height:
-                scale = f"scale={config.max_width}:{config.max_height}:force_original_aspect_ratio=decrease"
+                scale = f"scale={
+                    config.max_width}:{
+                    config.max_height}:force_original_aspect_ratio=decrease"
             elif config.max_width:
                 scale = f"scale={config.max_width}:-1"
             else:
@@ -795,7 +805,8 @@ def _build_image_args(config: ImageConfig, keep_aspect_ratio: bool = True) -> Li
     elif config.format == "png":
         args.extend(["-f", "png"])
     else:  # jpeg
-        args.extend(["-q:v", str(31 - int(config.quality * 0.3))])  # Convert 0-100 to 1-31
+        # Convert 0-100 to 1-31
+        args.extend(["-q:v", str(31 - int(config.quality * 0.3))])
         args.extend(["-f", "image2"])
 
     return args

@@ -7,25 +7,25 @@ from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Form
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .background_tasks import result_subscriber
 from ..core.config import settings
-from ..core.db import init_db, get_db, TaskCRUD
+from ..core.db import TaskCRUD, get_db, init_db
 from ..core.db.crud import ConfigTemplateCRUD
-from ..models.schemas import TaskStatus, CallbackAuth, ConfigTemplateRequest
+from ..models.schemas import CallbackAuth, ConfigTemplateRequest, TaskStatus
 from ..models.schemas_v2 import (
+    S3OutputConfig,
+    UniversalConverterConfig,
     UniversalTranscodeConfig,
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
-    UniversalConverterConfig,
-    S3OutputConfig,
 )
-from ..services import s3_service, pubsub_service
+from ..services import pubsub_service, s3_service
 from ..services.callback_service import callback_service
 from ..services.media_detection_service import media_detection_service
+from .background_tasks import result_subscriber
 
 logger = logging.getLogger("api")
 
@@ -102,7 +102,10 @@ async def startup_event():
         asyncio.create_task(result_subscriber())
         #
         total_time = time.time() - start_time
-        logger.info(f"Background services started. Total startup time: {total_time:.2f}s")
+        logger.info(
+            f"Background services started. Total startup time: {
+                total_time:.2f}s"
+        )
 
     except Exception as e:
         logger.error(f"Startup failed: {e}")
@@ -130,7 +133,7 @@ def _validate_media_url(url: str) -> bool:
         ]
         path = parsed.path.lower()
         return any(path.endswith(ext) for ext in allowed_extensions)
-    except:
+    except BaseException:
         return False
 
 
@@ -234,7 +237,10 @@ async def create_transcode_task(
 
             except Exception as e:
                 raise HTTPException(
-                    400, f"Invalid profile {profile_data.get('id_profile', 'unknown')}: {e}"
+                    400,
+                    f"Invalid profile {
+                        profile_data.get(
+                            'id_profile', 'unknown')}: {e}",
                 )
 
         # Create S3 config
@@ -316,17 +322,24 @@ async def create_transcode_task(
                     response = await client.head(media_url)
                     if response.status_code >= 400:
                         raise HTTPException(
-                            400, f"Media URL not accessible: HTTP {response.status_code}"
+                            400,
+                            f"Media URL not accessible: HTTP {
+                                response.status_code}",
                         )
                 except httpx.TimeoutException:
                     raise HTTPException(400, "Media URL request timeout")
                 except Exception as e:
-                    raise HTTPException(400, f"Cannot access media URL: {str(e)}")
+                    raise HTTPException(
+                        400,
+                        f"Cannot access media URL: {
+                            str(e)}",
+                    )
 
             source_url = media_url
             source_key = None  # No S3 key for URL sources
 
-        # Create task in database and publish messages in transaction-like manner
+        # Create task in database and publish messages in transaction-like
+        # manner
         try:
             # Store v2 config directly as dict in database
             config_dict = transcode_config.model_dump()
@@ -367,7 +380,10 @@ async def create_transcode_task(
                     message_id = pubsub_service.publish_universal_transcode_task(message)
                     published_count += 1
                     logger.info(
-                        f"✅ Published v2 {i}/{len(transcode_config.profiles)}: profile {profile.id_profile}, message_id: {message_id}"
+                        f"✅ Published v2 {i}/{
+                            len(
+                                transcode_config.profiles)}: profile {
+                            profile.id_profile}, message_id: {message_id}"
                     )
                 except Exception as e:
                     logger.error(
@@ -428,7 +444,7 @@ async def create_transcode_task(
                 if source_key:
                     try:
                         s3_service.delete_file(source_key)
-                    except:
+                    except BaseException:
                         pass
                 raise HTTPException(500, f"Failed to publish transcode messages: {failed_profiles}")
 
@@ -447,15 +463,19 @@ async def create_transcode_task(
                     await TaskCRUD.update_task_status(
                         db, task_id, TaskStatus.FAILED, f"Unexpected error: {str(e)}"
                     )
-            except:
+            except BaseException:
                 pass
             # Clean up uploaded file if exists
             if source_key:
                 try:
                     s3_service.delete_file(source_key)
-                except:
+                except BaseException:
                     pass
-            raise HTTPException(500, f"Failed to create transcode task: {str(e)}")
+            raise HTTPException(
+                500,
+                f"Failed to create transcode task: {
+                    str(e)}",
+            )
 
         return {
             "task_id": task_id,
@@ -479,7 +499,7 @@ async def create_transcode_task(
         if source_key:
             try:
                 s3_service.delete_file(source_key)
-            except:
+            except BaseException:
                 pass
         raise HTTPException(500, str(e))
 
@@ -540,7 +560,13 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"Codec: {vc['codec']}")
                 if vc.get("max_width") or vc.get("max_height"):
                     config_summary.append(
-                        f"Max: {vc.get('max_width', 'auto')}x{vc.get('max_height', 'auto')}"
+                        f"Max: {
+                            vc.get(
+                                'max_width',
+                                'auto')}x{
+                            vc.get(
+                                'max_height',
+                                'auto')}"
                     )
                 if vc.get("bitrate"):
                     config_summary.append(f"Bitrate: {vc['bitrate']}")
@@ -558,7 +584,13 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"Quality: {ic['quality']}%")
                 if ic.get("max_width") or ic.get("max_height"):
                     config_summary.append(
-                        f"Max: {ic.get('max_width', 'auto')}x{ic.get('max_height', 'auto')}"
+                        f"Max: {
+                            ic.get(
+                                'max_width',
+                                'auto')}x{
+                            ic.get(
+                                'max_height',
+                                'auto')}"
                     )
 
         elif output_type == "gif":
@@ -568,7 +600,13 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                     config_summary.append(f"FPS: {gc['fps']}")
                 if gc.get("width") or gc.get("height"):
                     config_summary.append(
-                        f"Size: {gc.get('width', 'auto')}x{gc.get('height', 'auto')}"
+                        f"Size: {
+                            gc.get(
+                                'width',
+                                'auto')}x{
+                            gc.get(
+                                'height',
+                                'auto')}"
                     )
                 if gc.get("duration"):
                     config_summary.append(f"Duration: {gc['duration']}s")
@@ -581,7 +619,8 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
             "full_config": profile,
         }
 
-    # Ensure outputs format compatibility (metadata already included from consumer)
+    # Ensure outputs format compatibility (metadata already included from
+    # consumer)
     enhanced_outputs = ensure_outputs_compatibility(task.outputs) if task.outputs else None
 
     # Face detection info - check v2 config format
@@ -595,7 +634,8 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
     # Format face detection results for task status
     face_detection_results = None
     if task.face_detection_results:
-        # Process faces to exclude avatar base64 and normed_embedding, but keep URLs
+        # Process faces to exclude avatar base64 and normed_embedding, but keep
+        # URLs
         faces = []
         for face in task.face_detection_results.get("faces", []):
             # Create a copy without sensitive/large data but keep URLs
@@ -609,7 +649,8 @@ async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                 "age": face.get("age"),
                 "group_size": face.get("group_size"),
                 "avatar_url": face.get("avatar_url"),  # Keep avatar URL
-                "face_image_url": face.get("face_image_url"),  # Keep face image URL
+                # Keep face image URL
+                "face_image_url": face.get("face_image_url"),
                 "metrics": face.get("metrics"),
             }
             # Only include non-null values
@@ -747,7 +788,8 @@ async def list_tasks(
 @app.get("/tasks/summary")
 async def get_tasks_summary(db: AsyncSession = Depends(get_db)) -> Dict:
     """Get tasks summary with counts by status - very fast endpoint"""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
+
     from ..core.db.models import TranscodeTaskDB
 
     # Get status counts in single query
@@ -819,7 +861,8 @@ async def get_task_result(task_id: str, db: AsyncSession = Depends(get_db)) -> D
     # Format face detection results
     face_detection_results = None
     if task.face_detection_results:
-        # Process faces to exclude avatar base64 and normed_embedding, but keep URLs
+        # Process faces to exclude avatar base64 and normed_embedding, but keep
+        # URLs
         faces = []
         for face in task.face_detection_results.get("faces", []):
             # Create a copy without sensitive/large data but keep URLs
@@ -833,7 +876,8 @@ async def get_task_result(task_id: str, db: AsyncSession = Depends(get_db)) -> D
                 "age": face.get("age"),
                 "group_size": face.get("group_size"),
                 "avatar_url": face.get("avatar_url"),  # Keep avatar URL
-                "face_image_url": face.get("face_image_url"),  # Keep face image URL
+                # Keep face image URL
+                "face_image_url": face.get("face_image_url"),
                 "metrics": face.get("metrics"),
             }
             # Only include non-null values
@@ -905,7 +949,8 @@ async def delete_task(
                 item_list = items if isinstance(items, list) else [items]
 
                 for item in item_list:
-                    # Handle both new format {url, metadata} and old format (URL string)
+                    # Handle both new format {url, metadata} and old format
+                    # (URL string)
                     url = item.get("url") if isinstance(item, dict) else item
                     if not url:
                         continue
@@ -955,7 +1000,10 @@ async def delete_task(
                         logger.info(f"Deleted face avatar: {key}")
                     except Exception as e:
                         failed_deletions.append(f"face_avatar: {face['avatar_url']} - {str(e)}")
-                        logger.error(f"Error deleting face avatar {face['avatar_url']}: {e}")
+                        logger.error(
+                            f"Error deleting face avatar {
+                                face['avatar_url']}: {e}"
+                        )
 
                 # Delete face image URL
                 if face.get("face_image_url"):
@@ -977,7 +1025,10 @@ async def delete_task(
                         logger.info(f"Deleted face image: {key}")
                     except Exception as e:
                         failed_deletions.append(f"face_image: {face['face_image_url']} - {str(e)}")
-                        logger.error(f"Error deleting face image {face['face_image_url']}: {e}")
+                        logger.error(
+                            f"Error deleting face image {
+                                face['face_image_url']}: {e}"
+                        )
 
     # Delete from database
     await db.delete(task)
@@ -985,7 +1036,9 @@ async def delete_task(
 
     if delete_files:
         logger.info(
-            f"Task {task_id} deleted successfully. Deleted {len(deleted_files)} files, {len(failed_deletions)} failed"
+            f"Task {task_id} deleted successfully. Deleted {
+                len(deleted_files)} files, {
+                len(failed_deletions)} failed"
         )
         return {
             "message": "Task deleted successfully",
@@ -1024,7 +1077,8 @@ async def retry_task(
                 item_list = items if isinstance(items, list) else [items]
 
                 for item in item_list:
-                    # Handle both new format {url, metadata} and old format (URL string)
+                    # Handle both new format {url, metadata} and old format
+                    # (URL string)
                     url = item.get("url") if isinstance(item, dict) else item
                     if not url:
                         continue
@@ -1087,12 +1141,15 @@ async def retry_task(
                 message_id = pubsub_service.publish_universal_transcode_task(message)
                 published_count += 1
                 logger.info(
-                    f"✅ RETRY: Published v2 profile {profile.id_profile}, message_id: {message_id}"
+                    f"✅ RETRY: Published v2 profile {
+                        profile.id_profile}, message_id: {message_id}"
                 )
 
             except Exception as e:
                 logger.error(
-                    f"❌ RETRY: Failed to publish v2 profile {profile.id_profile}: {str(e)}"
+                    f"❌ RETRY: Failed to publish v2 profile {
+                        profile.id_profile}: {
+                        str(e)}"
                 )
 
                 # Mark this profile as failed immediately

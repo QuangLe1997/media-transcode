@@ -5,6 +5,9 @@ Simplified worker that only supports WebP, JPG, and MP4 outputs
 No GIF processing - only formats supported by UniversalMediaConverter
 """
 
+from ..services import pubsub_service, s3_service
+from ..models.schemas_v2 import MediaMetadata, UniversalTranscodeMessage, UniversalTranscodeResult
+import logging.handlers
 import json
 import os
 import shutil
@@ -18,7 +21,6 @@ from typing import List
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Setup logging for consumer
-import logging.handlers
 
 # Create logs directory if it doesn't exist
 os.makedirs("logs", exist_ok=True)
@@ -42,8 +44,6 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-from ..services import s3_service, pubsub_service
-from ..models.schemas_v2 import UniversalTranscodeMessage, UniversalTranscodeResult, MediaMetadata
 
 logger = logging.getLogger("consumer_v2")
 
@@ -134,7 +134,10 @@ def extract_media_metadata(file_path: str) -> MediaMetadata:
 
                 break  # Take first video stream
 
-        logger.info(f"Extracted metadata for {file_path}: {metadata.model_dump()}")
+        logger.info(
+            f"Extracted metadata for {file_path}: {
+                metadata.model_dump()}"
+        )
         return metadata
 
     except Exception as e:
@@ -160,22 +163,33 @@ class TranscodeWorkerV2:
     def process_transcode_task(self, message: UniversalTranscodeMessage):
         """Process a single transcode task using UniversalMediaConverter"""
         logger.info(
-            f"🔄 === CONSUMER V2 PROCESSING START: task {message.task_id}, profile {message.profile.id_profile} ==="
+            f"🔄 === CONSUMER V2 PROCESSING START: task {
+                message.task_id}, profile {
+                message.profile.id_profile} ==="
         )
         logger.info(f"Source: {message.source_url}")
         logger.info(f"Config: {message.profile.config.model_dump()}")
 
         # 📊 S3 CONFIG LOGGING
         logger.info(
-            f"📊 S3 CONFIG in CONSUMER V2 for task {message.task_id}, profile {message.profile.id_profile}:"
+            f"📊 S3 CONFIG in CONSUMER V2 for task {
+                message.task_id}, profile {
+                message.profile.id_profile}:"
         )
         if message.s3_output_config:
             s3_config = message.s3_output_config
             logger.info(f"   📦 Using bucket: {s3_config.bucket}")
             logger.info(f"   📁 Using base_path: {s3_config.base_path}")
-            logger.info(f"   🗂️  Using folder_structure: {s3_config.folder_structure}")
             logger.info(
-                f"   🧹 Cleanup temp files: {getattr(s3_config, 'cleanup_temp_files', 'N/A')}"
+                f"   🗂️  Using folder_structure: {
+                    s3_config.folder_structure}"
+            )
+            logger.info(
+                f"   🧹 Cleanup temp files: {
+                    getattr(
+                        s3_config,
+                        'cleanup_temp_files',
+                        'N/A')}"
             )
         else:
             logger.warning(f"   ⚠️  NO S3 config found in message!")
@@ -186,14 +200,18 @@ class TranscodeWorkerV2:
         try:
             # Handle source file - download from URL
             temp_input = os.path.join(
-                self.temp_dir, f"{message.task_id}_{message.profile.id_profile}_input"
+                self.temp_dir,
+                f"{
+                    message.task_id}_{
+                    message.profile.id_profile}_input",
             )
 
             if message.source_url:
                 # Download from public URL
                 if not s3_service.download_file_from_url(message.source_url, temp_input):
                     raise Exception(
-                        f"Failed to download source file from URL: {message.source_url}"
+                        f"Failed to download source file from URL: {
+                            message.source_url}"
                     )
             else:
                 raise Exception("No source URL provided")
@@ -220,18 +238,24 @@ class TranscodeWorkerV2:
                 completed_at=datetime.now(timezone.utc),
             )
             logger.info(
-                f"Publishing result for task {message.task_id}, profile {message.profile.id_profile}"
+                f"Publishing result for task {
+                    message.task_id}, profile {
+                    message.profile.id_profile}"
             )
             message_id = pubsub_service.publish_universal_transcode_result(result)
             logger.info(f"✅ Result published with message_id: {message_id}")
 
             logger.info(
-                f"✅ === CONSUMER V2 PROCESSING COMPLETE: task {message.task_id}, profile {message.profile.id_profile} ==="
+                f"✅ === CONSUMER V2 PROCESSING COMPLETE: task {
+                    message.task_id}, profile {
+                    message.profile.id_profile} ==="
             )
 
         except Exception as e:
             logger.error(
-                f"❌ === CONSUMER V2 PROCESSING FAILED: task {message.task_id}, profile {message.profile.id_profile} ==="
+                f"❌ === CONSUMER V2 PROCESSING FAILED: task {
+                    message.task_id}, profile {
+                    message.profile.id_profile} ==="
             )
             logger.error(f"Error details: {str(e)}")
 
@@ -245,7 +269,9 @@ class TranscodeWorkerV2:
                     completed_at=datetime.now(timezone.utc),
                 )
                 logger.info(
-                    f"Publishing failure result for task {message.task_id}, profile {message.profile.id_profile}"
+                    f"Publishing failure result for task {
+                        message.task_id}, profile {
+                        message.profile.id_profile}"
                 )
                 message_id = pubsub_service.publish_universal_transcode_result(result)
                 logger.info(f"❌ Failure result published with message_id: {message_id}")
@@ -289,7 +315,8 @@ class TranscodeWorkerV2:
         # Determine output format based on config or auto-detect
         output_format = config.output_format
         if not output_format:
-            # Auto-detect from filename if provided, otherwise use webp as default
+            # Auto-detect from filename if provided, otherwise use webp as
+            # default
             if profile.output_filename:
                 ext = Path(profile.output_filename).suffix.lower().lstrip(".")
                 if ext in ["webp", "jpg", "jpeg", "mp4"]:
@@ -301,14 +328,17 @@ class TranscodeWorkerV2:
 
         # Generate output filename
         if profile.output_filename:
-            base_name = Path(profile.output_filename).stem
+            Path(profile.output_filename).stem
         else:
             input_name = Path(temp_input).stem
-            base_name = f"{input_name}_{profile.id_profile}"
+            f"{input_name}_{profile.id_profile}"
 
         # Create temp output file
         temp_output = os.path.join(
-            self.temp_dir, f"{message.task_id}_{profile.id_profile}_output.{output_format}"
+            self.temp_dir,
+            f"{
+                message.task_id}_{
+                profile.id_profile}_output.{output_format}",
         )
         temp_outputs.append(temp_output)
 
@@ -387,16 +417,34 @@ class TranscodeWorkerV2:
                 # Generate output filename with correct extension
                 file_ext = os.path.splitext(temp_output)[1]
                 if profile.output_filename:
-                    output_filename = f"{Path(profile.output_filename).stem}{file_ext}"
+                    output_filename = f"{
+                        Path(
+                            profile.output_filename).stem}{file_ext}"
                 else:
-                    output_filename = f"{profile.id_profile}_output_{i}{file_ext}"
+                    output_filename = f"{
+                        profile.id_profile}_output_{i}{file_ext}"
 
                 # Generate S3 key based on config
                 s3_config = message.s3_output_config.model_dump()
                 logger.info(f"📤 S3 UPLOAD CONFIG for {output_filename}:")
-                logger.info(f"   📦 S3 bucket: {s3_config.get('bucket', 'N/A')}")
-                logger.info(f"   📁 Base path: {s3_config.get('base_path', 'N/A')}")
-                logger.info(f"   🗂️  Folder structure: {s3_config.get('folder_structure', 'N/A')}")
+                logger.info(
+                    f"   📦 S3 bucket: {
+                        s3_config.get(
+                            'bucket',
+                            'N/A')}"
+                )
+                logger.info(
+                    f"   📁 Base path: {
+                        s3_config.get(
+                            'base_path',
+                            'N/A')}"
+                )
+                logger.info(
+                    f"   🗂️  Folder structure: {
+                        s3_config.get(
+                            'folder_structure',
+                            'N/A')}"
+                )
 
                 output_key = s3_service.generate_output_key(
                     message.task_id, message.profile.id_profile, output_filename, s3_config

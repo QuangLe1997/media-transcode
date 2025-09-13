@@ -1,9 +1,8 @@
-import os
-import requests
-import hashlib
 import logging
-from typing import Dict, Optional
 from pathlib import Path
+from typing import Dict, Optional
+
+import requests
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -80,7 +79,9 @@ class ModelDownloader:
                 return False
 
             logger.info(
-                f"Successfully downloaded {filepath.name} ({filepath.stat().st_size} bytes)"
+                f"Successfully downloaded {
+                    filepath.name} ({
+                    filepath.stat().st_size} bytes)"
             )
             return True
 
@@ -88,7 +89,11 @@ class ModelDownloader:
             logger.error(f"Failed to download {filepath.name}: {str(e)}")
             return False
         except Exception as e:
-            logger.error(f"Unexpected error downloading {filepath.name}: {str(e)}")
+            logger.error(
+                f"Unexpected error downloading {
+                    filepath.name}: {
+                    str(e)}"
+            )
             return False
 
     def is_model_valid(self, filepath: Path, expected_size: Optional[int] = None) -> bool:

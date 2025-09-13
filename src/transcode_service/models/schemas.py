@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class TaskStatus(str, Enum):
@@ -60,7 +60,8 @@ class S3OutputConfig(BaseModel):
             }
         )
 
-        # AWS credentials (use message values if provided, otherwise fall back to settings)
+        # AWS credentials (use message values if provided, otherwise fall back
+        # to settings)
         if fallback_settings:
             config_data.update(
                 {
@@ -116,9 +117,11 @@ class VideoConfig(BaseModel):
     def ensure_even_dimensions(self):
         """Ensure dimensions are even numbers for H.264 encoder compatibility"""
         if self.max_width is not None and self.max_width > 0:
-            self.max_width = (self.max_width + 1) & ~1  # Round up to next even number
+            # Round up to next even number
+            self.max_width = (self.max_width + 1) & ~1
         if self.max_height is not None and self.max_height > 0:
-            self.max_height = (self.max_height + 1) & ~1  # Round up to next even number
+            # Round up to next even number
+            self.max_height = (self.max_height + 1) & ~1
         return self
 
     # Quality control
@@ -196,7 +199,8 @@ class GifConfig(BaseModel):
         if self.width is not None and self.width > 0:
             self.width = (self.width + 1) & ~1  # Round up to next even number
         if self.height is not None and self.height > 0:
-            self.height = (self.height + 1) & ~1  # Round up to next even number
+            # Round up to next even number
+            self.height = (self.height + 1) & ~1
         return self
 
 
@@ -232,7 +236,8 @@ class WebPConfig(BaseModel):
         if self.width is not None and self.width > 0:
             self.width = (self.width + 1) & ~1  # Round up to next even number
         if self.height is not None and self.height > 0:
-            self.height = (self.height + 1) & ~1  # Round up to next even number
+            # Round up to next even number
+            self.height = (self.height + 1) & ~1
         return self
 
 
@@ -379,7 +384,8 @@ class TranscodeResult(BaseModel):
     profile_id: str
     status: str
     output_urls: Optional[List[str]] = None
-    metadata: Optional[List[MediaMetadata]] = None  # Metadata for each output URL
+    # Metadata for each output URL
+    metadata: Optional[List[MediaMetadata]] = None
     error_message: Optional[str] = None
     completed_at: datetime
 

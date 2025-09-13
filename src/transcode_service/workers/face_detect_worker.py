@@ -1,3 +1,6 @@
+from ..services.face_detect_service import FaceProcessor
+from ..services import pubsub_service, s3_service
+from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
 import json
 import logging.handlers
 import os
@@ -6,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,9 +35,6 @@ logging.basicConfig(
     handlers=handlers,
 )
 
-from ..services import s3_service, pubsub_service
-from ..services.face_detect_service import FaceProcessor
-from ..models.schemas import FaceDetectionMessage, FaceDetectionResult
 
 logger = logging.getLogger("face_detect_consumer")
 
@@ -42,7 +42,10 @@ logger = logging.getLogger("face_detect_consumer")
 class FaceDetectionWorker:
     def __init__(self):
         self.temp_dir = tempfile.mkdtemp(prefix="face_detect_")
-        logger.info(f"Initialized FaceDetectionWorker with temp dir: {self.temp_dir}")
+        logger.info(
+            f"Initialized FaceDetectionWorker with temp dir: {
+                self.temp_dir}"
+        )
 
         # Auto check and download models on startup
         self._ensure_models_ready()
@@ -50,8 +53,9 @@ class FaceDetectionWorker:
     def _ensure_models_ready(self):
         """Ensure all required models are available before starting worker"""
         try:
-            from ..services.model_downloader import ensure_face_detection_models
             from pathlib import Path
+
+            from ..services.model_downloader import ensure_face_detection_models
 
             # Get project root and models directory
             project_root = Path(__file__).parent.parent.absolute()
@@ -88,8 +92,9 @@ class FaceDetectionWorker:
 
         try:
             # Check models availability
-            from ..services.model_downloader import get_model_downloader
             from pathlib import Path
+
+            from ..services.model_downloader import get_model_downloader
 
             project_root = Path(__file__).parent.parent.absolute()
             models_dir = project_root / "models_faces"
@@ -181,7 +186,11 @@ class FaceDetectionWorker:
 
         try:
             # Create task-specific temp directory to avoid cross-contamination
-            task_temp_dir = os.path.join(self.temp_dir, f"task_{message.task_id}")
+            task_temp_dir = os.path.join(
+                self.temp_dir,
+                f"task_{
+                    message.task_id}",
+            )
             os.makedirs(task_temp_dir, exist_ok=True)
             logger.info(f"Created task-specific temp directory: {task_temp_dir}")
             # Download input media to task-specific directory
@@ -189,7 +198,10 @@ class FaceDetectionWorker:
             temp_input = self._download_media(message.source_url, message.task_id, task_temp_dir)
 
             if not temp_input or not os.path.exists(temp_input):
-                raise Exception(f"Failed to download input media from {message.source_url}")
+                raise Exception(
+                    f"Failed to download input media from {
+                        message.source_url}"
+                )
 
             # Determine media type
             media_type = self._detect_media_type(temp_input)
@@ -232,7 +244,10 @@ class FaceDetectionWorker:
             logger.info(f"Detected {len(detection_result.get('faces', []))} face groups")
 
         except Exception as e:
-            logger.error(f"Error processing face detection task {message.task_id}: {e}")
+            logger.error(
+                f"Error processing face detection task {
+                    message.task_id}: {e}"
+            )
 
             # Create failure result
             result = FaceDetectionResult(
@@ -245,7 +260,10 @@ class FaceDetectionWorker:
         finally:
             # Publish result
             try:
-                logger.info(f"Publishing face detection result for task {message.task_id}")
+                logger.info(
+                    f"Publishing face detection result for task {
+                        message.task_id}"
+                )
                 message_id = pubsub_service.publish_face_detection_result(result)
                 logger.info(f"✅ Face detection result published with message_id: {message_id}")
             except Exception as result_error:
@@ -474,7 +492,8 @@ class FaceDetectionWorker:
                         # Unknown file type, skip
                         continue
 
-                    # Upload to S3 (key already includes base_path from generate_output_key)
+                    # Upload to S3 (key already includes base_path from
+                    # generate_output_key)
                     s3_url = s3_service.upload_file_from_path(
                         local_path, s3_key, skip_base_folder=True
                     )
@@ -519,7 +538,12 @@ def main():
 
     if health_status["status"] == "unhealthy":
         logger.error("Worker is unhealthy, cannot start")
-        logger.error(f"Health check error: {health_status.get('error', 'Unknown error')}")
+        logger.error(
+            f"Health check error: {
+                health_status.get(
+                    'error',
+                    'Unknown error')}"
+        )
         return
     elif health_status["status"] == "degraded":
         logger.warning("Worker is in degraded state but will continue")
@@ -527,7 +551,9 @@ def main():
         for model_name, model_info in health_status["models"].items():
             if not model_info["available"] or not model_info["valid"]:
                 logger.warning(
-                    f"Model {model_name}: available={model_info['available']}, valid={model_info['valid']}"
+                    f"Model {model_name}: available={
+                        model_info['available']}, valid={
+                        model_info['valid']}"
                 )
 
     def message_handler(message_data):

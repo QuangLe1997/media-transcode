@@ -1,7 +1,7 @@
 import logging
 import mimetypes
 import os
-from typing import Optional, BinaryIO
+from typing import BinaryIO, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -98,17 +98,21 @@ class S3Service:
 
             extra_args = {
                 "ContentType": content_type,
-                "CacheControl": "public, max-age=31536000",  # 1 year cache for better web performance
+                # 1 year cache for better web performance
+                "CacheControl": "public, max-age=31536000",
                 "ContentDisposition": content_disposition,
             }
 
             # Optimize cache control based on content type
             if content_type.startswith("image/"):
-                extra_args["CacheControl"] = "public, max-age=31536000"  # 1 year for images
+                # 1 year for images
+                extra_args["CacheControl"] = "public, max-age=31536000"
             elif content_type.startswith("video/") or content_type.startswith("audio/"):
-                extra_args["CacheControl"] = "public, max-age=2592000"  # 30 days for videos/audio
+                # 30 days for videos/audio
+                extra_args["CacheControl"] = "public, max-age=2592000"
                 # Add additional headers for video streaming
-                extra_args["AcceptRanges"] = "bytes"  # Enable range requests for video streaming
+                # Enable range requests for video streaming
+                extra_args["AcceptRanges"] = "bytes"
 
             self.s3_client.upload_fileobj(
                 file_data, self.bucket_name, full_key, ExtraArgs=extra_args
@@ -150,17 +154,21 @@ class S3Service:
 
             extra_args = {
                 "ContentType": content_type,
-                "CacheControl": "public, max-age=31536000",  # 1 year cache for better web performance
+                # 1 year cache for better web performance
+                "CacheControl": "public, max-age=31536000",
                 "ContentDisposition": content_disposition,
             }
 
             # Optimize cache control based on content type
             if content_type.startswith("image/"):
-                extra_args["CacheControl"] = "public, max-age=31536000"  # 1 year for images
+                # 1 year for images
+                extra_args["CacheControl"] = "public, max-age=31536000"
             elif content_type.startswith("video/") or content_type.startswith("audio/"):
-                extra_args["CacheControl"] = "public, max-age=2592000"  # 30 days for videos/audio
+                # 30 days for videos/audio
+                extra_args["CacheControl"] = "public, max-age=2592000"
                 # Add additional headers for video streaming
-                extra_args["AcceptRanges"] = "bytes"  # Enable range requests for video streaming
+                # Enable range requests for video streaming
+                extra_args["AcceptRanges"] = "bytes"
 
             self.s3_client.upload_file(file_path, self.bucket_name, full_key, ExtraArgs=extra_args)
 
@@ -285,8 +293,9 @@ class S3Service:
     def download_file_from_url(self, url: str, local_path: str) -> bool:
         """Download file from public URL using HTTP"""
         try:
-            import requests
             import time
+
+            import requests
 
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
@@ -296,7 +305,10 @@ class S3Service:
 
             for attempt in range(max_retries):
                 try:
-                    logger.info(f"Downloading from URL (attempt {attempt + 1}): {url}")
+                    logger.info(
+                        f"Downloading from URL (attempt {
+                            attempt + 1}): {url}"
+                    )
 
                     response = requests.get(url, stream=True, timeout=timeout)
                     response.raise_for_status()
@@ -310,7 +322,10 @@ class S3Service:
                     return True
 
                 except Exception as e:
-                    logger.warning(f"Download attempt {attempt + 1} failed: {e}")
+                    logger.warning(
+                        f"Download attempt {
+                            attempt + 1} failed: {e}"
+                    )
                     if attempt < max_retries - 1:
                         delay = 2 * (2**attempt)  # 2s, 4s, 8s
                         logger.info(f"Waiting {delay} seconds before retry...")
@@ -327,7 +342,8 @@ class S3Service:
     ) -> bool:
         """Download file from S3 to local path"""
         try:
-            # Handle both signatures: download_file(key, local_path) and download_file(bucket_name, key, local_path)
+            # Handle both signatures: download_file(key, local_path) and
+            # download_file(bucket_name, key, local_path)
             if local_path is None:
                 # Two parameter call: download_file(key, local_path)
                 key = bucket_name_or_key
@@ -335,7 +351,8 @@ class S3Service:
                 bucket_name = self.bucket_name
                 full_key = self._get_full_key(key)
             else:
-                # Three parameter call: download_file(bucket_name, key, local_path)
+                # Three parameter call: download_file(bucket_name, key,
+                # local_path)
                 bucket_name = bucket_name_or_key
                 key = key_or_local_path
                 full_key = key  # Use key as-is when bucket is explicitly provided

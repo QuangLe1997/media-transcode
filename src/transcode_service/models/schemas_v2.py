@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict, Optional, Union
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field
 
 
 class TaskStatus(str, Enum):

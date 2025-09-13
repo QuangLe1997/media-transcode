@@ -3,13 +3,16 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from .models import Base
 from ..config import settings
+from .models import Base
 
 logger = logging.getLogger(__name__)
 
 database_url = settings.database_url
-logger.info(f"Using database: {database_url.split('@')[0] if '@' in database_url else 'local'}")
+logger.info(
+    f"Using database: {
+        database_url.split('@')[0] if '@' in database_url else 'local'}"
+)
 
 # Configure engine based on database type
 if "postgresql" in database_url:

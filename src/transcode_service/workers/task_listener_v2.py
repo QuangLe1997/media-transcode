@@ -14,16 +14,16 @@ import sys
 from typing import Dict, Optional
 
 from ..core.config import settings
-from ..core.db import init_db, get_db, TaskCRUD
+from ..core.db import TaskCRUD, get_db, init_db
 from ..core.logging_config import setup_logging
 from ..models.schemas_v2 import (
+    CallbackAuth,
+    S3OutputConfig,
+    TaskStatus,
+    UniversalConverterConfig,
     UniversalTranscodeConfig,
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
-    UniversalConverterConfig,
-    S3OutputConfig,
-    CallbackAuth,
-    TaskStatus,
 )
 from ..services import pubsub_service
 from ..services.media_detection_service import media_detection_service
@@ -71,7 +71,8 @@ class PubSubTaskListenerV2:
             face_detection_config = message_data.get("face_detection_config")
 
             # Only support new format (multiple profiles) - v2 requires proper format
-            # Old format conversion removed - API must send proper UniversalConverter format
+            # Old format conversion removed - API must send proper
+            # UniversalConverter format
 
             callback_url = message_data.get("callback_url")
             callback_auth = message_data.get("callback_auth")
@@ -117,9 +118,13 @@ class PubSubTaskListenerV2:
             logger.info(f"🔧 S3 CONFIG ENHANCED for task v2 {task_id}:")
             logger.info(f"   📦 Bucket: {enhanced_s3_config.bucket}")
             logger.info(f"   📁 Base path: {enhanced_s3_config.base_path}")
-            logger.info(f"   🗂️  Folder structure: {enhanced_s3_config.folder_structure}")
+            logger.info(
+                f"   🗂️  Folder structure: {
+                    enhanced_s3_config.folder_structure}"
+            )
 
-            # Convert profiles to UniversalTranscodeProfile format - ONLY new v2 format supported
+            # Convert profiles to UniversalTranscodeProfile format - ONLY new
+            # v2 format supported
             universal_profiles = []
             for profile_data in profiles:
                 try:
@@ -141,7 +146,10 @@ class PubSubTaskListenerV2:
                         config=universal_config,
                     )
                     universal_profiles.append(universal_profile)
-                    logger.info(f"✅ Created universal profile: {universal_profile.id_profile}")
+                    logger.info(
+                        f"✅ Created universal profile: {
+                            universal_profile.id_profile}"
+                    )
 
                 except Exception as e:
                     profile_id = profile_data.get("id_profile", "unknown")
@@ -152,7 +160,8 @@ class PubSubTaskListenerV2:
                 logger.error("No valid profiles after conversion to v2 format")
                 return None
 
-            # Filter profiles based on detected media type (if input_type is specified)
+            # Filter profiles based on detected media type (if input_type is
+            # specified)
             filtered_profiles = []
             skipped_profiles = []
 
@@ -163,7 +172,9 @@ class PubSubTaskListenerV2:
                     filtered_profiles.append(profile)
 
             logger.info(
-                f"Profile filtering: {len(filtered_profiles)} selected, {len(skipped_profiles)} skipped"
+                f"Profile filtering: {
+                    len(filtered_profiles)} selected, {
+                    len(skipped_profiles)} skipped"
             )
             if skipped_profiles:
                 logger.info(f"Skipped profiles (media type mismatch): {skipped_profiles}")
@@ -210,12 +221,15 @@ class PubSubTaskListenerV2:
                 failed_profiles = []
 
                 logger.info(
-                    f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {len(filtered_profiles)} profiles ==="
+                    f"=== PUBSUB PUBLISHING V2 START: task {task_id} with {
+                        len(filtered_profiles)} profiles ==="
                 )
 
                 for i, profile in enumerate(filtered_profiles, 1):
                     try:
-                        profile_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
+                        profile_info = f"{i}/{
+                            len(filtered_profiles)}: profile {
+                            profile.id_profile}"
                         logger.info(f"Publishing v2 {profile_info} for task {task_id}")
 
                         message = UniversalTranscodeMessage(
@@ -226,14 +240,19 @@ class PubSubTaskListenerV2:
                             source_key=None,
                         )
 
-                        # Publish to v2 topic (need to implement this in pubsub_service)
+                        # Publish to v2 topic (need to implement this in
+                        # pubsub_service)
                         message_id = pubsub_service.publish_universal_transcode_task(message)
                         published_count += 1
-                        success_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
+                        success_info = f"{i}/{
+                            len(filtered_profiles)}: profile {
+                            profile.id_profile}"
                         logger.info(f"✅ Published v2 {success_info}, message_id: {message_id}")
 
                     except Exception as e:
-                        error_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
+                        error_info = f"{i}/{
+                            len(filtered_profiles)}: profile {
+                            profile.id_profile}"
                         logger.error(f"❌ Failed to publish v2 {error_info}, error: {e}")
                         failed_profiles.append(profile.id_profile)
 
@@ -263,7 +282,6 @@ class PubSubTaskListenerV2:
                         )
 
                         face_message_id = pubsub_service.publish_face_detection_task(face_message)
-                        face_detection_published = True
                         logger.info(
                             f"✅ Published face detection task, message_id: {face_message_id}"
                         )
@@ -317,7 +335,7 @@ class PubSubTaskListenerV2:
             ]
             path = parsed.path.lower()
             return any(path.endswith(ext) for ext in allowed_extensions)
-        except:
+        except BaseException:
             return False
 
     def pubsub_message_callback(self, message):

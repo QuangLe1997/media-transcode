@@ -1,18 +1,18 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import TranscodeTaskDB, ConfigTemplateDB
 from ...models.schemas import (
-    TaskStatus,
-    TranscodeConfig,
-    MediaMetadata,
     ConfigTemplateRequest,
     ConfigTemplateResponse,
+    MediaMetadata,
+    TaskStatus,
+    TranscodeConfig,
 )
+from .models import ConfigTemplateDB, TranscodeTaskDB
 
 
 class TaskCRUD:
@@ -253,7 +253,8 @@ class TaskCRUD:
         config = TranscodeConfig(**task.config)
         expected_profiles = len(config.profiles)
 
-        # Check if transcode is complete (including partial completion with failures)
+        # Check if transcode is complete (including partial completion with
+        # failures)
         completed_profiles = len(task.outputs) if task.outputs else 0
         failed_profiles = len(task.failed_profiles) if task.failed_profiles else 0
         total_processed = completed_profiles + failed_profiles

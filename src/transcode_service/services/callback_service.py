@@ -1,10 +1,9 @@
-import httpx
-import logging
-from typing import Optional
-from ..models.schemas import CallbackData, CallbackAuth
-from ..core.db.models import TranscodeTaskDB
 import base64
-from datetime import datetime
+import logging
+
+import httpx
+
+from ..core.db.models import TranscodeTaskDB
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,8 @@ class CallbackService:
         # Format face detection results
         face_detection_results = None
         if task.face_detection_results:
-            # Process faces to exclude avatar base64 and normed_embedding, but keep URLs
+            # Process faces to exclude avatar base64 and normed_embedding, but
+            # keep URLs
             faces = []
             for face in task.face_detection_results.get("faces", []):
                 # Create a copy without sensitive/large data but keep URLs
@@ -70,7 +70,8 @@ class CallbackService:
                     "age": face.get("age"),
                     "group_size": face.get("group_size"),
                     "avatar_url": face.get("avatar_url"),  # Keep avatar URL
-                    "face_image_url": face.get("face_image_url"),  # Keep face image URL
+                    # Keep face image URL
+                    "face_image_url": face.get("face_image_url"),
                     "metrics": face.get("metrics"),
                 }
                 # Only include non-null values
@@ -127,7 +128,10 @@ class CallbackService:
             return success
 
         except Exception as e:
-            logger.error(f"Error sending callback for task {task.task_id}: {e}")
+            logger.error(
+                f"Error sending callback for task {
+                    task.task_id}: {e}"
+            )
             return False
 
     @staticmethod
@@ -150,7 +154,9 @@ class CallbackService:
                     and auth_config.get("username")
                     and auth_config.get("password")
                 ):
-                    credentials = f"{auth_config['username']}:{auth_config['password']}"
+                    credentials = f"{
+                        auth_config['username']}:{
+                        auth_config['password']}"
                     encoded = base64.b64encode(credentials.encode()).decode()
                     headers["Authorization"] = f"Basic {encoded}"
 
@@ -165,12 +171,17 @@ class CallbackService:
 
                 if response.status_code >= 200 and response.status_code < 300:
                     logger.info(
-                        f"Callback sent successfully for task {task.task_id} to {task.callback_url}"
+                        f"Callback sent successfully for task {
+                            task.task_id} to {
+                            task.callback_url}"
                     )
                     return True
                 else:
                     logger.error(
-                        f"Callback failed for task {task.task_id}. Status: {response.status_code}, Response: {response.text}"
+                        f"Callback failed for task {
+                            task.task_id}. Status: {
+                            response.status_code}, Response: {
+                            response.text}"
                     )
                     return False
 
@@ -192,17 +203,24 @@ class CallbackService:
 
             if success:
                 logger.info(
-                    f"PubSub notification sent successfully for task {task.task_id} to topic {task.pubsub_topic}"
+                    f"PubSub notification sent successfully for task {
+                        task.task_id} to topic {
+                        task.pubsub_topic}"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to send PubSub notification for task {task.task_id} to topic {task.pubsub_topic}"
+                    f"Failed to send PubSub notification for task {
+                        task.task_id} to topic {
+                        task.pubsub_topic}"
                 )
                 return False
 
         except Exception as e:
-            logger.error(f"Error sending PubSub notification for task {task.task_id}: {e}")
+            logger.error(
+                f"Error sending PubSub notification for task {
+                    task.task_id}: {e}"
+            )
             return False
 
     @staticmethod
@@ -217,7 +235,9 @@ class CallbackService:
             if attempt < max_retries - 1:  # Don't wait after last attempt
                 wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
                 logger.info(
-                    f"Callback failed for task {task.task_id}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})"
+                    f"Callback failed for task {
+                        task.task_id}, retrying in {wait_time}s (attempt {
+                        attempt + 1}/{max_retries})"
                 )
                 await asyncio.sleep(wait_time)
 

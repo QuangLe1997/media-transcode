@@ -1,6 +1,8 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, Text, JSON, Enum as SQLEnum
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 
@@ -21,17 +23,20 @@ class TranscodeTaskDB(Base):
     updated_at = Column(DateTime, onupdate=func.now())
     error_message = Column(Text, nullable=True)
     outputs = Column(JSON, nullable=True)
-    failed_profiles = Column(JSON, nullable=True)  # Store failed profile information
+    # Store failed profile information
+    failed_profiles = Column(JSON, nullable=True)
     callback_url = Column(String, nullable=True)
     callback_auth = Column(JSON, nullable=True)  # Store auth headers/tokens
-    pubsub_topic = Column(String, nullable=True)  # PubSub topic for notifications
+    # PubSub topic for notifications
+    pubsub_topic = Column(String, nullable=True)
 
     # Face detection fields
     face_detection_status = Column(
         SQLEnum(TaskStatus), nullable=True, index=True
     )  # Status of face detection task
     face_detection_results = Column(JSON, nullable=True)  # Face detection results
-    face_detection_error = Column(Text, nullable=True)  # Face detection error message
+    # Face detection error message
+    face_detection_error = Column(Text, nullable=True)
 
     def to_dict(self):
         return {

@@ -1,15 +1,17 @@
-from google.cloud import pubsub_v1
-from google.oauth2 import service_account
 import json
 import logging
-from typing import Optional, Callable
 from concurrent.futures import TimeoutError
+from typing import Callable, Optional
+
+from google.cloud import pubsub_v1
+from google.oauth2 import service_account
+
 from ..core.config import settings
 from ..models.schemas import (
-    TranscodeMessage,
-    TranscodeResult,
     FaceDetectionMessage,
     FaceDetectionResult,
+    TranscodeMessage,
+    TranscodeResult,
 )
 from ..models.schemas_v2 import UniversalTranscodeMessage, UniversalTranscodeResult
 
@@ -77,7 +79,8 @@ class PubSubService:
             ),
         )
 
-        # Face detection topic paths (using same topics or add new ones if needed)
+        # Face detection topic paths (using same topics or add new ones if
+        # needed)
         self.face_detection_tasks_topic_path = self._publisher_client.topic_path(
             self.project_id,
             getattr(settings, "pubsub_face_detection_tasks_topic", "face-detection-worker-tasks"),
@@ -156,7 +159,8 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published universal transcode task: {message.task_id}, message_id: {message_id}"
+                f"Published universal transcode task: {
+                    message.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -182,7 +186,8 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published universal transcode result: {result.task_id}, message_id: {message_id}"
+                f"Published universal transcode result: {
+                    result.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -211,10 +216,13 @@ class PubSubService:
             data = message.model_dump_json().encode("utf-8")
 
             logger.info(
-                f"🔤 Publishing face detection task to topic: {self.face_detection_tasks_topic_path}"
+                f"🔤 Publishing face detection task to topic: {
+                    self.face_detection_tasks_topic_path}"
             )
             logger.info(
-                f"📋 Face detection task details - task_id: {message.task_id}, source_url: {message.source_url}"
+                f"📋 Face detection task details - task_id: {
+                    message.task_id}, source_url: {
+                    message.source_url}"
             )
             logger.info(f"⚙️ Face detection config: {message.config}")
 
@@ -224,7 +232,9 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"✅ Published face detection task: {message.task_id}, message_id: {message_id}, topic: {self.face_detection_tasks_topic_path}"
+                f"✅ Published face detection task: {
+                    message.task_id}, message_id: {message_id}, topic: {
+                    self.face_detection_tasks_topic_path}"
             )
             return message_id
 
@@ -243,7 +253,8 @@ class PubSubService:
 
             message_id = future.result()
             logger.info(
-                f"Published face detection result: {result.task_id}, message_id: {message_id}"
+                f"Published face detection result: {
+                    result.task_id}, message_id: {message_id}"
             )
             return message_id
 
@@ -296,22 +307,32 @@ class PubSubService:
         logger.info(f"📍 Project ID: {self.project_id}")
         logger.info(f"📬 Subscription name: {subscription_name}")
         logger.info(f"🔗 Full subscription path: {subscription_path}")
-        logger.info(f"📨 Face detection tasks topic: {self.face_detection_tasks_topic_path}")
+        logger.info(
+            f"📨 Face detection tasks topic: {
+                self.face_detection_tasks_topic_path}"
+        )
 
         def message_callback(message):
             try:
                 data = json.loads(message.data.decode("utf-8"))
                 face_detection_message = FaceDetectionMessage(**data)
 
-                logger.info(f"📥 Received face detection task: {face_detection_message.task_id}")
-                logger.info(f"🔗 Source URL: {face_detection_message.source_url}")
+                logger.info(
+                    f"📥 Received face detection task: {
+                        face_detection_message.task_id}"
+                )
+                logger.info(
+                    f"🔗 Source URL: {
+                        face_detection_message.source_url}"
+                )
                 logger.info(f"⚙️ Config: {face_detection_message.config}")
 
                 callback(face_detection_message)
 
                 message.ack()
                 logger.info(
-                    f"✅ Acknowledged face detection message: {face_detection_message.task_id}"
+                    f"✅ Acknowledged face detection message: {
+                        face_detection_message.task_id}"
                 )
 
             except Exception as e:

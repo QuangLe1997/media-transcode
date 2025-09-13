@@ -4,7 +4,6 @@ Media detection and profile filtering service
 
 import logging
 import mimetypes
-import os
 from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlparse
@@ -136,22 +135,32 @@ class MediaDetectionService:
             profile_input_type = getattr(profile, "input_type", None)
 
             if profile_input_type is None:
-                # No input_type specified, include all profiles (backward compatibility)
+                # No input_type specified, include all profiles (backward
+                # compatibility)
                 filtered_profiles.append(profile)
-                logger.debug(f"Profile {profile.id_profile} has no input_type, including")
+                logger.debug(
+                    f"Profile {
+                        profile.id_profile} has no input_type, including"
+                )
             elif profile_input_type == media_type:
                 # Input type matches, include this profile
                 filtered_profiles.append(profile)
-                logger.debug(f"Profile {profile.id_profile} matches input_type: {media_type}")
+                logger.debug(
+                    f"Profile {
+                        profile.id_profile} matches input_type: {media_type}"
+                )
             else:
                 # Input type doesn't match, skip this profile
                 skipped_profiles.append(profile.id_profile)
                 logger.info(
-                    f"Skipping profile {profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
+                    f"Skipping profile {
+                        profile.id_profile}: input_type={profile_input_type}, media_type={media_type}"
                 )
 
         logger.info(
-            f"Filtered {len(filtered_profiles)} profiles for {media_type} input, skipped {len(skipped_profiles)} profiles"
+            f"Filtered {
+                len(filtered_profiles)} profiles for {media_type} input, skipped {
+                len(skipped_profiles)} profiles"
         )
 
         return filtered_profiles, skipped_profiles

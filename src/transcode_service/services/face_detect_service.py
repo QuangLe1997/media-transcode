@@ -3,7 +3,7 @@ import logging
 import os
 import statistics
 from base64 import b64encode
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -220,10 +220,11 @@ def get_face_analyser():
     if _face_analyser_instance is not None:
         return _face_analyser_instance
 
-    import onnxruntime
     import os
-    import numpy as np
     from pathlib import Path
+
+    import numpy as np
+    import onnxruntime
 
     # Suppress ONNX Runtime warnings about CUDA
     onnxruntime.set_default_logger_severity(3)
@@ -277,7 +278,10 @@ def get_face_analyser():
             missing_files.append(f"{model_name} ({file_path})")
 
     if missing_files:
-        logger.warning(f"Missing model files after download attempt: {', '.join(missing_files)}")
+        logger.warning(
+            f"Missing model files after download attempt: {
+                ', '.join(missing_files)}"
+        )
         return _create_mock_face_analyser()
 
     # Cấu hình ONNX Runtime
@@ -287,12 +291,14 @@ def get_face_analyser():
     options.inter_op_num_threads = 2
 
     # Memory optimization settings
-    options.enable_cpu_mem_arena = False  # Disable memory arena to reduce fragmentation
+    # Disable memory arena to reduce fragmentation
+    options.enable_cpu_mem_arena = False
     options.enable_mem_pattern = True  # Enable for better GPU memory pattern
     options.enable_mem_reuse = True  # Enable memory reuse between runs
 
     # GPU-specific optimizations
-    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL  # Better GPU utilization
+    # Better GPU utilization
+    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
 
     # GPU configuration - test CUDA context first
     providers = ["CPUExecutionProvider"]  # Default to CPU
@@ -309,7 +315,8 @@ def get_face_analyser():
                 # Test CUDA with explicit device configuration
                 if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
                     try:
-                        # Optimized CUDA provider settings for better GPU utilization
+                        # Optimized CUDA provider settings for better GPU
+                        # utilization
                         cuda_options = {
                             "device_id": 0,
                             "arena_extend_strategy": "kSameAsRequested",  # Better memory management
@@ -737,7 +744,10 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
 
         # Validate frame dimensions
         if temp_vision_frame.shape[0] <= 0 or temp_vision_frame.shape[1] <= 0:
-            logger.warning(f"Invalid frame dimensions: {temp_vision_frame.shape}")
+            logger.warning(
+                f"Invalid frame dimensions: {
+                    temp_vision_frame.shape}"
+            )
             return 1, 30
 
         # Reshape bounding box
@@ -773,7 +783,8 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
         # Validate cropped frame
         if crop_vision_frame is None or crop_vision_frame.shape != (96, 96, 3):
             logger.warning(
-                f"Invalid cropped frame shape: {crop_vision_frame.shape if crop_vision_frame is not None else None}"
+                f"Invalid cropped frame shape: {
+                    crop_vision_frame.shape if crop_vision_frame is not None else None}"
             )
             return 1, 30
 
@@ -783,7 +794,10 @@ def detect_gender_age(temp_vision_frame: VisionFrame, bounding_box: BoundingBox)
 
         # Validate preprocessed frame
         if crop_vision_frame.shape != (1, 3, 96, 96):
-            logger.warning(f"Invalid preprocessed frame shape: {crop_vision_frame.shape}")
+            logger.warning(
+                f"Invalid preprocessed frame shape: {
+                    crop_vision_frame.shape}"
+            )
             return 1, 30
 
         # Run inference
@@ -970,8 +984,12 @@ class FaceProcessor:
         cap.release()
         progress_bar.close()
 
-        # Process frames in parallel with batch processing to avoid memory issues
-        logger.info(f"Processing {len(frames_to_process)} frames with face detection")
+        # Process frames in parallel with batch processing to avoid memory
+        # issues
+        logger.info(
+            f"Processing {
+                len(frames_to_process)} frames with face detection"
+        )
 
         # Calculate optimal batch size based on available memory
         import psutil
@@ -989,7 +1007,8 @@ class FaceProcessor:
         logger.info(f"Using {max_concurrent} concurrent workers based on available memory")
 
         # Process frames sequentially for better GPU utilization
-        # GPU models work better with sequential batch processing than concurrent threading
+        # GPU models work better with sequential batch processing than
+        # concurrent threading
         logger.info("Processing frames sequentially for optimal GPU utilization")
 
         for i, (frame, idx) in enumerate(
@@ -1016,7 +1035,10 @@ class FaceProcessor:
 
         # Process detected faces
         processed_frames = len(set(f["frame_number"] for f in faces_with_metadata))
-        logger.info(f"Found {len(faces_with_metadata)} faces in {processed_frames} frames")
+        logger.info(
+            f"Found {
+                len(faces_with_metadata)} faces in {processed_frames} frames"
+        )
 
         # Continue with clustering and result creation
         logger.info("Clustering faces...")
@@ -1130,7 +1152,8 @@ class FaceProcessor:
         if not frame_faces:
             return {"is_change_index": False, "faces": []}
 
-        # Detect gender and age for each face immediately (since we're not clustering in single image mode)
+        # Detect gender and age for each face immediately (since we're not
+        # clustering in single image mode)
         for face in frame_faces:
             gender, age = detect_gender_age(frame, face.bounding_box)
             face.gender = gender
@@ -1462,7 +1485,11 @@ class FaceProcessor:
         groups_data_filtered = self._filter_quality_groups(groups_data, processed_frames)
 
         if len(groups_data_filtered) != len(groups_data):
-            logger.info(f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}")
+            logger.info(
+                f"Filtered groups: {
+                    len(groups_data) -
+                    len(groups_data_filtered)}"
+            )
             is_change_index = True
 
         return {"is_change_index": is_change_index, "faces": groups_data_filtered}
@@ -1601,8 +1628,10 @@ class FaceProcessor:
 
             # Pose variance penalty (30% weight for each)
             # Convert variances to 0-1 scale where 0 variance is best
-            normalized_yaw_var = max(0, 1 - (yaw_variance / 45.0))  # 45 degrees variance as max
-            normalized_pitch_var = max(0, 1 - (pitch_variance / 30.0))  # 30 degrees variance as max
+            # 45 degrees variance as max
+            normalized_yaw_var = max(0, 1 - (yaw_variance / 45.0))
+            # 30 degrees variance as max
+            normalized_pitch_var = max(0, 1 - (pitch_variance / 30.0))
 
             variance_component = normalized_yaw_var * 0.3 + normalized_pitch_var * 0.3
 
