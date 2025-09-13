@@ -408,11 +408,7 @@ class PubSubService:
             # Use universal results subscription path
             subscription_path = self.subscriber_client.subscription_path(
                 self.project_id,
-                getattr(
-                    settings,
-                    "pubsub_universal_results_subscription",
-                    "universal-transcode-worker-results-sub",
-                ),
+                settings.pubsub_results_subscription
             )
 
             response = self.subscriber_client.pull(
