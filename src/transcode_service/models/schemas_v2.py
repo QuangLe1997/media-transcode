@@ -215,6 +215,29 @@ class UniversalTranscodeMessage(BaseModel):
             raise ValueError("Only one of source_url or source_path should be provided")
 
 
+class UniversalConfigTemplateRequest(BaseModel):
+    """Request to create/update Universal Transcode config template (v2)"""
+    
+    name: str = Field(description="Template name")
+    description: Optional[str] = Field(default=None, description="Template description")
+    profiles: List[UniversalTranscodeProfile] = Field(description="List of transcode profiles")
+    s3_output_config: Optional[S3OutputConfig] = Field(default=None, description="Default S3 output configuration")
+    face_detection_config: Optional[Dict] = Field(default=None, description="Default face detection configuration")
+
+
+class UniversalConfigTemplate(BaseModel):
+    """Universal Transcode config template (v2)"""
+    
+    template_id: str
+    name: str
+    description: Optional[str] = None
+    profiles: List[UniversalTranscodeProfile]
+    s3_output_config: Optional[S3OutputConfig] = None
+    face_detection_config: Optional[Dict] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
 class MediaMetadata(BaseModel):
     """Media metadata extracted from files"""
 
@@ -306,6 +329,29 @@ class FaceDetectionMessage(BaseModel):
             raise ValueError("Either source_url or source_path must be provided")
         if self.source_url and self.source_path:
             raise ValueError("Only one of source_url or source_path should be provided")
+
+
+class UniversalConfigTemplateRequest(BaseModel):
+    """Request to create/update Universal Transcode config template (v2)"""
+    
+    name: str = Field(description="Template name")
+    description: Optional[str] = Field(default=None, description="Template description")
+    profiles: List[UniversalTranscodeProfile] = Field(description="List of transcode profiles")
+    s3_output_config: Optional[S3OutputConfig] = Field(default=None, description="Default S3 output configuration")
+    face_detection_config: Optional[Dict] = Field(default=None, description="Default face detection configuration")
+
+
+class UniversalConfigTemplate(BaseModel):
+    """Universal Transcode config template (v2)"""
+    
+    template_id: str
+    name: str
+    description: Optional[str] = None
+    profiles: List[UniversalTranscodeProfile]
+    s3_output_config: Optional[S3OutputConfig] = None
+    face_detection_config: Optional[Dict] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class FaceDetectionResult(BaseModel):

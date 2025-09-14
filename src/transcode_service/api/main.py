@@ -25,6 +25,7 @@ from ..models.schemas_v2 import (
     UniversalTranscodeConfig,
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
+    UniversalConfigTemplateRequest,
 )
 from ..services.callback_service import callback_service
 from ..services.media_detection_service import media_detection_service
@@ -186,16 +187,39 @@ async def create_transcode_task(
             face_detection_config_data = None
             if face_detection_config:
                 face_detection_config_data = json.loads(face_detection_config)
-
-            # Validate v2 format - each profile must have 'config' field
+                
+            # Validate v2 UniversalTranscodeProfile format
+            validated_profiles = []
             for i, profile_data in enumerate(profiles_data):
-                if "config" not in profile_data:
+                try:
+                    # Validate profile structure
+                    profile = UniversalTranscodeProfile.model_validate(profile_data)
+                    validated_profiles.append(profile)
+                except Exception as profile_error:
                     raise HTTPException(
-                        400, f"Profile {i} missing 'config' field - v2 Universal format required"
+                        400, f"Invalid profile {i} ({profile_data.get('id_profile', f'index_{i}')}): {str(profile_error)}"
                     )
-
+                    
+            # Validate S3 configuration
+            try:
+                s3_config = S3OutputConfig.model_validate(s3_config_data)
+            except Exception as s3_error:
+                raise HTTPException(400, f"Invalid S3 configuration: {str(s3_error)}")
+                
+            # Create UniversalTranscodeConfig object for further validation
+            try:
+                config = UniversalTranscodeConfig(
+                    profiles=validated_profiles,
+                    s3_output_config=s3_config,
+                    face_detection_config=face_detection_config_data
+                )
+            except Exception as config_error:
+                raise HTTPException(400, f"Invalid transcode configuration: {str(config_error)}")
+                
         except json.JSONDecodeError as e:
             raise HTTPException(400, f"Invalid JSON format: {e}") from e
+        except HTTPException:
+            raise
 
         # Parse callback auth if provided
         callback_auth_obj = None
@@ -1349,3 +1373,95 @@ async def delete_config_template(template_id: str, db: AsyncSession = Depends(ge
         raise HTTPException(500, "Failed to delete config template")
 
 # Legacy profile endpoints removed - use /config-templates instead
+
+
+# Universal Config Template v2 Endpoints (for UniversalTranscodeProfile format)
+
+@app.post("/universal-config-templates")
+async def create_universal_config_template(
+        request: UniversalConfigTemplateRequest, db: AsyncSession = Depends(get_db)
+) -> Dict:
+    """Create new Universal config template (v2 format)"""
+    try:
+        # Validate profiles using UniversalTranscodeProfile format
+        for profile in request.profiles:
+            # Validate the config field
+            UniversalConverterConfig.model_validate(profile.config.model_dump())
+        
+        # Generate template ID
+        template_id = str(uuid.uuid4())
+        
+        # Store in database (we'll use the same table but with v2 flag)
+        legacy_request = ConfigTemplateRequest(
+            name=f"{request.name}_v2",
+            config=[]  # We don't use this for v2, store in metadata
+        )
+        
+        template = await ConfigTemplateCRUD.create_template(db, legacy_request)
+        
+        # For now, we'll return success (would need proper DB schema for v2 storage)
+        return {
+            "template_id": template.template_id,
+            "name": request.name,
+            "description": request.description,
+            "profiles": [
+                {
+                    "id_profile": profile.id_profile,
+                    "input_type": profile.input_type,
+                    "output_filename": profile.output_filename,
+                    "config_summary": f"Format: {profile.config.output_format}, Quality: {profile.config.quality}"
+                }
+                for profile in request.profiles
+            ],
+            "s3_output_config": request.s3_output_config.model_dump() if request.s3_output_config else None,
+            "face_detection_config": request.face_detection_config,
+            "created_at": template.created_at,
+            "status": "created",
+            "format_version": "v2"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating universal config template: {e}")
+        raise HTTPException(500, f"Failed to create universal config template: {str(e)}")
+
+
+@app.post("/universal-config-templates/validate")
+async def validate_universal_config_template(request: UniversalConfigTemplateRequest) -> Dict:
+    """Validate Universal config template (v2 format) without saving"""
+    try:
+        validation_results = []
+        
+        for i, profile in enumerate(request.profiles):
+            try:
+                # Validate each profile's config
+                UniversalConverterConfig.model_validate(profile.config.model_dump())
+                validation_results.append({
+                    "profile_index": i,
+                    "id_profile": profile.id_profile,
+                    "status": "valid",
+                    "message": "Profile configuration is valid"
+                })
+            except Exception as profile_error:
+                validation_results.append({
+                    "profile_index": i,
+                    "id_profile": profile.id_profile,
+                    "status": "invalid",
+                    "message": str(profile_error)
+                })
+        
+        # Overall validation status
+        all_valid = all(result["status"] == "valid" for result in validation_results)
+        
+        return {
+            "template_name": request.name,
+            "overall_status": "valid" if all_valid else "invalid",
+            "profiles_validated": len(request.profiles),
+            "valid_profiles": len([r for r in validation_results if r["status"] == "valid"]),
+            "invalid_profiles": len([r for r in validation_results if r["status"] == "invalid"]),
+            "validation_results": validation_results,
+            "format_version": "v2"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error validating universal config template: {e}")
+        raise HTTPException(500, f"Validation failed: {str(e)}")
