@@ -572,18 +572,6 @@
                         <div class="config-section compact">
                             <h3>⚙️ Advanced Settings</h3>
                             <div class="config-form-compact">
-                                <div class="form-group-compact">
-                                    <label>Method</label>
-                                    <select id="method">
-                                        <option value="0">0 - Fast</option>
-                                        <option value="1">1 - Fast</option>
-                                        <option value="2">2 - Good</option>
-                                        <option value="3">3 - Better</option>
-                                        <option value="4" selected>4 - Best</option>
-                                        <option value="5">5 - Slow</option>
-                                        <option value="6">6 - Slowest</option>
-                                    </select>
-                                </div>
                                 
                                 <div class="form-group-compact">
                                     <label>Preset</label>
@@ -597,28 +585,9 @@
                                     </select>
                                 </div>
                                 
-                                <div class="form-group-compact">
-                                    <label>Near Loss</label>
-                                    <input type="number" id="nearLossless" min="0" max="100" placeholder="Off">
-                                </div>
                                 
-                                <div class="form-group-compact">
-                                    <label>Target KB</label>
-                                    <input type="number" id="targetSize" min="10" placeholder="Auto">
-                                </div>
                                 
-                                <div class="form-group-compact">
-                                    <label>Alpha Q</label>
-                                    <input type="number" id="alphaQuality" min="0" max="100" value="100">
-                                </div>
                                 
-                                <div class="form-group-compact">
-                                    <label>Alpha M</label>
-                                    <select id="alphaMethod">
-                                        <option value="0">0 - None</option>
-                                        <option value="1" selected>1 - Comp</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -760,11 +729,11 @@
         
         // Preset configurations
         const presets = {
-            tiny: { width: 180, quality: 60, fps: 8, duration: 3, method: 1 },
-            low: { width: 270, quality: 75, fps: 10, duration: 5, method: 2 },
-            high: { width: 360, quality: 85, fps: 15, duration: 6, method: 4 },
-            banner: { width: 540, quality: 80, fps: 12, duration: 8, method: 4 },
-            lossless: { width: 270, quality: 100, fps: 12, duration: 4, method: 6, lossless: true }
+            tiny: { width: 180, quality: 60, fps: 8, duration: 3 },
+            low: { width: 270, quality: 75, fps: 10, duration: 5 },
+            high: { width: 360, quality: 85, fps: 15, duration: 6 },
+            banner: { width: 540, quality: 80, fps: 12, duration: 8 },
+            lossless: { width: 270, quality: 100, fps: 12, duration: 4, lossless: true }
         };
         
         // File selection events
@@ -852,7 +821,6 @@
             document.getElementById('quality').value = preset.quality;
             document.getElementById('fps').value = preset.fps;
             document.getElementById('duration').value = preset.duration;
-            document.getElementById('method').value = preset.method;
             document.getElementById('lossless').checked = preset.lossless || false;
             
             // Update active preset button
@@ -879,12 +847,7 @@
                 startTime: parseFloat(document.getElementById('startTime').value),
                 
                 // Advanced settings
-                method: parseInt(document.getElementById('method').value),
                 preset: document.getElementById('preset').value,
-                nearLossless: parseInt(document.getElementById('nearLossless').value) || null,
-                targetSize: parseInt(document.getElementById('targetSize').value) || null,
-                alphaQuality: parseInt(document.getElementById('alphaQuality').value),
-                alphaMethod: parseInt(document.getElementById('alphaMethod').value),
                 
                 // Image processing
                 contrast: parseFloat(document.getElementById('contrast').value),
@@ -1051,25 +1014,9 @@
                             
                             <!-- Advanced Settings -->
                             <div class="config-item">
-                                <span class="config-label">Method:</span>
-                                <span class="config-value">${result.config.method}</span>
-                            </div>
-                            <div class="config-item">
                                 <span class="config-label">Preset:</span>
                                 <span class="config-value">${result.config.preset}</span>
                             </div>
-                            ${result.config.nearLossless ? `
-                            <div class="config-item">
-                                <span class="config-label">Near Lossless:</span>
-                                <span class="config-value">${result.config.nearLossless}</span>
-                            </div>
-                            ` : ''}
-                            ${result.config.targetSize ? `
-                            <div class="config-item">
-                                <span class="config-label">Target Size:</span>
-                                <span class="config-value">${result.config.targetSize || 'Auto'}KB</span>
-                            </div>
-                            ` : ''}
                             
                             <!-- Image Processing -->
                             ${result.config.contrast !== 1 ? `
@@ -1192,12 +1139,7 @@
                     if (config.speed) document.getElementById('speed').value = config.speed;
                     if (config.duration) document.getElementById('duration').value = config.duration;
                     if (config.startTime) document.getElementById('startTime').value = config.startTime;
-                    if (config.method) document.getElementById('method').value = config.method;
                     if (config.preset) document.getElementById('preset').value = config.preset;
-                    if (config.nearLossless) document.getElementById('nearLossless').value = config.nearLossless;
-                    if (config.targetSize) document.getElementById('targetSize').value = config.targetSize;
-                    if (config.alphaQuality) document.getElementById('alphaQuality').value = config.alphaQuality;
-                    if (config.alphaMethod) document.getElementById('alphaMethod').value = config.alphaMethod;
                     if (config.contrast) {
                         document.getElementById('contrast').value = config.contrast;
                         document.getElementById('contrastValue').textContent = config.contrast;
