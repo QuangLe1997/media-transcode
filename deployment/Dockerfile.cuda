@@ -17,7 +17,8 @@ RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86
     dpkg -i cuda-keyring_1.1-1_all.deb && \
     rm cuda-keyring_1.1-1_all.deb
 
-# Install dependencies with explicit GnuTLS packages
+# Install dependencies
+# CUDA libraries are already included in the base image
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3.11-dev \
@@ -30,8 +31,6 @@ RUN apt-get update && apt-get install -y \
     nettle-dev \
     pkg-config \
     build-essential \
-    libcudnn8 \
-    cuda-libraries-11-8 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create Python symlinks
