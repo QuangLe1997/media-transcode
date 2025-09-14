@@ -233,6 +233,55 @@
             border-color: #667eea;
         }
         
+        /* Custom Presets */
+        .custom-preset-btn {
+            padding: 10px;
+            border: 2px solid #28a745;
+            background: #f8fff9;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.85rem;
+            position: relative;
+            margin: 5px;
+            display: inline-block;
+            min-width: 140px;
+        }
+        
+        .custom-preset-btn:hover {
+            border-color: #20c997;
+            background: #e9f7ef;
+        }
+        
+        .custom-preset-btn.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        
+        .custom-preset-btn .delete-preset {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .custom-preset-btn .delete-preset:hover {
+            background: #c82333;
+        }
+        
         .convert-btn {
             width: 100%;
             padding: 15px;
@@ -650,9 +699,24 @@
             <div class="panel">
                 <h2>⚙️ Configuration</h2>
                 
-                <!-- Preset Buttons -->
-                <div class="preset-buttons" id="presetButtons">
-                    <!-- Will be populated by JavaScript -->
+                <!-- Preset Management -->
+                <div class="preset-management" style="margin-bottom: 20px;">
+                    <!-- Default Presets -->
+                    <div class="preset-buttons" id="presetButtons">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <!-- Custom Presets -->
+                    <div class="custom-presets" id="customPresets" style="margin-top: 15px;">
+                        <!-- Custom presets will be loaded here -->
+                    </div>
+                    
+                    <!-- Preset Controls -->
+                    <div class="preset-controls" style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                        <input type="text" id="presetName" placeholder="Enter preset name..." style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
+                        <button id="savePresetBtn" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">💾 Save Config</button>
+                        <button id="clearPresetsBtn" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">🗑️ Clear All</button>
+                    </div>
                 </div>
                 
                 <div class="config-row-container">
@@ -939,6 +1003,7 @@
         let selectedFile = null;
         let currentMediaType = 'auto';
         let presets = {};
+        let customPresets = {};
         let results = {}; // Store results for modal access
 
         // DOM elements
@@ -949,6 +1014,10 @@
         const loading = document.getElementById('loading');
         const resultsGrid = document.getElementById('resultsGrid');
         const presetButtons = document.getElementById('presetButtons');
+        const customPresetsContainer = document.getElementById('customPresets');
+        const presetNameInput = document.getElementById('presetName');
+        const savePresetBtn = document.getElementById('savePresetBtn');
+        const clearPresetsBtn = document.getElementById('clearPresetsBtn');
 
         // Media type buttons
         const mediaTypeButtons = document.querySelectorAll('.media-type-btn');
@@ -961,7 +1030,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
             setupModalEventListeners();
+            setupCustomPresetListeners();
             loadPresets();
+            loadCustomPresets();
             loadExistingResults();
         });
 
@@ -1401,8 +1472,35 @@
         }
         
         function copyConfig(filename) {
-            alert('Config copy functionality - to be implemented');
-            // TODO: Implement config copying
+            // Find the result data
+            const result = Object.values(results).find(r => r.outputFilename === filename);
+            if (!result) {
+                alert('Configuration not found');
+                return;
+            }
+            
+            // Apply the configuration to the current form
+            const config = result.config;
+            applyConfigToForm(config);
+            
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'status success';
+            successDiv.style.position = 'fixed';
+            successDiv.style.top = '20px';
+            successDiv.style.right = '20px';
+            successDiv.style.zIndex = '1000';
+            successDiv.style.padding = '10px 15px';
+            successDiv.style.background = '#d4edda';
+            successDiv.style.color = '#155724';
+            successDiv.style.border = '1px solid #c3e6cb';
+            successDiv.style.borderRadius = '5px';
+            successDiv.textContent = '📋 Configuration copied to form!';
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
         }
         
         function deleteResult(filename) {
@@ -1432,6 +1530,247 @@
             } catch (error) {
                 console.error('Failed to load existing results:', error);
             }
+        }
+
+        // Custom Presets Management Functions
+        function setupCustomPresetListeners() {
+            savePresetBtn.addEventListener('click', saveCustomPreset);
+            clearPresetsBtn.addEventListener('click', clearAllCustomPresets);
+            presetNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveCustomPreset();
+                }
+            });
+        }
+
+        function loadCustomPresets() {
+            const saved = localStorage.getItem('universal-media-custom-presets');
+            if (saved) {
+                try {
+                    customPresets = JSON.parse(saved);
+                    renderCustomPresets();
+                } catch (error) {
+                    console.error('Failed to load custom presets:', error);
+                    customPresets = {};
+                }
+            }
+        }
+        
+        function saveCustomPresets() {
+            localStorage.setItem('universal-media-custom-presets', JSON.stringify(customPresets));
+        }
+        
+        function getCurrentConfig() {
+            // Helper function to safely parse numbers
+            const safeParseInt = (value, defaultValue = null) => {
+                const parsed = parseInt(value);
+                return isNaN(parsed) ? defaultValue : parsed;
+            };
+            
+            const safeParseFloat = (value, defaultValue = null) => {
+                const parsed = parseFloat(value);
+                return isNaN(parsed) ? defaultValue : parsed;
+            };
+            
+            const config = {
+                // Common settings
+                width: safeParseInt(document.getElementById('width')?.value),
+                height: safeParseInt(document.getElementById('height')?.value),
+                startTime: safeParseFloat(document.getElementById('startTime')?.value, 0),
+                
+                // Image settings (if visible)
+                jpegQuality: safeParseInt(document.getElementById('jpegQuality')?.value, 90),
+                optimize: document.getElementById('optimize')?.value === 'true',
+                progressive: document.getElementById('progressive')?.value === 'true',
+                
+                // Video settings (if visible)
+                codec: document.getElementById('codec')?.value,
+                crf: safeParseInt(document.getElementById('crf')?.value, 23),
+                preset: document.getElementById('preset')?.value,
+                fps: safeParseInt(document.getElementById('fps')?.value),
+                duration: safeParseFloat(document.getElementById('duration')?.value),
+                bitrate: document.getElementById('bitrate')?.value,
+                
+                // Color & Filters
+                contrast: safeParseFloat(document.getElementById('contrast')?.value, 1.0),
+                brightness: safeParseFloat(document.getElementById('brightness')?.value, 0.0),
+                saturation: safeParseFloat(document.getElementById('saturation')?.value, 1.0),
+                gamma: safeParseFloat(document.getElementById('gamma')?.value, 1.0),
+                denoising: document.getElementById('denoising')?.value === 'true',
+                sharpening: document.getElementById('sharpening')?.value === 'true',
+                
+                // Video Advanced (if visible)
+                profile: document.getElementById('profile')?.value,
+                level: document.getElementById('level')?.value,
+                audioCodec: document.getElementById('audioCodec')?.value,
+                audioBitrate: document.getElementById('audioBitrate')?.value,
+                twoPass: document.getElementById('twoPass')?.value === 'true',
+                hardwareAccel: document.getElementById('hardwareAccel')?.value === 'true',
+                
+                // Store current media type for proper restore
+                mediaType: currentMediaType
+            };
+            
+            // Remove null/undefined values
+            Object.keys(config).forEach(key => {
+                if (config[key] === null || config[key] === undefined) {
+                    delete config[key];
+                }
+            });
+            
+            return config;
+        }
+        
+        function applyConfigToForm(config) {
+            // Switch to the correct media type first
+            if (config.mediaType && config.mediaType !== currentMediaType) {
+                const mediaTypeBtn = document.querySelector(`[data-type="${config.mediaType}"]`);
+                if (mediaTypeBtn) {
+                    mediaTypeBtn.click();
+                }
+            }
+            
+            // Apply common settings
+            if (config.width) document.getElementById('width').value = config.width;
+            if (config.height) document.getElementById('height').value = config.height;
+            if (config.startTime !== undefined) document.getElementById('startTime').value = config.startTime;
+            
+            // Apply image settings
+            if (config.jpegQuality) document.getElementById('jpegQuality').value = config.jpegQuality;
+            if (config.optimize !== undefined) document.getElementById('optimize').value = config.optimize.toString();
+            if (config.progressive !== undefined) document.getElementById('progressive').value = config.progressive.toString();
+            
+            // Apply video settings
+            if (config.codec) document.getElementById('codec').value = config.codec;
+            if (config.crf) document.getElementById('crf').value = config.crf;
+            if (config.preset) document.getElementById('preset').value = config.preset;
+            if (config.fps) document.getElementById('fps').value = config.fps;
+            if (config.duration) document.getElementById('duration').value = config.duration;
+            if (config.bitrate) document.getElementById('bitrate').value = config.bitrate;
+            
+            // Apply color & filters
+            if (config.contrast) document.getElementById('contrast').value = config.contrast;
+            if (config.brightness) document.getElementById('brightness').value = config.brightness;
+            if (config.saturation) document.getElementById('saturation').value = config.saturation;
+            if (config.gamma) document.getElementById('gamma').value = config.gamma;
+            if (config.denoising !== undefined) document.getElementById('denoising').value = config.denoising.toString();
+            if (config.sharpening !== undefined) document.getElementById('sharpening').value = config.sharpening.toString();
+            
+            // Apply video advanced
+            if (config.profile) document.getElementById('profile').value = config.profile;
+            if (config.level) document.getElementById('level').value = config.level;
+            if (config.audioCodec) document.getElementById('audioCodec').value = config.audioCodec;
+            if (config.audioBitrate) document.getElementById('audioBitrate').value = config.audioBitrate;
+            if (config.twoPass !== undefined) document.getElementById('twoPass').value = config.twoPass.toString();
+            if (config.hardwareAccel !== undefined) document.getElementById('hardwareAccel').value = config.hardwareAccel.toString();
+        }
+        
+        function saveCustomPreset() {
+            const name = presetNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a preset name');
+                return;
+            }
+            
+            // Check if it conflicts with default presets
+            const defaultPresetNames = Object.keys(presets);
+            if (defaultPresetNames.includes(name)) {
+                alert('Cannot overwrite default presets. Please choose a different name.');
+                return;
+            }
+            
+            const config = getCurrentConfig();
+            customPresets[name] = {
+                name: name,
+                ...config,
+                created: new Date().toISOString()
+            };
+            
+            saveCustomPresets();
+            renderCustomPresets();
+            presetNameInput.value = '';
+            
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'status success';
+            successDiv.style.position = 'fixed';
+            successDiv.style.top = '20px';
+            successDiv.style.right = '20px';
+            successDiv.style.zIndex = '1000';
+            successDiv.style.padding = '10px 15px';
+            successDiv.style.background = '#d4edda';
+            successDiv.style.color = '#155724';
+            successDiv.style.border = '1px solid #c3e6cb';
+            successDiv.style.borderRadius = '5px';
+            successDiv.textContent = `✅ Preset "${name}" saved successfully!`;
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+        
+        function deleteCustomPreset(name) {
+            if (confirm(`Are you sure you want to delete preset "${name}"?`)) {
+                delete customPresets[name];
+                saveCustomPresets();
+                renderCustomPresets();
+            }
+        }
+        
+        function clearAllCustomPresets() {
+            if (confirm('Are you sure you want to delete all custom presets? This cannot be undone.')) {
+                customPresets = {};
+                saveCustomPresets();
+                renderCustomPresets();
+            }
+        }
+        
+        function renderCustomPresets() {
+            customPresetsContainer.innerHTML = '';
+            
+            Object.entries(customPresets).forEach(([key, preset]) => {
+                const btn = document.createElement('div');
+                btn.className = 'custom-preset-btn';
+                btn.dataset.preset = key;
+                
+                // Create preset description based on media type
+                const isVideo = preset.mediaType === 'video';
+                const description = isVideo 
+                    ? `${preset.width || 'Auto'}px, ${preset.codec || 'H264'}, CRF${preset.crf || 23}`
+                    : `${preset.width || 'Auto'}px, Q${preset.jpegQuality || 90}`;
+                
+                btn.innerHTML = `
+                    <strong>🎛️ ${preset.name}</strong><br>
+                    <small>${description}</small>
+                `;
+                
+                // Create delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-preset';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = 'Delete preset';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteCustomPreset(key);
+                };
+                btn.appendChild(deleteBtn);
+                
+                // Add click event for preset selection
+                btn.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('delete-preset')) {
+                        // Clear all active states
+                        document.querySelectorAll('.preset-btn, .custom-preset-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        applyConfigToForm(preset);
+                    }
+                });
+                
+                customPresetsContainer.appendChild(btn);
+            });
+            
+            // Show/hide custom presets section
+            customPresetsContainer.style.display = Object.keys(customPresets).length > 0 ? 'block' : 'none';
         }
 
         function showError(message) {
