@@ -18,6 +18,7 @@ from .background_tasks import result_subscriber
 from ..core.config import settings
 from ..core.db.crud import TaskCRUD, ConfigTemplateCRUD
 from ..core.db.database import get_db, init_db
+from ..core.logging_config import setup_logging
 from ..core.db.models import TranscodeTaskDB
 from ..models.schemas_v2 import CallbackAuth, FaceDetectionMessage, TaskStatus
 from ..models.schemas_v2 import (
@@ -39,6 +40,9 @@ logger = logging.getLogger("api")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle application startup and shutdown"""
+    # Setup logging first
+    setup_logging()
+    
     # Startup
     logger.info("🚀 API server startup initiated")
     start_time = time.time()
