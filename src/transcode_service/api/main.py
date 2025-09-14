@@ -230,16 +230,6 @@ async def create_transcode_task(
             except Exception as s3_error:
                 raise HTTPException(400, f"Invalid S3 configuration: {str(s3_error)}")
                 
-            # Create UniversalTranscodeConfig object for further validation
-            try:
-                config = UniversalTranscodeConfig(
-                    profiles=validated_profiles,
-                    s3_output_config=s3_config,
-                    face_detection_config=face_detection_config_data
-                )
-            except Exception as config_error:
-                raise HTTPException(400, f"Invalid transcode configuration: {str(config_error)}")
-                
         except json.JSONDecodeError as e:
             raise HTTPException(400, f"Invalid JSON format: {e}") from e
         except HTTPException:
@@ -338,28 +328,10 @@ async def create_transcode_task(
             if not _validate_media_url(media_url):
                 raise HTTPException(400, "Invalid media URL or unsupported file type")
 
-            # Test if URL is accessible
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                try:
-                    response = await client.head(media_url)
-                    if response.status_code >= 400:
-                        raise HTTPException(
-                            400,
-                            f"Media URL not accessible: HTTP {response.status_code}",
-                        )
-                except httpx.TimeoutException as exc:
-                    raise HTTPException(400, "Media URL request timeout") from exc
-                except Exception as e:
-                    raise HTTPException(
-                        400,
-                        f"Cannot access media URL: {str(e)}",
-                    ) from e
-
             source_url = media_url
             source_key = None  # No S3 key for URL sources
 
         # Create task in database and publish messages in transaction-like
-        # manner
         try:
             # Store v2 config directly as dict in database
             config_dict = transcode_config.model_dump()
@@ -416,10 +388,7 @@ async def create_transcode_task(
 
             # Publish face detection task if enabled
             face_detection_published = False
-            if (
-                    transcode_config.face_detection_config
-                    and getattr(transcode_config.face_detection_config, "enabled", False)
-            ):
+            if  transcode_config.face_detection_config and bool(transcode_config.face_detection_config.get('enabled')):
                 try:
                     logger.info(f"Publishing face detection task for {task_id}")
 
@@ -444,7 +413,8 @@ async def create_transcode_task(
                         TaskStatus.FAILED,
                         error_message=f"Failed to publish face detection task: {str(e)}",
                     )
-
+            else:
+                logger.info(f"No face_detection_config {face_detection_config_data}")
             # If no messages were published, fail the task and cleanup
             if published_count == 0:
                 await TaskCRUD.update_task_status(
