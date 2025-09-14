@@ -1189,6 +1189,38 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.delete("/output/{filename:path}")
+async def delete_output_file(filename: str):
+    """Delete an output file from the server"""
+    try:
+        # Construct the full path to the file in app_local/outputs
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app_local", "outputs")
+        file_path = os.path.join(output_dir, filename)
+        
+        # Security check - ensure the path is within the outputs directory
+        abs_output_dir = os.path.abspath(output_dir)
+        abs_file_path = os.path.abspath(file_path)
+        
+        if not abs_file_path.startswith(abs_output_dir):
+            raise HTTPException(403, "Access to file outside outputs directory is forbidden")
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            raise HTTPException(404, f"File not found: {filename}")
+        
+        # Delete the file
+        os.remove(file_path)
+        logger.info(f"Deleted output file: {filename}")
+        
+        return {"message": f"File {filename} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting file {filename}: {e}")
+        raise HTTPException(500, f"Failed to delete file: {str(e)}")
+
+
 @app.get("/health/detailed")
 async def health_check_detailed():
     """Detailed health check with timing info"""
