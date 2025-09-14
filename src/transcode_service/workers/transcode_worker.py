@@ -304,7 +304,7 @@ class TranscodeWorkerV2:
         config = profile.config
 
         # Determine output format based on config or auto-detect
-        output_format = config.output_format
+        output_format = config.output_format.value
         if output_format:
             # Get the string value from enum if it's an enum, otherwise use as-is
             if hasattr(output_format, 'value'):
