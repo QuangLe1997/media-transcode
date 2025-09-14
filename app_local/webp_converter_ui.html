@@ -913,35 +913,8 @@
             convertBtn.disabled = true;
             convertBtn.textContent = '🔄 Converting...';
             
-            // Get configuration
-            const config = {
-                // Basic settings
-                width: parseInt(document.getElementById('width').value) || null,
-                height: parseInt(document.getElementById('height').value) || null,
-                quality: parseInt(document.getElementById('quality').value),
-                fps: parseInt(document.getElementById('fps').value),
-                duration: parseFloat(document.getElementById('duration').value),
-                speed: parseFloat(document.getElementById('speed').value),
-                startTime: parseFloat(document.getElementById('startTime').value),
-                
-                // Advanced settings
-                preset: document.getElementById('preset').value,
-                
-                // Image processing
-                contrast: parseFloat(document.getElementById('contrast').value),
-                brightness: parseFloat(document.getElementById('brightness').value),
-                saturation: parseFloat(document.getElementById('saturation').value),
-                denoising: document.getElementById('denoising').checked,
-                sharpening: document.getElementById('sharpening').checked,
-                autoFilter: document.getElementById('autoFilter').checked,
-                
-                // Special modes
-                lossless: document.getElementById('lossless').checked,
-                twoPass: document.getElementById('twoPass').checked,
-                animated: document.getElementById('animated').checked,
-                loopCount: parseInt(document.getElementById('loopCount').value),
-                saveFrames: document.getElementById('saveFrames').checked
-            };
+            // Get configuration using the safe parsing function
+            const config = getCurrentConfig();
             
             try {
                 // Start conversion
@@ -1298,23 +1271,34 @@
         }
         
         function getCurrentConfig() {
+            // Helper function to safely parse numbers
+            const safeParseInt = (value, defaultValue = null) => {
+                const parsed = parseInt(value);
+                return isNaN(parsed) ? defaultValue : parsed;
+            };
+            
+            const safeParseFloat = (value, defaultValue = null) => {
+                const parsed = parseFloat(value);
+                return isNaN(parsed) ? defaultValue : parsed;
+            };
+            
             return {
                 // Basic settings
-                width: parseInt(document.getElementById('width').value) || null,
-                height: parseInt(document.getElementById('height').value) || null,
-                quality: parseInt(document.getElementById('quality').value),
-                fps: parseInt(document.getElementById('fps').value),
-                duration: parseFloat(document.getElementById('duration').value),
-                speed: parseFloat(document.getElementById('speed').value),
-                startTime: parseFloat(document.getElementById('startTime').value),
+                width: safeParseInt(document.getElementById('width').value),
+                height: safeParseInt(document.getElementById('height').value),
+                quality: safeParseInt(document.getElementById('quality').value, 85),
+                fps: safeParseInt(document.getElementById('fps').value, 15),
+                duration: safeParseFloat(document.getElementById('duration').value, 6),
+                speed: safeParseFloat(document.getElementById('speed').value, 1.0),
+                startTime: safeParseFloat(document.getElementById('startTime').value, 0),
                 
                 // Advanced settings
-                preset: document.getElementById('preset').value,
+                preset: document.getElementById('preset').value || 'default',
                 
                 // Image processing
-                contrast: parseFloat(document.getElementById('contrast').value),
-                brightness: parseFloat(document.getElementById('brightness').value),
-                saturation: parseFloat(document.getElementById('saturation').value),
+                contrast: safeParseFloat(document.getElementById('contrast').value, 1.0),
+                brightness: safeParseFloat(document.getElementById('brightness').value, 0.0),
+                saturation: safeParseFloat(document.getElementById('saturation').value, 1.0),
                 denoising: document.getElementById('denoising').checked,
                 sharpening: document.getElementById('sharpening').checked,
                 autoFilter: document.getElementById('autoFilter').checked,
@@ -1323,7 +1307,7 @@
                 lossless: document.getElementById('lossless').checked,
                 twoPass: document.getElementById('twoPass').checked,
                 animated: document.getElementById('animated').checked,
-                loopCount: parseInt(document.getElementById('loopCount').value),
+                loopCount: safeParseInt(document.getElementById('loopCount').value, 0),
                 saveFrames: document.getElementById('saveFrames').checked
             };
         }
