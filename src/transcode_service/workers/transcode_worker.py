@@ -227,7 +227,7 @@ class TranscodeWorkerV2:
                 metadata=metadata_list,
                 completed_at=datetime.now(timezone.utc),
                 input_type=message.profile.input_type,
-                output_format=output_format,
+                output_format=message.profile.config.output_format.value(),
             )
             logger.info(
                 f"Publishing result for task {message.task_id}, profile {message.profile.id_profile}"
@@ -304,7 +304,7 @@ class TranscodeWorkerV2:
         config = profile.config
 
         # Determine output format based on config or auto-detect
-        output_format = config.output_format
+        output_format = config.output_format.value()
         if not output_format:
             # Auto-detect from filename if provided, otherwise use webp as
             # default
