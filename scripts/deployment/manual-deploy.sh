@@ -51,6 +51,17 @@ set -a  # automatically export all variables
 source "$ENV_FILE"
 set +a
 
+# Upload key.json if it exists
+KEY_JSON_PATH="$PROJECT_ROOT/src/transcode_service/key.json"
+if [ -f "$KEY_JSON_PATH" ]; then
+    echo -e "${BLUE}📤 Uploading Google Cloud key.json...${NC}"
+    ssh "$USER@$SERVER" "mkdir -p ~/media-transcode/src/transcode_service"
+    scp "$KEY_JSON_PATH" "$USER@$SERVER:~/media-transcode/src/transcode_service/key.json"
+    echo -e "${GREEN}✅ key.json uploaded${NC}"
+else
+    echo -e "${YELLOW}⚠️  key.json not found locally, PubSub features may not work${NC}"
+fi
+
 echo -e "${YELLOW}🚀 Triggering deployment via SSH...${NC}"
 
 ssh $USER@$SERVER "
