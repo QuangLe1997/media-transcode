@@ -310,19 +310,25 @@ class UniversalMediaConverter:
             else:
                 cmd.extend(["-frames:v", "1"])  # Single frame for static output
 
-        # Additional WebP parameters that work with FFmpeg libwebp
-        # Note: Some are undocumented but functional
-        if kwargs.get('method') is not None:
-            cmd.extend(["-method", str(kwargs['method'])])
+        # Additional WebP parameters - many not supported in Ubuntu FFmpeg
+        # Note: Ubuntu FFmpeg 4.4.2 has limited WebP options support
+        # Skip unsupported options to avoid "Option not found" errors
+        
+        # Skip method - often not supported
+        # if kwargs.get('method') is not None:
+        #     cmd.extend(["-method", str(kwargs['method'])])
 
-        if kwargs.get('alpha_quality') is not None:
-            cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
+        # Skip alpha_quality - not supported in Ubuntu FFmpeg  
+        # if kwargs.get('alpha_quality') is not None:
+        #     cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
 
-        if kwargs.get('near_lossless') is not None:
-            cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
+        # Skip near_lossless - not widely supported
+        # if kwargs.get('near_lossless') is not None:
+        #     cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
 
-        if kwargs.get('target_size') is not None:
-            cmd.extend(["-target_size", str(kwargs['target_size'] * 1024)])  # Convert KB to bytes
+        # Skip target_size - may not be supported
+        # if kwargs.get('target_size') is not None:
+        #     cmd.extend(["-target_size", str(kwargs['target_size'] * 1024)])  # Convert KB to bytes
 
         # Note: alpha_method is NOT supported and will cause errors
         # auto_filter and pass_count are also not supported by FFmpeg libwebp

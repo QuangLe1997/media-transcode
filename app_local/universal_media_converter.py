@@ -323,19 +323,28 @@ class UniversalMediaConverter:
         
         # Additional WebP parameters - only for video/libwebp codec
         if input_type == 'video':
-            # These parameters only work with libwebp codec, not with -f webp
-            if kwargs.get('method') is not None:
-                cmd.extend(["-method", str(kwargs['method'])])
+            # NOTE: Many WebP options are not supported in Ubuntu FFmpeg 4.4.2
+            # Only use basic options that are widely supported
             
-            if kwargs.get('alpha_quality') is not None:
-                cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
+            # Method is sometimes supported
+            if kwargs.get('method') is not None and kwargs['method'] <= 4:
+                try:
+                    # Only use method 0-4, higher values may not be supported
+                    cmd.extend(["-method", str(min(kwargs['method'], 4))])
+                except:
+                    pass  # Skip if not supported
             
-            if kwargs.get('near_lossless') is not None:
-                cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
+            # Skip alpha_quality - not supported in Ubuntu FFmpeg
+            # if kwargs.get('alpha_quality') is not None:
+            #     cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
+            
+            # Skip near_lossless - not widely supported
+            # if kwargs.get('near_lossless') is not None:
+            #     cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
         
-        # Target size only for libwebp codec (video)
-        if input_type == 'video' and kwargs.get('target_size') is not None:
-            cmd.extend(["-target_size", str(kwargs['target_size'] * 1024)])  # Convert KB to bytes
+        # Target size only for libwebp codec (video) - may not be supported
+        # if input_type == 'video' and kwargs.get('target_size') is not None:
+        #     cmd.extend(["-target_size", str(kwargs['target_size'] * 1024)])  # Convert KB to bytes
         
         # Note: alpha_method is NOT supported and will cause errors
         # auto_filter and pass_count are also not supported by FFmpeg libwebp
