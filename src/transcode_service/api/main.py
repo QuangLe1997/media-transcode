@@ -34,7 +34,51 @@ from ..services.s3_service import s3_service
 
 logger = logging.getLogger("api")
 
-app = FastAPI(title="Transcode Service API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown"""
+    # Startup
+    logger.info("🚀 API server startup initiated")
+    start_time = time.time()
+
+    try:
+        logger.info("Starting database initialization...")
+        await init_db()
+        db_time = time.time() - start_time
+        logger.info(f"Database initialized in {db_time:.2f}s")
+
+        # Start background result subscriber
+        logger.info("Starting background result subscriber...")
+        try:
+            task = asyncio.create_task(result_subscriber())
+            logger.info("Background result subscriber task created successfully")
+            
+            # Add error callback to catch task exceptions
+            def task_exception_handler(task):
+                if task.exception():
+                    logger.error(f"Background task failed: {task.exception()}", exc_info=task.exception())
+            
+            task.add_done_callback(task_exception_handler)
+        except Exception as e:
+            logger.error(f"Failed to start background result subscriber: {e}", exc_info=True)
+        #
+        total_time = time.time() - start_time
+        logger.info(
+            f"Background services started. Total startup time: {total_time:.2f}s"
+        )
+
+    except Exception as e:
+        logger.error(f"Startup failed: {e}")
+        raise
+
+    yield  # Application runs here
+    
+    # Shutdown
+    logger.info("🛑 API server shutdown initiated")
+
+
+app = FastAPI(title="Transcode Service API", lifespan=lifespan)
 
 
 async def get_file_size(url: str) -> Optional[int]:
@@ -85,31 +129,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database and start background tasks"""
-    start_time = time.time()
-
-    try:
-        logger.info("Starting database initialization...")
-        await init_db()
-        db_time = time.time() - start_time
-        logger.info(f"Database initialized in {db_time:.2f}s")
-
-        # Start background result subscriber
-        logger.info("Starting background result subscriber...")
-        asyncio.create_task(result_subscriber())
-        #
-        total_time = time.time() - start_time
-        logger.info(
-            f"Background services started. Total startup time: {total_time:.2f}s"
-        )
-
-    except Exception as e:
-        logger.error(f"Startup failed: {e}")
-        raise
 
 
 def _validate_media_url(url: str) -> bool:

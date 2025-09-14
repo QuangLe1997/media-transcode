@@ -293,8 +293,14 @@ async def face_detection_subscriber():
     """Background task to subscribe to face detection results"""
     logger.info("Starting face detection subscriber background task")
 
-    # Initial delay to let API start properly
-    await asyncio.sleep(3)
+    try:
+        # Initial delay to let API start properly
+        logger.info("Face detection subscriber: waiting 3 seconds before starting...")
+        await asyncio.sleep(3)
+        logger.info("Face detection subscriber: starting main loop...")
+    except Exception as e:
+        logger.error(f"Error in face detection subscriber initialization: {e}", exc_info=True)
+        return
 
     while True:
         try:
@@ -332,8 +338,14 @@ async def universal_transcode_result_subscriber():
     """Background task to subscribe to universal transcode results (v2)"""
     logger.info("Starting universal transcode result subscriber background task")
 
-    # Initial delay to let API start properly
-    await asyncio.sleep(2)
+    try:
+        # Initial delay to let API start properly
+        logger.info("Universal subscriber: waiting 2 seconds before starting...")
+        await asyncio.sleep(2)
+        logger.info("Universal subscriber: starting main loop...")
+    except Exception as e:
+        logger.error(f"Error in universal subscriber initialization: {e}", exc_info=True)
+        return
 
     while True:
         try:
@@ -500,10 +512,18 @@ async def result_subscriber():
     """Background task to subscribe to all result types"""
     logger.info("Starting result subscriber background task")
 
-    # Run v2, face detection subscribers, and cleanup task
-    await asyncio.gather(
-        universal_transcode_result_subscriber(),  # v2 results only
-        face_detection_subscriber(),  # face detection results
-        cleanup_old_tasks(),  # scheduled cleanup every 15 minutes
-        return_exceptions=True,
-    )
+    try:
+        logger.info("Creating background task coroutines...")
+        
+        # Run v2, face detection subscribers, and cleanup task
+        results = await asyncio.gather(
+            universal_transcode_result_subscriber(),  # v2 results only
+            face_detection_subscriber(),  # face detection results
+            cleanup_old_tasks(),  # scheduled cleanup every 15 minutes
+            return_exceptions=True,
+        )
+        
+        logger.info(f"Background tasks completed with results: {results}")
+        
+    except Exception as e:
+        logger.error(f"Critical error in result_subscriber: {e}", exc_info=True)
