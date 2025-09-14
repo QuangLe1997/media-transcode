@@ -1475,8 +1475,9 @@ class FaceProcessor:
         groups_data_filtered = self._filter_quality_groups(groups_data, processed_frames)
 
         if len(groups_data_filtered) != len(groups_data):
+            filtered_out = len(groups_data) - len(groups_data_filtered)
             logger.info(
-                f"Filtered groups: {len(groups_data) - len(groups_data_filtered)}"
+                f"Quality filtering: {filtered_out} groups filtered out, {len(groups_data_filtered)} groups remaining (from {len(groups_data)} total)"
             )
             is_change_index = True
 
