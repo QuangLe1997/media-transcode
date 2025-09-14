@@ -49,8 +49,8 @@ RUN pip install -r requirements-cuda.txt
 # Copy application code
 COPY . .
 
-# Install the package in development mode
-RUN pip install -e .
+# Install the package (non-editable to avoid PEP 660 issues)
+RUN pip install .
 
 # Create necessary directories with proper permissions
 RUN mkdir -p logs temp /tmp/transcode models_faces && \
