@@ -120,7 +120,7 @@ docker-compose down || echo 'No containers to stop'
 echo '🏗️  Building and starting containers...'
 docker-compose pull
 docker-compose build
-docker-compose up -d
+docker-compose up
 
 echo '⏳ Waiting for services to initialize...'
 sleep 30

@@ -27,8 +27,8 @@ RUN pip install --no-cache-dir -r requirements-local.txt
 # Copy application code
 COPY . .
 
-# Install the package (non-editable to avoid PEP 660 issues)
-RUN pip install .
+# Add src to Python path for module imports
+ENV PYTHONPATH="/app/src:$PYTHONPATH"
 
 # Create necessary directories with proper permissions
 RUN mkdir -p logs temp /tmp/transcode models_faces && \
