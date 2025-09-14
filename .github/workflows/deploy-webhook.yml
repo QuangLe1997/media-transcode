@@ -1,0 +1,125 @@
+name: Deploy via Webhook
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Trigger deployment via webhook
+      run: |
+        echo "🚀 Triggering deployment on server..."
+        
+        # Create deployment payload
+        PAYLOAD=$(cat <<EOF
+        {
+          "repository": "${{ github.repository }}",
+          "ref": "${{ github.ref }}",
+          "sha": "${{ github.sha }}",
+          "actor": "${{ github.actor }}",
+          "run_id": "${{ github.run_id }}",
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "environment_variables": {
+            "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+            "API_HOST": "${{ vars.API_HOST }}",
+            "API_PORT": "${{ vars.API_PORT }}",
+            "DEBUG": "${{ vars.DEBUG }}",
+            "AWS_ACCESS_KEY_ID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
+            "AWS_SECRET_ACCESS_KEY": "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
+            "AWS_BUCKET_NAME": "${{ vars.AWS_BUCKET_NAME }}",
+            "AWS_ENDPOINT_URL": "${{ vars.AWS_ENDPOINT_URL }}",
+            "AWS_ENDPOINT_PUBLIC_URL": "${{ vars.AWS_ENDPOINT_PUBLIC_URL }}",
+            "AWS_BASE_FOLDER": "${{ vars.AWS_BASE_FOLDER }}",
+            "PUBSUB_PROJECT_ID": "${{ vars.PUBSUB_PROJECT_ID }}",
+            "PUBSUB_TASKS_TOPIC": "${{ vars.PUBSUB_TASKS_TOPIC }}",
+            "TASKS_SUBSCRIPTION": "${{ vars.TASKS_SUBSCRIPTION }}",
+            "PUBSUB_RESULTS_TOPIC": "${{ vars.PUBSUB_RESULTS_TOPIC }}",
+            "PUBSUB_RESULTS_SUBSCRIPTION": "${{ vars.PUBSUB_RESULTS_SUBSCRIPTION }}",
+            "PUBSUB_FACE_DETECTION_TASKS_TOPIC": "${{ vars.PUBSUB_FACE_DETECTION_TASKS_TOPIC }}",
+            "PUBSUB_FACE_DETECTION_RESULTS_TOPIC": "${{ vars.PUBSUB_FACE_DETECTION_RESULTS_TOPIC }}",
+            "PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION": "${{ vars.PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION }}",
+            "FACE_DETECTION_SUBSCRIPTION": "${{ vars.FACE_DETECTION_SUBSCRIPTION }}",
+            "PUBSUB_PUBLISHER_CREDENTIALS_PATH": "${{ vars.PUBSUB_PUBLISHER_CREDENTIALS_PATH }}",
+            "PUBSUB_SUBSCRIBER_CREDENTIALS_PATH": "${{ vars.PUBSUB_SUBSCRIBER_CREDENTIALS_PATH }}"
+          },
+          "google_cloud_key": "${{ secrets.GOOGLE_CLOUD_KEY_JSON }}"
+        }
+        EOF
+        )
+        
+        echo "📡 Sending webhook to http://${{ vars.SERVER_HOST }}:3001/deploy"
+        
+        # Send webhook with retry
+        for i in {1..3}; do
+          echo "Attempt $i/3..."
+          
+          response=$(curl -s -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -d "$PAYLOAD" \
+            --connect-timeout 30 \
+            --max-time 300 \
+            "http://${{ vars.SERVER_HOST }}:3001/deploy")
+          
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $response_body"
+          
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Deployment triggered successfully!"
+            exit 0
+          else
+            echo "❌ Deployment failed (attempt $i/3)"
+            if [ $i -lt 3 ]; then
+              echo "⏳ Waiting 10 seconds before retry..."
+              sleep 10
+            fi
+          fi
+        done
+        
+        echo "💥 All deployment attempts failed"
+        exit 1
+
+    - name: Wait for deployment completion
+      run: |
+        echo "⏳ Waiting for deployment to complete..."
+        sleep 60
+        
+        echo "🔍 Checking deployment status..."
+        for i in {1..10}; do
+          echo "Health check attempt $i/10..."
+          
+          if curl -f -s "http://${{ vars.SERVER_HOST }}:${{ vars.API_PORT }}/health" > /dev/null 2>&1; then
+            echo "✅ API is healthy!"
+            break
+          else
+            echo "⏳ API not ready yet, waiting 30 seconds..."
+            sleep 30
+          fi
+          
+          if [ $i -eq 10 ]; then
+            echo "❌ API health check failed after 10 attempts"
+            echo "🔗 Manual check: http://${{ vars.SERVER_HOST }}:${{ vars.API_PORT }}/health"
+            exit 1
+          fi
+        done
+        
+        echo "🎉 Deployment completed successfully!"
+        echo "🌐 Services available at:"
+        echo "  - API: http://${{ vars.SERVER_HOST }}:${{ vars.API_PORT }}"
+        echo "  - Frontend: http://${{ vars.SERVER_HOST }}:3000"

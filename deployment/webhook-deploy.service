@@ -1,0 +1,31 @@
+[Unit]
+Description=Media Transcode Webhook Deployment Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=quanglv
+WorkingDirectory=/home/quanglv/media-transcode/deployment
+ExecStart=/usr/bin/node webhook-server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webhook-deploy
+
+# Environment
+Environment=NODE_ENV=production
+Environment=WEBHOOK_SECRET=your-secure-webhook-secret-here
+
+# Security
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/home/quanglv/media-transcode
+ReadWritePaths=/var/lib/docker
+ReadWritePaths=/var/run/docker.sock
+
+[Install]
+WantedBy=multi-user.target

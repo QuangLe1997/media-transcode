@@ -1,10 +1,12 @@
-name: Deploy to Server
+name: Deploy to Server (SSH - DISABLED)
+
+# DISABLED: SSH deployment fails due to network restrictions
+# Use deploy-webhook.yml instead
 
 on:
   push:
     branches:
-      - master
-      - main
+      - disabled-ssh-deployment
 
 env:
   DOCKER_BUILDKIT: 1
