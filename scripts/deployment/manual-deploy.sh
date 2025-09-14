@@ -44,17 +44,17 @@ cat > .env << 'EOF'
 # Auto-generated environment file from manual deployment
 # Generated at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@192.168.0.234:5433/transcode_db
+DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
 API_HOST=0.0.0.0
 API_PORT=8087
 DEBUG=true
-AWS_ACCESS_KEY_ID=lohQviNWOolAohjnVxUx
-AWS_SECRET_ACCESS_KEY=9fkNUpprohih4eSemGw5HwZQbMKelqGPbb7DyMBh
-AWS_BUCKET_NAME=dev-facefusion-media
-AWS_ENDPOINT_URL=https://storage.skylink.vn
-AWS_ENDPOINT_PUBLIC_URL=https://static-vncdn.skylinklabs.ai
+AWS_ACCESS_KEY_ID=YOUR_ACCESS_KEY_HERE
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY_HERE  
+AWS_BUCKET_NAME=your-bucket-name
+AWS_ENDPOINT_URL=https://your-s3-endpoint.com
+AWS_ENDPOINT_PUBLIC_URL=https://your-cdn-endpoint.com
 AWS_BASE_FOLDER=transcode-service
-PUBSUB_PROJECT_ID=kiwi2-454610
+PUBSUB_PROJECT_ID=your-gcp-project-id
 PUBSUB_TASKS_TOPIC=transcode-utils-tasks
 TASKS_SUBSCRIPTION=transcode-utils-tasks-sub
 PUBSUB_RESULTS_TOPIC=transcode-utils-results
