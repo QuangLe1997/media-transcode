@@ -66,7 +66,6 @@ class PubSubService:
             self.project_id, settings.pubsub_results_topic
         )
 
-        # V2 Topic paths for UniversalMediaConverter
         self.universal_tasks_topic_path = self._publisher_client.topic_path(
             self.project_id,
             settings.pubsub_tasks_topic
@@ -140,7 +139,7 @@ class PubSubService:
             return message_id
 
         except Exception as e:
-            logger.error(f"Error publishing universal transcode task: {e}")
+            logger.error(f"Error publishing universal transcode task: {self.transcode_task_topic_path} {e}")
             raise
 
     def publish_universal_transcode_result(self, result: UniversalTranscodeResult) -> str:
