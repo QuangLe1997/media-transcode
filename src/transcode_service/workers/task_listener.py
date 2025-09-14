@@ -26,7 +26,6 @@ from ..models.schemas_v2 import (
     FaceDetectionMessage,
     S3OutputConfig,
     TaskStatus,
-    UniversalConverterConfig,
     UniversalTranscodeConfig,
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
@@ -74,7 +73,7 @@ class PubSubTaskListenerV2:
             # Extract required fields
             task_id = message_data.get("task_id")
             media_url = message_data.get("media_url") or message_data.get("source_url")
-            profile = message_data.get("profile")  # Single profile, not profiles
+            profiles = message_data.get("profiles")
             s3_output_config = message_data.get("s3_output_config")
             face_detection_config = message_data.get("face_detection_config")
 
@@ -88,8 +87,8 @@ class PubSubTaskListenerV2:
                 missing_fields.append("task_id")
             if not media_url:
                 missing_fields.append("media_url/source_url")
-            if not profile:
-                missing_fields.append("profile")
+            if not profiles:
+                missing_fields.append("profiles")
             if not s3_output_config:
                 missing_fields.append("s3_output_config")
 
@@ -117,42 +116,14 @@ class PubSubTaskListenerV2:
 
             # Create enhanced S3 config
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
-
-            # Parse the single profile from UniversalTranscodeMessage
-            try:
-                # Only support v2 format with 'config' field
-                if "config" not in profile:
-                    profile_id = profile.get("id_profile", "unknown")
-                    logger.error(
-                        f"❌ Profile {profile_id} missing 'config' field - v1 format not supported in v2 system"
+            filtered_profiles = []
+            for profile in profiles:
+                if detected_media_type == profile.input_type:
+                    filtered_profiles.append(
+                        UniversalTranscodeProfile(
+                            **profile
+                        )
                     )
-                    return None
-
-                # Parse v2 format
-                universal_config = UniversalConverterConfig(**profile["config"])
-
-                universal_profile = UniversalTranscodeProfile(
-                    id_profile=profile["id_profile"],
-                    input_type=profile.get("input_type"),
-                    output_filename=profile.get("output_filename"),
-                    config=universal_config,
-                )
-                logger.info(
-                    f"✅ Created universal profile: {universal_profile.id_profile}"
-                )
-
-            except Exception as e:
-                profile_id = profile.get("id_profile", "unknown")
-                logger.error(f"❌ Failed to parse v2 profile {profile_id}: {e}")
-                return None
-            # Check if the single profile matches the detected media type
-            if universal_profile.input_type and universal_profile.input_type != detected_media_type:
-                logger.info(f"Skipping profile {universal_profile.id_profile} (media type mismatch: expected {universal_profile.input_type}, detected {detected_media_type})")
-                return None
-            else:
-                logger.info(f"Profile {universal_profile.id_profile} matches detected media type: {detected_media_type}")
-                filtered_profiles = [universal_profile]
-
             # Create final config
             transcode_config = UniversalTranscodeConfig(
                 profiles=filtered_profiles,
@@ -166,12 +137,8 @@ class PubSubTaskListenerV2:
                 existing_task = await TaskCRUD.get_task(db, task_id)
 
                 if existing_task:
-                    logger.info(f"Task v2 {task_id} already exists, resetting...")
-                    # Reset task logic (simplified - just update status)
                     await TaskCRUD.update_task_status(db, task_id, TaskStatus.PENDING)
                 else:
-                    # Create new task with v2 config directly
-                    logger.info(f"Creating new task v2 {task_id}")
                     # Store v2 config directly as dict
                     v2_config_dict = transcode_config.model_dump()
 
@@ -185,8 +152,6 @@ class PubSubTaskListenerV2:
                         callback_auth=callback_auth_obj.model_dump() if callback_auth_obj else None,
                         pubsub_topic=pubsub_topic,
                     )
-
-                # Download source file to shared volume ONCE
                 shared_file_path = None
                 try:
                     # Create shared volume path from settings
@@ -228,8 +193,6 @@ class PubSubTaskListenerV2:
                     try:
                         profile_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"
                         logger.info(f"Publishing v2 {profile_info} for task {task_id}")
-
-                        # Use shared file path if available, otherwise fallback to URL
                         if shared_file_path:
                             message = UniversalTranscodeMessage(
                                 task_id=task_id,
@@ -251,8 +214,6 @@ class PubSubTaskListenerV2:
                             )
                             logger.info(f"🔗 Using source URL: {media_url}")
 
-                        # Publish to v2 topic (need to implement this in
-                        # pubsub_service)
                         message_id = pubsub_service.publish_universal_transcode_task(message)
                         published_count += 1
                         success_info = f"{i}/{len(filtered_profiles)}: profile {profile.id_profile}"

@@ -57,10 +57,11 @@ class PubSubService:
         )
         self._subscriber_client = pubsub_v1.SubscriberClient(credentials=subscriber_credentials)
 
-        # Topic paths (original)
-        self.tasks_topic_path = self._publisher_client.topic_path(
-            self.project_id, settings.pubsub_tasks_topic
+        # Topic transcode paht (original)
+        self.transcode_task_topic_path = self._publisher_client.topic_path(
+            self.project_id, settings.pubsub_transcode_task_topic
         )
+        # Topic paths (original)
         self.results_topic_path = self._publisher_client.topic_path(
             self.project_id, settings.pubsub_results_topic
         )
@@ -126,7 +127,7 @@ class PubSubService:
             data = message.model_dump_json().encode("utf-8")
 
             future = self.publisher_client.publish(
-                self.universal_tasks_topic_path,
+                self.transcode_task_topic_path,
                 data,
                 task_id=message.task_id,
                 profile_id=message.profile.id_profile,
@@ -175,7 +176,7 @@ class PubSubService:
             return
 
         # Use universal tasks subscription
-        subscription_name = settings.tasks_subscription
+        subscription_name = settings.transcode_task_subscription
 
         if not subscription_name:
             logger.info("Universal tasks subscription name not configured, skipping listener")

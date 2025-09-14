@@ -5,10 +5,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Google Pub/Sub
     pubsub_project_id: str = ""
+
     pubsub_tasks_topic: str = ""
     tasks_subscription: str = ""
+
+    pubsub_transcode_task_topic: str = ""
+    transcode_task_subscription: str = ""
+
     pubsub_results_topic: str = ""
     pubsub_results_subscription: str = ""
+
     pubsub_publisher_credentials_path: str = ""
     pubsub_subscriber_credentials_path: str = ""
     disable_pubsub: bool = False
