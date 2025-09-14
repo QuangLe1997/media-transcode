@@ -27,18 +27,28 @@ else
 fi
 
 echo
+
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ENV_FILE="$PROJECT_ROOT/deployment/.env"
+
+echo -e "${BLUE}📂 Project root: $PROJECT_ROOT${NC}"
+echo -e "${BLUE}📄 Looking for: $ENV_FILE${NC}"
+
 # Check if .env file exists
-if [ ! -f "deployment/.env" ]; then
-    echo -e "${RED}❌ deployment/.env file not found!${NC}"
+if [ ! -f "$ENV_FILE" ]; then
+    echo -e "${RED}❌ $ENV_FILE file not found!${NC}"
     echo "Please create deployment/.env file with your environment variables"
+    echo "You can copy from: $PROJECT_ROOT/deployment/.env.example"
     exit 1
 fi
 
-echo -e "${YELLOW}📄 Loading environment variables from deployment/.env...${NC}"
+echo -e "${YELLOW}📄 Loading environment variables from $ENV_FILE...${NC}"
 
 # Read .env file and export variables
 set -a  # automatically export all variables
-source deployment/.env
+source "$ENV_FILE"
 set +a
 
 echo -e "${YELLOW}🚀 Triggering deployment via SSH...${NC}"
