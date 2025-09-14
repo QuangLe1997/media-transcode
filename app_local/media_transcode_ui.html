@@ -1738,7 +1738,25 @@
                 return isNaN(parsed) ? defaultValue : parsed;
             };
             
+            // Detect output format based on current media type and settings
+            let output_format = 'webp'; // default
+            
+            if (currentMediaType === 'image') {
+                // Check if JPEG quality is set (indicates JPG output)
+                const jpegQuality = document.getElementById('jpegQuality')?.value;
+                if (jpegQuality && jpegQuality !== '') {
+                    output_format = 'jpg';
+                }
+            } else if (currentMediaType === 'video') {
+                // Video mode defaults to MP4
+                output_format = 'mp4';
+            }
+            // Auto mode: keep webp as default for compatibility
+            
             const config = {
+                // Output format (auto-detected)
+                output_format: output_format,
+                
                 // Common settings
                 width: safeParseInt(document.getElementById('width')?.value),
                 height: safeParseInt(document.getElementById('height')?.value),
@@ -1788,7 +1806,28 @@
         }
         
         function applyConfigToForm(config) {
-            // Switch to the correct media type first
+            // Auto-detect and switch media type based on output_format
+            if (config.output_format) {
+                let targetMediaType = currentMediaType;
+                
+                if (config.output_format === 'mp4') {
+                    targetMediaType = 'video';
+                } else if (config.output_format === 'jpg' || config.output_format === 'jpeg') {
+                    targetMediaType = 'image';
+                } else if (config.output_format === 'webp') {
+                    // WebP can be either, keep current or default to auto
+                    targetMediaType = config.mediaType || 'auto';
+                }
+                
+                if (targetMediaType !== currentMediaType) {
+                    const mediaTypeBtn = document.querySelector(`[data-type="${targetMediaType}"]`);
+                    if (mediaTypeBtn) {
+                        mediaTypeBtn.click();
+                    }
+                }
+            }
+            
+            // Legacy: Switch to the correct media type first (for backward compatibility)
             if (config.mediaType && config.mediaType !== currentMediaType) {
                 const mediaTypeBtn = document.querySelector(`[data-type="${config.mediaType}"]`);
                 if (mediaTypeBtn) {
