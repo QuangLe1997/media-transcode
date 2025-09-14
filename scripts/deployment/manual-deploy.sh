@@ -27,6 +27,20 @@ else
 fi
 
 echo
+# Check if .env file exists
+if [ ! -f "deployment/.env" ]; then
+    echo -e "${RED}❌ deployment/.env file not found!${NC}"
+    echo "Please create deployment/.env file with your environment variables"
+    exit 1
+fi
+
+echo -e "${YELLOW}📄 Loading environment variables from deployment/.env...${NC}"
+
+# Read .env file and export variables
+set -a  # automatically export all variables
+source deployment/.env
+set +a
+
 echo -e "${YELLOW}🚀 Triggering deployment via SSH...${NC}"
 
 ssh $USER@$SERVER "
@@ -42,29 +56,43 @@ echo '📝 Creating .env file...'
 cd deployment
 cat > .env << 'EOF'
 # Auto-generated environment file from manual deployment
-# Generated at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Generated at: \$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
+# Database Configuration (using Docker container name)
 DATABASE_URL=postgresql+asyncpg://transcode_user:transcode_pass@postgres:5432/transcode_db
+
+# API Configuration
 API_HOST=0.0.0.0
 API_PORT=8087
-DEBUG=true
-AWS_ACCESS_KEY_ID=YOUR_ACCESS_KEY_HERE
-AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY_HERE  
-AWS_BUCKET_NAME=your-bucket-name
-AWS_ENDPOINT_URL=https://your-s3-endpoint.com
-AWS_ENDPOINT_PUBLIC_URL=https://your-cdn-endpoint.com
-AWS_BASE_FOLDER=transcode-service
-PUBSUB_PROJECT_ID=your-gcp-project-id
-PUBSUB_TASKS_TOPIC=transcode-utils-tasks
-TASKS_SUBSCRIPTION=transcode-utils-tasks-sub
-PUBSUB_RESULTS_TOPIC=transcode-utils-results
-PUBSUB_RESULTS_SUBSCRIPTION=transcode-utils-results-sub
-PUBSUB_FACE_DETECTION_TASKS_TOPIC=face-detection-worker-tasks
-PUBSUB_FACE_DETECTION_RESULTS_TOPIC=face-detection-worker-results
-PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=face-detection-worker-results-sub
-FACE_DETECTION_SUBSCRIPTION=face-detection-worker-tasks-sub
+DEBUG=$DEBUG
+
+# AWS S3 Configuration  
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+AWS_BUCKET_NAME=$AWS_BUCKET_NAME
+AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL
+AWS_ENDPOINT_PUBLIC_URL=$AWS_ENDPOINT_PUBLIC_URL
+AWS_BASE_FOLDER=$AWS_BASE_FOLDER
+
+# Google Cloud PubSub Configuration
+PUBSUB_PROJECT_ID=$PUBSUB_PROJECT_ID
+PUBSUB_TASKS_TOPIC=$PUBSUB_TASKS_TOPIC
+TASKS_SUBSCRIPTION=$TASKS_SUBSCRIPTION
+PUBSUB_RESULTS_TOPIC=$PUBSUB_RESULTS_TOPIC
+PUBSUB_RESULTS_SUBSCRIPTION=$PUBSUB_RESULTS_SUBSCRIPTION
+
+# Face Detection PubSub
+PUBSUB_FACE_DETECTION_TASKS_TOPIC=$PUBSUB_FACE_DETECTION_TASKS_TOPIC
+PUBSUB_FACE_DETECTION_RESULTS_TOPIC=$PUBSUB_FACE_DETECTION_RESULTS_TOPIC
+PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=$PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION
+FACE_DETECTION_SUBSCRIPTION=$FACE_DETECTION_SUBSCRIPTION
+
+# Credentials paths (Docker container paths)
 PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
 PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
+
+# Optional flags
+DISABLE_PUBSUB=\${DISABLE_PUBSUB:-false}
 EOF
 
 echo '✅ Environment file created'
