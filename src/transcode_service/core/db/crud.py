@@ -7,11 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import ConfigTemplateDB, TranscodeTaskDB
 from ...models.schemas_v2 import (
-    ConfigTemplateRequest,
-    ConfigTemplateResponse,
     MediaMetadata,
     TaskStatus,
-    TranscodeConfig,
+    UniversalTranscodeConfig,
+    UniversalConfigTemplateRequest,
 )
 
 
@@ -158,7 +157,7 @@ class TaskCRUD:
         if not task:
             return None
 
-        config = TranscodeConfig(**task.config)
+        config = UniversalTranscodeConfig(**task.config)
         expected_profiles = len(config.profiles)
 
         if task.outputs and len(task.outputs) >= expected_profiles:
@@ -260,7 +259,7 @@ class TaskCRUD:
         if not task:
             return None
 
-        config = TranscodeConfig(**task.config)
+        config = UniversalTranscodeConfig(**task.config)
         expected_profiles = len(config.profiles)
 
         # Check if transcode is complete (including partial completion with
@@ -307,26 +306,26 @@ class TaskCRUD:
 class ConfigTemplateCRUD:
     @staticmethod
     async def create_template(
-            db: AsyncSession, request: ConfigTemplateRequest
-    ) -> ConfigTemplateResponse:
+            db: AsyncSession, request: UniversalConfigTemplateRequest
+    ) -> ConfigTemplateDB:
         """Create new config template"""
         template_id = str(uuid.uuid4())
         template = ConfigTemplateDB(
             template_id=template_id,
             name=request.name,
-            config=[profile.model_dump() for profile in request.config],
+            config={
+                "name": request.name,
+                "description": request.description,
+                "profiles": [profile.model_dump() for profile in request.profiles],
+                "s3_output_config": request.s3_output_config.model_dump() if request.s3_output_config else None,
+                "face_detection_config": request.face_detection_config
+            },
         )
         db.add(template)
         await db.commit()
         await db.refresh(template)
 
-        return ConfigTemplateResponse(
-            template_id=template.template_id,
-            name=template.name,
-            config=request.config,
-            created_at=template.created_at,
-            updated_at=template.updated_at,
-        )
+        return template
 
     @staticmethod
     async def get_template(db: AsyncSession, template_id: str) -> Optional[ConfigTemplateDB]:
@@ -346,31 +345,28 @@ class ConfigTemplateCRUD:
 
     @staticmethod
     async def update_template(
-            db: AsyncSession, template_id: str, request: ConfigTemplateRequest
-    ) -> Optional[ConfigTemplateResponse]:
+            db: AsyncSession, template_id: str, request: UniversalConfigTemplateRequest
+    ) -> Optional[ConfigTemplateDB]:
         """Update existing template"""
         stmt = (
             update(ConfigTemplateDB)
             .where(ConfigTemplateDB.template_id == template_id)
             .values(
                 name=request.name,
-                config=[profile.model_dump() for profile in request.config],
+                config={
+                    "name": request.name,
+                    "description": request.description,
+                    "profiles": [profile.model_dump() for profile in request.profiles],
+                    "s3_output_config": request.s3_output_config.model_dump() if request.s3_output_config else None,
+                    "face_detection_config": request.face_detection_config
+                },
                 updated_at=datetime.utcnow(),
             )
         )
         await db.execute(stmt)
         await db.commit()
 
-        template = await ConfigTemplateCRUD.get_template(db, template_id)
-        if template:
-            return ConfigTemplateResponse(
-                template_id=template.template_id,
-                name=template.name,
-                config=request.config,
-                created_at=template.created_at,
-                updated_at=template.updated_at,
-            )
-        return None
+        return await ConfigTemplateCRUD.get_template(db, template_id)
 
     @staticmethod
     async def delete_template(db: AsyncSession, template_id: str) -> bool:

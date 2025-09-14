@@ -18,13 +18,14 @@ from ..core.config import settings
 from ..core.db.crud import TaskCRUD, ConfigTemplateCRUD
 from ..core.db.database import get_db, init_db
 from ..core.db.models import TranscodeTaskDB
-from ..models.schemas_v2 import CallbackAuth, ConfigTemplateRequest, FaceDetectionMessage, TaskStatus
+from ..models.schemas_v2 import CallbackAuth, FaceDetectionMessage, TaskStatus
 from ..models.schemas_v2 import (
     S3OutputConfig,
     UniversalConverterConfig,
     UniversalTranscodeConfig,
     UniversalTranscodeMessage,
     UniversalTranscodeProfile,
+    UniversalConfigTemplateRequest,
 )
 from ..services.callback_service import callback_service
 from ..services.media_detection_service import media_detection_service
@@ -1272,7 +1273,9 @@ async def list_config_templates(db: AsyncSession = Depends(get_db)) -> Dict:
                 {
                     "template_id": template.template_id,
                     "name": template.name,
-                    "config": template.config,
+                    "config": (template.config.get('profiles', template.config) 
+                              if isinstance(template.config, dict) 
+                              else template.config),
                     "created_at": template.created_at,
                     "updated_at": template.updated_at,
                 }
@@ -1293,10 +1296,18 @@ async def get_config_template(template_id: str, db: AsyncSession = Depends(get_d
         if not template:
             raise HTTPException(404, "Config template not found")
 
+        # Extract the profiles from the stored config for backward compatibility
+        config_data = template.config if isinstance(template.config, dict) else {}
+        profiles = config_data.get('profiles', template.config if isinstance(template.config, list) else [])
+        
         return {
             "template_id": template.template_id,
             "name": template.name,
-            "config": template.config,
+            "description": config_data.get('description'),
+            "profiles": profiles,
+            "s3_output_config": config_data.get('s3_output_config'),
+            "face_detection_config": config_data.get('face_detection_config'),
+            "config": profiles,  # Backward compatibility for frontend
             "created_at": template.created_at,
             "updated_at": template.updated_at,
         }
@@ -1309,15 +1320,23 @@ async def get_config_template(template_id: str, db: AsyncSession = Depends(get_d
 
 @app.post("/config-templates")
 async def create_config_template(
-        request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
+        request: UniversalConfigTemplateRequest, db: AsyncSession = Depends(get_db)
 ) -> Dict:
     """Create new config template"""
     try:
         template = await ConfigTemplateCRUD.create_template(db, request)
+        # Extract the profiles from the stored config for backward compatibility
+        config_data = template.config if isinstance(template.config, dict) else {}
+        profiles = config_data.get('profiles', template.config if isinstance(template.config, list) else [])
+        
         return {
             "template_id": template.template_id,
             "name": template.name,
-            "config": template.config,
+            "description": config_data.get('description'),
+            "profiles": profiles,
+            "s3_output_config": config_data.get('s3_output_config'),
+            "face_detection_config": config_data.get('face_detection_config'),
+            "config": profiles,  # Backward compatibility for frontend
             "created_at": template.created_at,
             "updated_at": template.updated_at,
             "status": "created",
@@ -1329,7 +1348,7 @@ async def create_config_template(
 
 @app.put("/config-templates/{template_id}")
 async def update_config_template(
-        template_id: str, request: ConfigTemplateRequest, db: AsyncSession = Depends(get_db)
+        template_id: str, request: UniversalConfigTemplateRequest, db: AsyncSession = Depends(get_db)
 ) -> Dict:
     """Update existing config template"""
     try:
@@ -1337,10 +1356,18 @@ async def update_config_template(
         if not template:
             raise HTTPException(404, "Config template not found")
 
+        # Extract the profiles from the stored config for backward compatibility
+        config_data = template.config if isinstance(template.config, dict) else {}
+        profiles = config_data.get('profiles', template.config if isinstance(template.config, list) else [])
+        
         return {
             "template_id": template.template_id,
             "name": template.name,
-            "config": template.config,
+            "description": config_data.get('description'),
+            "profiles": profiles,
+            "s3_output_config": config_data.get('s3_output_config'),
+            "face_detection_config": config_data.get('face_detection_config'),
+            "config": profiles,  # Backward compatibility for frontend
             "created_at": template.created_at,
             "updated_at": template.updated_at,
             "status": "updated",

@@ -215,29 +215,6 @@ class UniversalTranscodeMessage(BaseModel):
             raise ValueError("Only one of source_url or source_path should be provided")
 
 
-class UniversalConfigTemplateRequest(BaseModel):
-    """Request to create/update Universal Transcode config template (v2)"""
-    
-    name: str = Field(description="Template name")
-    description: Optional[str] = Field(default=None, description="Template description")
-    profiles: List[UniversalTranscodeProfile] = Field(description="List of transcode profiles")
-    s3_output_config: Optional[S3OutputConfig] = Field(default=None, description="Default S3 output configuration")
-    face_detection_config: Optional[Dict] = Field(default=None, description="Default face detection configuration")
-
-
-class UniversalConfigTemplate(BaseModel):
-    """Universal Transcode config template (v2)"""
-    
-    template_id: str
-    name: str
-    description: Optional[str] = None
-    profiles: List[UniversalTranscodeProfile]
-    s3_output_config: Optional[S3OutputConfig] = None
-    face_detection_config: Optional[Dict] = None
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
 class MediaMetadata(BaseModel):
     """Media metadata extracted from files"""
 
@@ -365,37 +342,3 @@ class FaceDetectionResult(BaseModel):
     completed_at: datetime
 
 
-# ============ Config Template Classes (for v1 compatibility) ============
-
-class TranscodeProfile(BaseModel):
-    """Legacy v1 transcode profile - kept for backward compatibility"""
-    id_profile: str
-    output_type: OutputType
-    input_type: Optional[str] = None
-    ffmpeg_args: Optional[List[str]] = None
-    video_config: Optional[Dict] = None
-    image_config: Optional[Dict] = None
-    gif_config: Optional[Dict] = None
-    webp_config: Optional[Dict] = None
-
-
-class TranscodeConfig(BaseModel):
-    """Legacy v1 transcode configuration"""
-    profiles: List[TranscodeProfile]
-    s3_output_config: S3OutputConfig
-    face_detection_config: Optional[FaceDetectionConfig] = None
-
-
-class ConfigTemplateRequest(BaseModel):
-    """Request to create/update config template"""
-    name: str
-    config: List[TranscodeProfile]
-
-
-class ConfigTemplateResponse(BaseModel):
-    """Response for config template operations"""
-    template_id: str
-    name: str
-    config: List[TranscodeProfile]
-    created_at: datetime
-    updated_at: Optional[datetime] = None

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
-from ..models.schemas_v2 import TranscodeProfile
+from ..models.schemas_v2 import UniversalTranscodeProfile
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +112,8 @@ class MediaDetectionService:
 
     @classmethod
     def filter_profiles_by_input_type(
-            cls, profiles: List[TranscodeProfile], media_type: str
-    ) -> Tuple[List[TranscodeProfile], List[str]]:
+            cls, profiles: List[UniversalTranscodeProfile], media_type: str
+    ) -> Tuple[List[UniversalTranscodeProfile], List[str]]:
         """
         Filter profiles based on detected media type
 

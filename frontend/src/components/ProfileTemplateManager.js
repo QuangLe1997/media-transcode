@@ -91,7 +91,10 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
       const profiles = JSON.parse(newTemplateProfiles);
       const response = await api.post('/config-templates', {
         name: newTemplateName,
-        config: profiles
+        description: null,
+        profiles: profiles,
+        s3_output_config: null,
+        face_detection_config: null
       });
       
       setTemplates([...templates, response.data]);
@@ -120,7 +123,10 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
       const profiles = JSON.parse(templateProfiles);
       const response = await api.put(`/config-templates/${editingTemplate.template_id}`, {
         name: templateName,
-        config: profiles
+        description: editingTemplate.description,
+        profiles: profiles,
+        s3_output_config: editingTemplate.s3_output_config,
+        face_detection_config: editingTemplate.face_detection_config
       });
       
       // Update templates list

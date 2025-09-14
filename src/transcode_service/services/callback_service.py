@@ -5,7 +5,7 @@ import logging
 import httpx
 
 from ..core.db.models import TranscodeTaskDB
-from ..models.schemas_v2 import TranscodeConfig
+from ..models.schemas_v2 import UniversalTranscodeConfig
 
 # Import will be done locally where needed to avoid circular import
 
@@ -18,7 +18,7 @@ class CallbackService:
         """Prepare callback data in the new format"""
 
         # Parse config
-        config = TranscodeConfig(**task.config) if task.config else None
+        config = UniversalTranscodeConfig(**task.config) if task.config else None
 
         # Calculate profile counts
         expected_profiles = len(config.profiles) if config and config.profiles else 0
