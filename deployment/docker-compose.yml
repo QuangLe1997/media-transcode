@@ -344,6 +344,46 @@ services:
         max-size: "50m"
         max-file: "3"
 
+  app-local:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.cuda
+    container_name: transcode-app-local
+    ports:
+      - "5001:5001"
+    working_dir: /app/app_local
+    command: ["python", "unified_media_server.py"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Flask Configuration
+      - FLASK_APP=unified_media_server.py
+      - FLASK_ENV=development
+      
+      # Performance optimizations
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      
+      # FFmpeg Configuration
+      - FFMPEG_HWACCEL=auto
+      - FFMPEG_GPU_ENABLED=auto
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+      - FFPROBE_PATH=/usr/bin/ffprobe
+    volumes:
+      - ../src/transcode_service/key.json:/app/key.json:ro
+      - shared-media:/shared/media
+      # Mount app_local directory for uploads/outputs
+      - ../app_local/temp_uploads:/app/app_local/temp_uploads
+      - ../app_local/videos:/app/app_local/videos
+      - ../app_local/transcode_output:/app/app_local/transcode_output
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
 volumes:
   postgres_data:
   shared-media:
