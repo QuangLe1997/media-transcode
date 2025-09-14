@@ -74,7 +74,7 @@ class PubSubTaskListenerV2:
             # Extract required fields
             task_id = message_data.get("task_id")
             media_url = message_data.get("media_url") or message_data.get("source_url")
-            profiles = message_data.get("profiles")
+            profile = message_data.get("profile")  # Single profile, not profiles
             s3_output_config = message_data.get("s3_output_config")
             face_detection_config = message_data.get("face_detection_config")
 
@@ -88,8 +88,8 @@ class PubSubTaskListenerV2:
                 missing_fields.append("task_id")
             if not media_url:
                 missing_fields.append("media_url/source_url")
-            if not profiles:
-                missing_fields.append("profiles")
+            if not profile:
+                missing_fields.append("profile")
             if not s3_output_config:
                 missing_fields.append("s3_output_config")
 
@@ -118,59 +118,40 @@ class PubSubTaskListenerV2:
             # Create enhanced S3 config
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
 
-            # Convert profiles to UniversalTranscodeProfile format - ONLY new
-            # v2 format supported
-            universal_profiles = []
-            for profile_data in profiles:
-                try:
-                    # Only support v2 format with 'config' field
-                    if "config" not in profile_data:
-                        profile_id = profile_data.get("id_profile", "unknown")
-                        logger.error(
-                            f"❌ Profile {profile_id} missing 'config' field - v1 format not supported in v2 system"
-                        )
-                        continue
-
-                    # Parse v2 format
-                    universal_config = UniversalConverterConfig(**profile_data["config"])
-
-                    universal_profile = UniversalTranscodeProfile(
-                        id_profile=profile_data["id_profile"],
-                        input_type=profile_data.get("input_type"),
-                        output_filename=profile_data.get("output_filename"),
-                        config=universal_config,
+            # Parse the single profile from UniversalTranscodeMessage
+            try:
+                # Only support v2 format with 'config' field
+                if "config" not in profile:
+                    profile_id = profile.get("id_profile", "unknown")
+                    logger.error(
+                        f"❌ Profile {profile_id} missing 'config' field - v1 format not supported in v2 system"
                     )
-                    universal_profiles.append(universal_profile)
-                    logger.info(
-                        f"✅ Created universal profile: {universal_profile.id_profile}"
-                    )
+                    return None
 
-                except Exception as e:
-                    profile_id = profile_data.get("id_profile", "unknown")
-                    logger.error(f"❌ Failed to parse v2 profile {profile_id}: {e}")
-                    continue
+                # Parse v2 format
+                universal_config = UniversalConverterConfig(**profile["config"])
 
-            if not universal_profiles:
-                logger.error("No valid profiles after conversion to v2 format")
+                universal_profile = UniversalTranscodeProfile(
+                    id_profile=profile["id_profile"],
+                    input_type=profile.get("input_type"),
+                    output_filename=profile.get("output_filename"),
+                    config=universal_config,
+                )
+                logger.info(
+                    f"✅ Created universal profile: {universal_profile.id_profile}"
+                )
+
+            except Exception as e:
+                profile_id = profile.get("id_profile", "unknown")
+                logger.error(f"❌ Failed to parse v2 profile {profile_id}: {e}")
                 return None
-            filtered_profiles = []
-            skipped_profiles = []
-
-            for profile in universal_profiles:
-                if profile.input_type and profile.input_type != detected_media_type:
-                    skipped_profiles.append(profile.id_profile)
-                else:
-                    filtered_profiles.append(profile)
-
-            logger.info(
-                f"Profile filtering: {len(filtered_profiles)} selected, {len(skipped_profiles)} skipped"
-            )
-            if skipped_profiles:
-                logger.info(f"Skipped profiles (media type mismatch): {skipped_profiles}")
-
-            if not filtered_profiles:
-                logger.error(f"No profiles match the detected media type '{detected_media_type}'")
+            # Check if the single profile matches the detected media type
+            if universal_profile.input_type and universal_profile.input_type != detected_media_type:
+                logger.info(f"Skipping profile {universal_profile.id_profile} (media type mismatch: expected {universal_profile.input_type}, detected {detected_media_type})")
                 return None
+            else:
+                logger.info(f"Profile {universal_profile.id_profile} matches detected media type: {detected_media_type}")
+                filtered_profiles = [universal_profile]
 
             # Create final config
             transcode_config = UniversalTranscodeConfig(
