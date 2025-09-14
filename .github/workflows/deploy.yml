@@ -21,8 +21,8 @@ jobs:
     - name: Create deployment directory on server
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
@@ -32,8 +32,8 @@ jobs:
     - name: Copy files to server
       uses: appleboy/scp-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         source: "."
@@ -43,47 +43,55 @@ jobs:
     - name: Create .env file on server
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
           cd ~/media-transcode
           cat > deployment/.env << 'EOF'
+          # Database Configuration (sensitive)
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          
+          # API Configuration (public)
+          API_HOST=${{ vars.API_HOST }}
+          API_PORT=${{ vars.API_PORT }}
+          DEBUG=${{ vars.DEBUG }}
+          
           # AWS S3 Configuration
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
-          AWS_ENDPOINT_URL=${{ secrets.AWS_ENDPOINT_URL }}
-          AWS_ENDPOINT_PUBLIC_URL=${{ secrets.AWS_ENDPOINT_PUBLIC_URL }}
-          AWS_BASE_FOLDER=${{ secrets.AWS_BASE_FOLDER }}
+          AWS_BUCKET_NAME=${{ vars.AWS_BUCKET_NAME }}
+          AWS_ENDPOINT_URL=${{ vars.AWS_ENDPOINT_URL }}
+          AWS_ENDPOINT_PUBLIC_URL=${{ vars.AWS_ENDPOINT_PUBLIC_URL }}
+          AWS_BASE_FOLDER=${{ vars.AWS_BASE_FOLDER }}
           
           # Google Cloud Pub/Sub Configuration
-          PUBSUB_PROJECT_ID=${{ secrets.PUBSUB_PROJECT_ID }}
-          PUBSUB_TASKS_TOPIC=${{ secrets.PUBSUB_TASKS_TOPIC }}
-          TASKS_SUBSCRIPTION=${{ secrets.TASKS_SUBSCRIPTION }}
-          PUBSUB_RESULTS_TOPIC=${{ secrets.PUBSUB_RESULTS_TOPIC }}
-          PUBSUB_RESULTS_SUBSCRIPTION=${{ secrets.PUBSUB_RESULTS_SUBSCRIPTION }}
+          PUBSUB_PROJECT_ID=${{ vars.PUBSUB_PROJECT_ID }}
+          PUBSUB_TASKS_TOPIC=${{ vars.PUBSUB_TASKS_TOPIC }}
+          TASKS_SUBSCRIPTION=${{ vars.TASKS_SUBSCRIPTION }}
+          PUBSUB_RESULTS_TOPIC=${{ vars.PUBSUB_RESULTS_TOPIC }}
+          PUBSUB_RESULTS_SUBSCRIPTION=${{ vars.PUBSUB_RESULTS_SUBSCRIPTION }}
           
-          # Face Detection Topics
-          PUBSUB_FACE_DETECTION_TASKS_TOPIC=${{ secrets.PUBSUB_FACE_DETECTION_TASKS_TOPIC }}
-          PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${{ secrets.PUBSUB_FACE_DETECTION_RESULTS_TOPIC }}
-          PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${{ secrets.PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION }}
-          FACE_DETECTION_SUBSCRIPTION=${{ secrets.FACE_DETECTION_SUBSCRIPTION }}
+          # Face Detection Topics (public configuration)
+          PUBSUB_FACE_DETECTION_TASKS_TOPIC=${{ vars.PUBSUB_FACE_DETECTION_TASKS_TOPIC }}
+          PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${{ vars.PUBSUB_FACE_DETECTION_RESULTS_TOPIC }}
+          PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${{ vars.PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION }}
+          FACE_DETECTION_SUBSCRIPTION=${{ vars.FACE_DETECTION_SUBSCRIPTION }}
           
-          # Task Listener
-          PUBSUB_TASK_SUBSCRIPTION=${{ secrets.PUBSUB_TASK_SUBSCRIPTION }}
-          PUBSUB_MAX_MESSAGES=${{ secrets.PUBSUB_MAX_MESSAGES }}
+          # Credentials paths (public)
+          PUBSUB_PUBLISHER_CREDENTIALS_PATH=${{ vars.PUBSUB_PUBLISHER_CREDENTIALS_PATH }}
+          PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=${{ vars.PUBSUB_SUBSCRIBER_CREDENTIALS_PATH }}
           
-          # Disable Pub/Sub if needed
-          DISABLE_PUBSUB=${{ secrets.DISABLE_PUBSUB }}
+          # Optional flags
+          DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
           EOF
 
     - name: Create Google Cloud key file
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
@@ -94,8 +102,8 @@ jobs:
     - name: Deploy with Docker Compose
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         command_timeout: 30m
@@ -125,8 +133,8 @@ jobs:
     - name: Health check
       uses: appleboy/ssh-action@v0.1.7
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
@@ -137,7 +145,7 @@ jobs:
           sleep 30
           
           # Check API health
-          curl -f http://localhost:8087/health || echo "API health check failed"
+          curl -f http://localhost:${{ vars.API_PORT }}/health || echo "API health check failed"
           
           # Check all services status
           docker-compose ps
