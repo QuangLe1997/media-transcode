@@ -306,8 +306,11 @@ class TranscodeWorkerV2:
         # Determine output format based on config or auto-detect
         output_format = config.output_format
         if output_format:
-            # Convert enum to string value if needed
-            output_format = str(output_format).lower()
+            # Get the string value from enum if it's an enum, otherwise use as-is
+            if hasattr(output_format, 'value'):
+                output_format = output_format.value
+            else:
+                output_format = str(output_format).lower()
         else:
             # Auto-detect from filename if provided, otherwise use webp as default
             if profile.output_filename:
@@ -318,13 +321,6 @@ class TranscodeWorkerV2:
                     output_format = "webp"  # Default fallback
             else:
                 output_format = "webp"  # Default fallback
-
-        # Generate output filename
-        if profile.output_filename:
-            Path(profile.output_filename).stem
-        else:
-            input_name = Path(temp_input).stem
-            f"{input_name}_{profile.id_profile}"
 
         # Create temp output file
         temp_output = os.path.join(
