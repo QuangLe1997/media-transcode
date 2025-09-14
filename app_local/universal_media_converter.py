@@ -255,9 +255,11 @@ class UniversalMediaConverter:
             if kwargs['width'] and kwargs['height']:
                 filters.append(f"scale={kwargs['width']}:{kwargs['height']}")
             elif kwargs['width'] and not kwargs['height']:
-                filters.append(f"scale={kwargs['width']}:-1")
+                # Use -2 instead of -1 to ensure height is divisible by 2
+                filters.append(f"scale={kwargs['width']}:-2")
             elif kwargs['height'] and not kwargs['width']:
-                filters.append(f"scale=-1:{kwargs['height']}")
+                # Use -2 instead of -1 to ensure width is divisible by 2
+                filters.append(f"scale=-2:{kwargs['height']}")
         
         # FPS filter for video
         if input_type == 'video' and kwargs['fps']:
@@ -373,9 +375,11 @@ class UniversalMediaConverter:
             if kwargs['width'] and kwargs['height']:
                 filters.append(f"scale={kwargs['width']}:{kwargs['height']}")
             elif kwargs['width'] and not kwargs['height']:
-                filters.append(f"scale={kwargs['width']}:-1")
+                # Use -2 instead of -1 to ensure height is divisible by 2
+                filters.append(f"scale={kwargs['width']}:-2")
             elif kwargs['height'] and not kwargs['width']:
-                filters.append(f"scale=-1:{kwargs['height']}")
+                # Use -2 instead of -1 to ensure width is divisible by 2
+                filters.append(f"scale=-2:{kwargs['height']}")
         
         # Color adjustments
         if (kwargs['contrast'] != 1.0 or kwargs['brightness'] != 0.0 or 
@@ -445,9 +449,11 @@ class UniversalMediaConverter:
             if kwargs['width'] and kwargs['height']:
                 filters.append(f"scale={kwargs['width']}:{kwargs['height']}")
             elif kwargs['width'] and not kwargs['height']:
-                filters.append(f"scale={kwargs['width']}:-1")
+                # Use -2 instead of -1 to ensure height is divisible by 2
+                filters.append(f"scale={kwargs['width']}:-2")
             elif kwargs['height'] and not kwargs['width']:
-                filters.append(f"scale=-1:{kwargs['height']}")
+                # Use -2 instead of -1 to ensure width is divisible by 2
+                filters.append(f"scale=-2:{kwargs['height']}")
         
         # FPS filter
         if kwargs['fps']:
