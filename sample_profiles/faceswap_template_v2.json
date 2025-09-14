@@ -119,14 +119,16 @@
       }
     },
     {
-      "id_profile": "png_ai_processing",
+      "id_profile": "jpeg_ai_processing",
       "input_type": "image",
       "output_filename": "ai_processing",
       "config": {
-        "output_format": "png",
+        "output_format": "jpeg",
         "width": null,
         "height": null,
-        "quality": 100,
+        "jpeg_quality": 100,
+        "optimize": false,
+        "progressive": false,
         "verbose": false
       }
     }
