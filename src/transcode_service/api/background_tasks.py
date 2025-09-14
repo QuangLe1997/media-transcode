@@ -410,8 +410,8 @@ async def cleanup_old_tasks():
         try:
             logger.info("🧹 Running scheduled task cleanup...")
 
-            # Calculate cutoff time (30 minutes ago)
-            cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+            # Calculate cutoff time (30 minutes ago) - timezone-naive to match database
+            cutoff_time = datetime.now() - timedelta(minutes=30)
 
             async for db in get_db():
                 # Get old tasks (created more than 30 minutes ago)

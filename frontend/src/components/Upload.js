@@ -75,48 +75,95 @@ const Upload = () => {
     // Profile template management
     const [showProfileManager, setShowProfileManager] = useState(false);
 
-  // Quick templates for profiles
+  // Quick templates for profiles (v1 format - API compatible)
   const profileTemplates = {
-    video_720p: {
-      "id_profile": "720p_h264",
+    quick_web_video: {
+      "id_profile": "quick_web_video",
       "output_type": "video",
+      "input_type": "video",
       "video_config": {
         "codec": "libx264",
         "max_width": 1280,
         "max_height": 720,
-        "bitrate": "2M",
-        "preset": "medium"
+        "crf": 23,
+        "preset": "fast",
+        "profile": "main",
+        "level": "4.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k"
       }
     },
-    video_1080p: {
-      "id_profile": "1080p_h264",
-      "output_type": "video",
-      "video_config": {
-        "codec": "libx264",
-        "max_width": 1920,
-        "max_height": 1080,
-        "bitrate": "4M",
-        "preset": "medium"
+    quick_mobile_preview: {
+      "id_profile": "quick_mobile_preview",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "width": 640,
+        "height": 360,
+        "quality": 80,
+        "fps": 15,
+        "duration": 5.0,
+        "start_time": 1.0,
+        "animated": true,
+        "lossless": false,
+        "method": 2,
+        "preset": "default",
+        "loop": 0
       }
     },
-    thumbnail: {
-      "id_profile": "thumbnail",
+    quick_thumbnail: {
+      "id_profile": "quick_thumbnail",
       "output_type": "image",
+      "input_type": "video",
       "image_config": {
         "max_width": 400,
         "max_height": 300,
-        "quality": 80,
-        "format": "jpeg"
+        "quality": 85,
+        "format": "jpeg",
+        "start_time": 3.0
       }
     },
-    gif_preview: {
-      "id_profile": "preview_gif",
+    quick_gif_preview: {
+      "id_profile": "quick_gif_preview",
       "output_type": "gif",
+      "input_type": "video",
       "gif_config": {
-        "fps": 10,
-        "width": 640,
-        "duration": 5,
-        "quality": 80
+        "width": 480,
+        "height": 270,
+        "fps": 12,
+        "duration": 3.0,
+        "start_time": 2.0,
+        "quality": 75,
+        "loop": 0
+      }
+    },
+    social_square_video: {
+      "id_profile": "social_square_video",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "codec": "libx264",
+        "max_width": 1080,
+        "max_height": 1080,
+        "crf": 25,
+        "preset": "fast",
+        "profile": "main",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k"
+      }
+    },
+    image_optimize: {
+      "id_profile": "image_optimize_jpeg",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "max_width": 1200,
+        "max_height": 800,
+        "quality": 85,
+        "format": "jpeg",
+        "progressive": true
       }
     }
   };

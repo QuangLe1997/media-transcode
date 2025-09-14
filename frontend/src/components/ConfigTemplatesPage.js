@@ -70,15 +70,20 @@ const ConfigTemplatesPage = () => {
       setTemplateName('');
       setTemplateProfiles(JSON.stringify([
         {
-          "id_profile": "example_profile",
-          "output_type": "video",
+          "id_profile": "example_web_video",
           "input_type": "video",
-          "video_config": {
-            "codec": "libx264",
-            "max_width": 1280,
-            "max_height": 720,
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "codec": "h264",
             "crf": 23,
-            "preset": "medium"
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "verbose": false
           }
         }
       ], null, 2));
@@ -137,15 +142,20 @@ const ConfigTemplatesPage = () => {
     setTemplateName('');
     setTemplateProfiles(JSON.stringify([
       {
-        "id_profile": "example_profile",
-        "output_type": "video",
+        "id_profile": "example_web_video",
         "input_type": "video",
-        "video_config": {
-          "codec": "libx264",
-          "max_width": 1280,
-          "max_height": 720,
+        "config": {
+          "output_format": "mp4",
+          "width": 1280,
+          "height": 720,
+          "codec": "h264",
           "crf": 23,
-          "preset": "medium"
+          "mp4_preset": "fast",
+          "profile": "main",
+          "pixel_format": "yuv420p",
+          "audio_codec": "aac",
+          "audio_bitrate": "128k",
+          "verbose": false
         }
       }
     ], null, 2));

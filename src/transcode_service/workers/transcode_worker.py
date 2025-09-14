@@ -448,7 +448,10 @@ def main():
         def process_universal_message(message_data):
             """Process UniversalTranscodeMessage format"""
             try:
-                message = UniversalTranscodeMessage(**message_data)
+                if isinstance(message_data, UniversalTranscodeMessage):
+                    message = message_data
+                else:
+                    message = UniversalTranscodeMessage(**message_data)
                 worker.process_transcode_task(message)
             except Exception as e:
                 logger.error(f"Failed to process message: {e}")
