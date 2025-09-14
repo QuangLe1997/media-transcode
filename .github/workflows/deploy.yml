@@ -1,0 +1,145 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Create deployment directory on server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          mkdir -p ~/media-transcode
+          cd ~/media-transcode
+          
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        source: "."
+        target: "~/media-transcode"
+        rm: true
+
+    - name: Create .env file on server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd ~/media-transcode
+          cat > deployment/.env << 'EOF'
+          # AWS S3 Configuration
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
+          AWS_ENDPOINT_URL=${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_ENDPOINT_PUBLIC_URL=${{ secrets.AWS_ENDPOINT_PUBLIC_URL }}
+          AWS_BASE_FOLDER=${{ secrets.AWS_BASE_FOLDER }}
+          
+          # Google Cloud Pub/Sub Configuration
+          PUBSUB_PROJECT_ID=${{ secrets.PUBSUB_PROJECT_ID }}
+          PUBSUB_TASKS_TOPIC=${{ secrets.PUBSUB_TASKS_TOPIC }}
+          TASKS_SUBSCRIPTION=${{ secrets.TASKS_SUBSCRIPTION }}
+          PUBSUB_RESULTS_TOPIC=${{ secrets.PUBSUB_RESULTS_TOPIC }}
+          PUBSUB_RESULTS_SUBSCRIPTION=${{ secrets.PUBSUB_RESULTS_SUBSCRIPTION }}
+          
+          # Face Detection Topics
+          PUBSUB_FACE_DETECTION_TASKS_TOPIC=${{ secrets.PUBSUB_FACE_DETECTION_TASKS_TOPIC }}
+          PUBSUB_FACE_DETECTION_RESULTS_TOPIC=${{ secrets.PUBSUB_FACE_DETECTION_RESULTS_TOPIC }}
+          PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION=${{ secrets.PUBSUB_FACE_DETECTION_RESULTS_SUBSCRIPTION }}
+          FACE_DETECTION_SUBSCRIPTION=${{ secrets.FACE_DETECTION_SUBSCRIPTION }}
+          
+          # Task Listener
+          PUBSUB_TASK_SUBSCRIPTION=${{ secrets.PUBSUB_TASK_SUBSCRIPTION }}
+          PUBSUB_MAX_MESSAGES=${{ secrets.PUBSUB_MAX_MESSAGES }}
+          
+          # Disable Pub/Sub if needed
+          DISABLE_PUBSUB=${{ secrets.DISABLE_PUBSUB }}
+          EOF
+
+    - name: Create Google Cloud key file
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd ~/media-transcode
+          echo '${{ secrets.GOOGLE_CLOUD_KEY_JSON }}' > src/transcode_service/key.json
+          chmod 600 src/transcode_service/key.json
+
+    - name: Deploy with Docker Compose
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        command_timeout: 30m
+        script: |
+          cd ~/media-transcode/deployment
+          
+          # Pull latest images and rebuild
+          docker-compose pull
+          docker-compose build --no-cache
+          
+          # Stop old containers
+          docker-compose down
+          
+          # Start new containers
+          docker-compose up -d
+          
+          # Clean up old images
+          docker image prune -f
+          
+          # Check if services are running
+          sleep 10
+          docker-compose ps
+          
+          # Show logs for debugging
+          docker-compose logs --tail=50
+
+    - name: Health check
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd ~/media-transcode/deployment
+          
+          # Wait for services to be healthy
+          echo "Waiting for services to be healthy..."
+          sleep 30
+          
+          # Check API health
+          curl -f http://localhost:8087/health || echo "API health check failed"
+          
+          # Check all services status
+          docker-compose ps
+          
+          echo "Deployment completed successfully!"

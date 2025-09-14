@@ -39,8 +39,14 @@ wheels/
 
 # Environment
 .env
+.env.*
 .env.local
 .env.*.local
+**/.env
+**/.env.*
+deployment/.env
+frontend/.env
+frontend/.env.production
 
 # IDE
 .vscode/
