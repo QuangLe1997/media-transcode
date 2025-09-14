@@ -307,7 +307,7 @@ class TranscodeWorkerV2:
         output_format = config.output_format
         if not output_format:
             # Auto-detect from filename if provided, otherwise use webp as
-            # default
+            # defaultK
             if profile.output_filename:
                 ext = Path(profile.output_filename).suffix.lower().lstrip(".")
                 if ext in ["webp", "jpg", "jpeg", "mp4"]:
