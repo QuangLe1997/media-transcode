@@ -1,0 +1,108 @@
+{
+  "name": "faceswap_template",
+  "config": [
+    {
+      "id_profile": "webp_preview_high_device",
+      "output_type": "webp",
+      "input_type": "video",
+      "webp_config": {
+        "width": 720,
+        "quality": 85,
+        "fps": 12.0,
+        "duration": 3.0,
+        "start_time": 0,
+        "speed": 1.0,
+        "lossless": false,
+        "animated": true,
+        "loop": 0,
+        "preset": "picture"
+      }
+    },
+    {
+      "id_profile": "webp_preview_low_device",
+      "output_type": "webp", 
+      "input_type": "video",
+      "webp_config": {
+        "width": 480,
+        "quality": 75,
+        "fps": 8.0,
+        "duration": 3.0,
+        "start_time": 0,
+        "speed": 1.0,
+        "lossless": false,
+        "animated": true,
+        "loop": 0,
+        "preset": "picture"
+      }
+    },
+    {
+      "id_profile": "mp4_detail_playback",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "quality": 90,
+        "codec": "h264",
+        "crf": 20,
+        "preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "two_pass": false,
+        "hardware_accel": false
+      }
+    },
+    {
+      "id_profile": "mp4_ai_processing",
+      "output_type": "video",
+      "input_type": "video",
+      "video_config": {
+        "quality": 95,
+        "codec": "h264",
+        "crf": 18,
+        "preset": "slow",
+        "profile": "high", 
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+        "audio_sample_rate": 48000,
+        "two_pass": true,
+        "hardware_accel": false
+      }
+    },
+    {
+      "id_profile": "webp_thumb_preview",
+      "output_type": "webp",
+      "input_type": "image",
+      "webp_config": {
+        "width": 400,
+        "height": 400,
+        "quality": 80,
+        "lossless": false,
+        "animated": false,
+        "preset": "photo"
+      }
+    },
+    {
+      "id_profile": "jpg_detail_view",
+      "output_type": "image",
+      "input_type": "image",
+      "image_config": {
+        "quality": 90,
+        "optimize": true,
+        "progressive": false
+      }
+    },
+    {
+      "id_profile": "png_ai_processing",
+      "output_type": "image",
+      "input_type": "image", 
+      "image_config": {
+        "quality": 100
+      }
+    }
+  ]
+}
