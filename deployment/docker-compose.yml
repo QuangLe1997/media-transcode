@@ -69,7 +69,7 @@ services:
       - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
       - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
       - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
-      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-true}
       
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
@@ -149,7 +149,7 @@ services:
       - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
       - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
       - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
-      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-true}
       
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
@@ -221,7 +221,7 @@ services:
       - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
       - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
       - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
-      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-true}
       
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
@@ -292,7 +292,7 @@ services:
       - PUBSUB_RESULTS_SUBSCRIPTION=${PUBSUB_RESULTS_SUBSCRIPTION}
       - PUBSUB_PUBLISHER_CREDENTIALS_PATH=/app/key.json
       - PUBSUB_SUBSCRIBER_CREDENTIALS_PATH=/app/key.json
-      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-false}
+      - DISABLE_PUBSUB=${DISABLE_PUBSUB:-true}
       
       # Face Detection Pub/Sub Configuration
       - PUBSUB_FACE_DETECTION_TASKS_TOPIC=${PUBSUB_FACE_DETECTION_TASKS_TOPIC:-face-detection-worker-tasks}
