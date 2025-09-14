@@ -195,9 +195,18 @@ class TranscodeWorkerV2:
 
             elif message.source_url:
                 # Fallback: download from URL (backward compatibility)
+                # Extract file extension from URL if present
+                from urllib.parse import urlparse
+                url_path = urlparse(message.source_url).path
+                file_ext = Path(url_path).suffix if url_path else ""
+                
+                # If no extension in URL, try to detect from content
+                if not file_ext:
+                    file_ext = ".mp4"  # Default to mp4 for videos
+                
                 temp_input = os.path.join(
                     self.temp_dir,
-                    f"{message.task_id}_{message.profile.id_profile}_input",
+                    f"{message.task_id}_{message.profile.id_profile}_input{file_ext}",
                 )
 
                 logger.info(f"🔗 Downloading from URL: {message.source_url}")
