@@ -99,7 +99,7 @@ def convert_to_webp():
             'target_size': int(request.form.get('targetSize')) if request.form.get('targetSize') else None,
 
             # System settings
-            'verbose': False
+            'verbose': True
         }
 
         # Generate smart output filename
@@ -349,7 +349,7 @@ def transcode_media():
             'hardware_accel': request.form.get('hardwareAccel', 'false').lower() == 'true',
 
             # System settings
-            'verbose': False
+            'verbose': True
         }
 
         # Detect media type for output extension

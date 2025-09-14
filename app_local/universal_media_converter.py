@@ -340,9 +340,9 @@ class UniversalMediaConverter:
         # Note: alpha_method is NOT supported and will cause errors
         # auto_filter and pass_count are also not supported by FFmpeg libwebp
         
-        # Verbose/quiet
+        # Verbose/quiet - use 'error' level to still show errors
         if not kwargs['verbose']:
-            cmd.extend(["-loglevel", "quiet"])
+            cmd.extend(["-loglevel", "error"])
         
         # Output file
         cmd.append(kwargs['output_path'])
@@ -401,9 +401,9 @@ class UniversalMediaConverter:
         # Output format
         cmd.extend(["-f", "image2"])
         
-        # Verbose/quiet
+        # Verbose/quiet - use 'error' level to still show errors
         if not kwargs['verbose']:
-            cmd.extend(["-loglevel", "quiet"])
+            cmd.extend(["-loglevel", "error"])
         
         # Output file
         cmd.append(kwargs['output_path'])
@@ -505,9 +505,9 @@ class UniversalMediaConverter:
         cmd.extend(["-f", "mp4"])
         cmd.extend(["-movflags", "+faststart"])  # Enable streaming
         
-        # Verbose/quiet
+        # Verbose/quiet - use 'error' level to still show errors
         if not kwargs['verbose']:
-            cmd.extend(["-loglevel", "quiet"])
+            cmd.extend(["-loglevel", "error"])
         
         # Output file
         cmd.append(kwargs['output_path'])
