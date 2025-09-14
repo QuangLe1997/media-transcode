@@ -25,9 +25,12 @@ jobs:
         username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
+        timeout: 60s
+        command_timeout: 5m
         script: |
           mkdir -p ~/media-transcode
           cd ~/media-transcode
+          echo "Deployment directory ready"
           
     - name: Copy files to server
       uses: appleboy/scp-action@v0.1.7
@@ -36,6 +39,7 @@ jobs:
         username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
+        timeout: 10m
         source: "."
         target: "~/media-transcode"
         rm: true
@@ -47,6 +51,8 @@ jobs:
         username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
+        timeout: 60s
+        command_timeout: 5m
         script: |
           cd ~/media-transcode
           cat > deployment/.env << 'EOF'
@@ -94,6 +100,8 @@ jobs:
         username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
+        timeout: 60s
+        command_timeout: 5m
         script: |
           cd ~/media-transcode
           echo '${{ secrets.GOOGLE_CLOUD_KEY_JSON }}' > src/transcode_service/key.json
@@ -137,6 +145,8 @@ jobs:
         username: ${{ vars.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
+        timeout: 60s
+        command_timeout: 10m
         script: |
           cd ~/media-transcode/deployment
           
