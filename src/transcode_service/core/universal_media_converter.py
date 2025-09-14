@@ -17,7 +17,8 @@ from typing import Dict, Any, Optional
 
 class UniversalMediaConverter:
     def __init__(self):
-        self.ffmpeg_path = "/opt/homebrew/bin/ffmpeg"
+        # Use environment variable or default to system ffmpeg
+        self.ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")
 
         # Supported file extensions
         self.video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.flv', '.wmv', '.m2ts', '.ts'}
@@ -522,7 +523,7 @@ class UniversalMediaConverter:
 
             # Get media info using ffprobe
             probe_cmd = [
-                "/opt/homebrew/bin/ffprobe", "-v", "quiet", "-print_format", "json",
+                os.getenv("FFPROBE_PATH", "ffprobe"), "-v", "quiet", "-print_format", "json",
                 "-show_format", "-show_streams", output_path
             ]
 
