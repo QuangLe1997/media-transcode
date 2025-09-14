@@ -235,7 +235,10 @@ const Upload = () => {
       const profiles = JSON.parse(profilesJson);
       const response = await api.post('/config-templates', {
         name: templateName,
-        config: profiles
+        description: null,
+        profiles: profiles,
+        s3_output_config: null,
+        face_detection_config: null
       });
       
       setConfigTemplates([...configTemplates, response.data]);

@@ -62,7 +62,10 @@ const ConfigTemplatesPage = () => {
       const profiles = JSON.parse(templateProfiles);
       const response = await api.post('/config-templates', {
         name: templateName.trim(),
-        config: profiles
+        description: null,
+        profiles: profiles,
+        s3_output_config: null,
+        face_detection_config: null
       });
 
       setTemplates([...templates, response.data]);
@@ -107,7 +110,10 @@ const ConfigTemplatesPage = () => {
       const profiles = JSON.parse(templateProfiles);
       const response = await api.put(`/config-templates/${selectedTemplate.template_id}`, {
         name: templateName.trim(),
-        config: profiles
+        description: selectedTemplate.description,
+        profiles: profiles,
+        s3_output_config: selectedTemplate.s3_output_config,
+        face_detection_config: selectedTemplate.face_detection_config
       });
 
       setTemplates(templates.map(t => 

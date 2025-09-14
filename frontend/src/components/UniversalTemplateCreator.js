@@ -189,10 +189,13 @@ const UniversalTemplateCreator = ({ onClose, onTemplateCreated }) => {
         return legacyProfile;
       });
 
-      // Create template using legacy API
+      // Create template using v2 API
       const response = await api.post('/config-templates', {
         name: `${templateData.name}_v2_universal`,
-        config: legacyProfiles
+        description: templateData.description,
+        profiles: templateData.profiles,
+        s3_output_config: templateData.s3_output_config,
+        face_detection_config: templateData.face_detection_config
       });
 
       // Also save to localStorage for v2 format reference
