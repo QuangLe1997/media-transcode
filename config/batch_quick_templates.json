@@ -1,0 +1,316 @@
+{
+  "title": "Batch Quick Templates for Multi-Output Tasks",
+  "description": "Templates that generate multiple outputs in a single transcode job for maximum efficiency",
+  "version": "2.0",
+  "templates": {
+    "complete_web_package": {
+      "name": "Complete Web Package",
+      "description": "Generate MP4 video, WebP preview, thumbnail, and audio - all in one job",
+      "use_case": "Complete web media package for websites and platforms",
+      "estimated_time": "Fast - parallel processing",
+      "config": [
+        {
+          "id_profile": "web_mp4_main",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "codec": "h264",
+            "crf": 23,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "web_preview_webp",
+          "input_type": "video",
+          "config": {
+            "output_format": "webp",
+            "width": 640,
+            "height": 360,
+            "quality": 80,
+            "fps": 15,
+            "duration": 4.0,
+            "start_time": 1.0,
+            "animated": true,
+            "loop": 0,
+            "target_size": 500,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "web_thumbnail_jpeg",
+          "input_type": "video",
+          "config": {
+            "output_format": "jpeg",
+            "width": 400,
+            "height": 300,
+            "quality": 85,
+            "start_time": 2.0,
+            "jpeg_quality": 85,
+            "optimize": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "web_audio_mp3",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp3",
+            "audio_codec": "mp3",
+            "audio_bitrate": "128k",
+            "audio_sample_rate": 44100,
+            "audio_channels": 2,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "social_media_pack": {
+      "name": "Social Media Pack",
+      "description": "Square video, story format, and GIF preview for social platforms",
+      "use_case": "Social media content distribution",
+      "estimated_time": "Fast - optimized for social specs",
+      "config": [
+        {
+          "id_profile": "social_square_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1080,
+            "height": 1080,
+            "codec": "h264",
+            "crf": 25,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "social_story_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 720,
+            "height": 1280,
+            "codec": "h264",
+            "crf": 25,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "96k",
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "social_gif_preview",
+          "input_type": "video",
+          "config": {
+            "output_format": "gif",
+            "width": 480,
+            "height": 480,
+            "fps": 12,
+            "duration": 3.0,
+            "start_time": 1.0,
+            "quality": 75,
+            "loop": 0,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "mobile_optimization": {
+      "name": "Mobile Optimization",
+      "description": "Multiple mobile-friendly formats and sizes",
+      "use_case": "Mobile app content and responsive web design",
+      "estimated_time": "Fast - mobile-optimized settings",
+      "config": [
+        {
+          "id_profile": "mobile_720p_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "codec": "h264",
+            "crf": 26,
+            "mp4_preset": "fast",
+            "profile": "baseline",
+            "level": "3.1",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "96k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "mobile_480p_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 854,
+            "height": 480,
+            "codec": "h264",
+            "crf": 28,
+            "mp4_preset": "fast",
+            "profile": "baseline",
+            "level": "3.0",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "64k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "mobile_webp_preview",
+          "input_type": "video",
+          "config": {
+            "output_format": "webp",
+            "width": 480,
+            "height": 270,
+            "quality": 75,
+            "fps": 12,
+            "duration": 3.0,
+            "start_time": 1.0,
+            "animated": true,
+            "target_size": 300,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "archive_and_preview": {
+      "name": "Archive & Preview",
+      "description": "High quality archive copy plus web preview",
+      "use_case": "Content preservation with web distribution",
+      "estimated_time": "Medium - includes high quality encoding",
+      "config": [
+        {
+          "id_profile": "archive_hq_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "codec": "h264",
+            "crf": 18,
+            "mp4_preset": "slow",
+            "profile": "high",
+            "level": "5.1",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "192k",
+            "audio_sample_rate": 48000,
+            "hardware_accel": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "preview_web_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "codec": "h264",
+            "crf": 23,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "preview_thumbnail",
+          "input_type": "video",
+          "config": {
+            "output_format": "jpeg",
+            "width": 800,
+            "height": 600,
+            "quality": 90,
+            "start_time": 5.0,
+            "jpeg_quality": 90,
+            "optimize": true,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "image_batch_optimize": {
+      "name": "Image Batch Optimize",
+      "description": "Multiple image formats and sizes from source",
+      "use_case": "Image optimization for web galleries and responsive design",
+      "estimated_time": "Fast - image processing",
+      "config": [
+        {
+          "id_profile": "image_large_jpeg",
+          "input_type": "image",
+          "config": {
+            "output_format": "jpeg",
+            "width": 1920,
+            "height": 1280,
+            "quality": 85,
+            "jpeg_quality": 85,
+            "optimize": true,
+            "progressive": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "image_medium_jpeg",
+          "input_type": "image",
+          "config": {
+            "output_format": "jpeg",
+            "width": 1200,
+            "height": 800,
+            "quality": 85,
+            "jpeg_quality": 85,
+            "optimize": true,
+            "progressive": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "image_thumb_jpeg",
+          "input_type": "image",
+          "config": {
+            "output_format": "jpeg",
+            "width": 400,
+            "height": 300,
+            "quality": 80,
+            "jpeg_quality": 80,
+            "optimize": true,
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "image_webp_modern",
+          "input_type": "image",
+          "config": {
+            "output_format": "webp",
+            "width": 1200,
+            "height": 800,
+            "quality": 85,
+            "lossless": false,
+            "method": 4,
+            "auto_filter": true,
+            "verbose": false
+          }
+        }
+      ]
+    }
+  }
+}

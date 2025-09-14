@@ -1,0 +1,797 @@
+{
+  "title": "Categorized Profiles by Use Case - ALL Parameters Organized",
+  "description": "Practical organization of all UniversalMediaConverter parameters by common use cases",
+  "version": "2.0",
+  "last_updated": "2025-09-14",
+
+  "web_optimization_profiles": {
+    "description": "Profiles optimized for web delivery and streaming",
+    "webp_web_optimized": {
+      "id_profile": "webp_web_optimized",
+      "input_type": "video",
+      "config": {
+        "output_format": "webp",
+        "width": 1280,
+        "height": 720,
+        "quality": 85,
+        "fps": 24,
+        "duration": 6.0,
+        "start_time": 1.0,
+        "animated": true,
+        "lossless": false,
+        "method": 4,
+        "preset": "default",
+        "loop": 0,
+        "target_size": 800,
+        "pass_count": 1,
+        "auto_filter": true,
+        "verbose": false
+      }
+    },
+    "mp4_web_streaming": {
+      "id_profile": "mp4_web_streaming",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "profile": "main",
+        "level": "4.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "verbose": false
+      }
+    },
+    "jpeg_web_gallery": {
+      "id_profile": "jpeg_web_gallery",
+      "input_type": "image",
+      "config": {
+        "output_format": "jpeg",
+        "width": 1200,
+        "height": 800,
+        "quality": 85,
+        "jpeg_quality": 85,
+        "optimize": true,
+        "progressive": true,
+        "auto_filter": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "mobile_optimization_profiles": {
+    "description": "Profiles optimized for mobile devices and bandwidth",
+    "webp_mobile_preview": {
+      "id_profile": "webp_mobile_preview",
+      "input_type": "video",
+      "config": {
+        "output_format": "webp",
+        "width": 640,
+        "height": 360,
+        "quality": 75,
+        "fps": 12,
+        "duration": 3.0,
+        "start_time": 1.0,
+        "animated": true,
+        "lossless": false,
+        "method": 2,
+        "preset": "default",
+        "loop": 0,
+        "target_size": 200,
+        "pass_count": 1,
+        "verbose": false
+      }
+    },
+    "mp4_mobile_high": {
+      "id_profile": "mp4_mobile_high",
+      "input_type": "video", 
+      "config": {
+        "output_format": "mp4",
+        "width": 1280,
+        "height": 720,
+        "codec": "h264",
+        "crf": 26,
+        "mp4_preset": "fast",
+        "bitrate": "2M",
+        "max_bitrate": "3M",
+        "buffer_size": "4M",
+        "profile": "main",
+        "level": "3.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "96k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "verbose": false
+      }
+    },
+    "mp4_mobile_low": {
+      "id_profile": "mp4_mobile_low",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 640,
+        "height": 360,
+        "codec": "h264",
+        "crf": 30,
+        "mp4_preset": "ultrafast",
+        "bitrate": "800k",
+        "max_bitrate": "1M",
+        "buffer_size": "1.5M",
+        "profile": "baseline",
+        "level": "2.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "64k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "social_media_profiles": {
+    "description": "Profiles optimized for social media platforms",
+    "instagram_feed_square": {
+      "id_profile": "instagram_feed_1080x1080",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30,
+        "duration": 60.0,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "medium",
+        "bitrate": "3.5M",
+        "max_bitrate": "5M",
+        "profile": "main",
+        "level": "4.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "contrast": 1.1,
+        "saturation": 1.15,
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    },
+    "instagram_story_vertical": {
+      "id_profile": "instagram_story_1080x1920",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 15.0,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "bitrate": "4M",
+        "max_bitrate": "6M",
+        "profile": "main",
+        "level": "4.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "brightness": 0.05,
+        "contrast": 1.1,
+        "saturation": 1.2,
+        "verbose": false
+      }
+    },
+    "tiktok_vertical": {
+      "id_profile": "tiktok_720x1280", 
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 720,
+        "height": 1280,
+        "fps": 30,
+        "duration": 60.0,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "bitrate": "2.5M",
+        "max_bitrate": "4M",
+        "profile": "main",
+        "level": "3.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "contrast": 1.15,
+        "saturation": 1.25,
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    },
+    "youtube_shorts": {
+      "id_profile": "youtube_shorts_1080x1920",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 60.0,
+        "codec": "h264",
+        "crf": 20,
+        "mp4_preset": "medium",
+        "bitrate": "6M",
+        "max_bitrate": "8M",
+        "buffer_size": "12M",
+        "profile": "high",
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+        "audio_sample_rate": 48000,
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "archival_quality_profiles": {
+    "description": "Maximum quality profiles for archival and master copies",
+    "webp_archival_lossless": {
+      "id_profile": "webp_archival_lossless",
+      "input_type": "image",
+      "config": {
+        "output_format": "webp",
+        "lossless": true,
+        "method": 6,
+        "preset": "photo",
+        "alpha_quality": 100,
+        "pass_count": 2,
+        "enable_denoising": true,
+        "enable_sharpening": false,
+        "contrast": 1.0,
+        "brightness": 0.0,
+        "saturation": 1.0,
+        "gamma": 1.0,
+        "verbose": true
+      }
+    },
+    "mp4_archival_master": {
+      "id_profile": "mp4_archival_master",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "codec": "h264",
+        "crf": 16,
+        "mp4_preset": "veryslow",
+        "profile": "high",
+        "level": "5.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "320k",
+        "audio_sample_rate": 48000,
+        "two_pass": true,
+        "hardware_accel": false,
+        "enable_denoising": true,
+        "verbose": true
+      }
+    },
+    "jpeg_archival_maximum": {
+      "id_profile": "jpeg_archival_maximum",
+      "input_type": "image",
+      "config": {
+        "output_format": "jpeg",
+        "quality": 100,
+        "jpeg_quality": 100,
+        "optimize": true,
+        "progressive": false,
+        "enable_denoising": false,
+        "enable_sharpening": false,
+        "contrast": 1.0,
+        "brightness": 0.0,
+        "saturation": 1.0,
+        "gamma": 1.0,
+        "verbose": true
+      }
+    }
+  },
+
+  "preview_thumbnail_profiles": {
+    "description": "Fast processing profiles for previews and thumbnails",
+    "webp_thumbnail_fast": {
+      "id_profile": "webp_thumbnail_fast",
+      "input_type": "video",
+      "config": {
+        "output_format": "webp",
+        "width": 320,
+        "height": 240,
+        "quality": 70,
+        "fps": 8,
+        "duration": 2.0,
+        "start_time": 1.0,
+        "animated": true,
+        "lossless": false,
+        "method": 1,
+        "preset": "default",
+        "loop": 0,
+        "target_size": 100,
+        "pass_count": 1,
+        "auto_filter": true,
+        "verbose": false
+      }
+    },
+    "mp4_preview_fast": {
+      "id_profile": "mp4_preview_fast",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 640,
+        "height": 360,
+        "fps": 24,
+        "duration": 5.0,
+        "start_time": 2.0,
+        "codec": "h264",
+        "crf": 32,
+        "mp4_preset": "ultrafast",
+        "profile": "baseline",
+        "level": "3.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "64k",
+        "hardware_accel": true,
+        "verbose": false
+      }
+    },
+    "jpeg_thumbnail_static": {
+      "id_profile": "jpeg_thumbnail_static",
+      "input_type": "video",
+      "config": {
+        "output_format": "jpeg",
+        "width": 400,
+        "height": 300,
+        "start_time": 3.0,
+        "duration": 0.1,
+        "quality": 80,
+        "jpeg_quality": 80,
+        "optimize": true,
+        "progressive": false,
+        "auto_filter": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "creative_effects_profiles": {
+    "description": "Profiles with creative filters and effects",
+    "cinematic_look": {
+      "id_profile": "cinematic_color_grade",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "fps": 24,
+        "codec": "h264",
+        "crf": 20,
+        "mp4_preset": "slow",
+        "profile": "high",
+        "level": "4.1",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+        "contrast": 1.2,
+        "brightness": -0.05,
+        "saturation": 0.85,
+        "gamma": 1.1,
+        "enable_denoising": true,
+        "enable_sharpening": false,
+        "verbose": false
+      }
+    },
+    "vibrant_colors": {
+      "id_profile": "vibrant_color_boost",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 22,
+        "mp4_preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "contrast": 1.25,
+        "brightness": 0.03,
+        "saturation": 1.4,
+        "gamma": 0.92,
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    },
+    "vintage_film_look": {
+      "id_profile": "vintage_film_effect",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "medium",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "contrast": 0.9,
+        "brightness": -0.02,
+        "saturation": 0.8,
+        "gamma": 1.15,
+        "enable_denoising": false,
+        "enable_sharpening": false,
+        "verbose": false
+      }
+    },
+    "high_contrast_bw": {
+      "id_profile": "high_contrast_monochrome",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 21,
+        "mp4_preset": "medium",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "contrast": 1.5,
+        "brightness": 0.0,
+        "saturation": 0.0,
+        "gamma": 0.85,
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "speed_manipulation_profiles": {
+    "description": "Profiles for time-based effects",
+    "slow_motion_quarter_speed": {
+      "id_profile": "slow_motion_0_25x",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "fps": 60,
+        "speed": 0.25,
+        "codec": "h264",
+        "crf": 20,
+        "mp4_preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    },
+    "time_lapse_8x": {
+      "id_profile": "time_lapse_8x_speed",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "speed": 8.0,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "profile": "high",
+        "level": "4.1",
+        "audio_codec": "none",
+        "enable_sharpening": true,
+        "verbose": false
+      }
+    },
+    "double_speed": {
+      "id_profile": "double_speed_2x",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "speed": 2.0,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "verbose": false
+      }
+    }
+  },
+
+  "hardware_optimized_profiles": {
+    "description": "Profiles optimized for hardware acceleration",
+    "gpu_accelerated_h264": {
+      "id_profile": "gpu_h264_fast",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "fast",
+        "profile": "high",
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "two_pass": false,
+        "verbose": false
+      }
+    },
+    "gpu_accelerated_h265": {
+      "id_profile": "gpu_h265_efficient",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h265",
+        "crf": 25,
+        "mp4_preset": "fast",
+        "profile": "main",
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "two_pass": false,
+        "verbose": false
+      }
+    }
+  },
+
+  "batch_processing_profiles": {
+    "description": "Efficient profiles for batch processing multiple files",
+    "batch_webp_standard": {
+      "id_profile": "batch_webp_efficient",
+      "input_type": "image",
+      "config": {
+        "output_format": "webp",
+        "width": 1200,
+        "height": 800,
+        "quality": 85,
+        "lossless": false,
+        "method": 3,
+        "preset": "default",
+        "alpha_quality": 90,
+        "pass_count": 1,
+        "auto_filter": true,
+        "verbose": false
+      }
+    },
+    "batch_jpeg_standard": {
+      "id_profile": "batch_jpeg_efficient",
+      "input_type": "image",
+      "config": {
+        "output_format": "jpeg",
+        "width": 1200,
+        "height": 800,
+        "quality": 85,
+        "jpeg_quality": 85,
+        "optimize": true,
+        "progressive": true,
+        "auto_filter": true,
+        "verbose": false
+      }
+    },
+    "batch_mp4_standard": {
+      "id_profile": "batch_mp4_efficient", 
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1280,
+        "height": 720,
+        "codec": "h264",
+        "crf": 26,
+        "mp4_preset": "fast",
+        "profile": "main",
+        "level": "3.1",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "hardware_accel": true,
+        "verbose": false
+      }
+    }
+  },
+
+  "platform_specific_profiles": {
+    "description": "Profiles optimized for specific platforms and devices",
+    "apple_device_optimized": {
+      "id_profile": "apple_device_h264",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 23,
+        "mp4_preset": "medium",
+        "profile": "high",
+        "level": "4.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "verbose": false
+      }
+    },
+    "android_device_optimized": {
+      "id_profile": "android_device_baseline",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1280,
+        "height": 720,
+        "codec": "h264",
+        "crf": 26,
+        "mp4_preset": "fast",
+        "profile": "baseline",
+        "level": "3.1",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "96k",
+        "audio_sample_rate": 44100,
+        "hardware_accel": true,
+        "verbose": false
+      }
+    },
+    "web_browser_compatible": {
+      "id_profile": "web_browser_universal",
+      "input_type": "video",
+      "config": {
+        "output_format": "mp4",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "crf": 25,
+        "mp4_preset": "medium",
+        "profile": "main",
+        "level": "4.0",
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "128k",
+        "audio_sample_rate": 44100,
+        "verbose": false
+      }
+    }
+  },
+
+  "complete_use_case_examples": {
+    "content_creator_workflow": {
+      "description": "Complete workflow for content creators",
+      "profiles": [
+        {
+          "id_profile": "master_quality_archive",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "codec": "h264",
+            "crf": 18,
+            "mp4_preset": "slower",
+            "profile": "high",
+            "level": "5.1",
+            "audio_codec": "aac",
+            "audio_bitrate": "320k",
+            "audio_sample_rate": 48000,
+            "two_pass": true,
+            "enable_denoising": true
+          }
+        },
+        {
+          "id_profile": "youtube_upload_ready",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1920,
+            "height": 1080,
+            "codec": "h264",
+            "crf": 20,
+            "mp4_preset": "medium",
+            "profile": "high",
+            "level": "4.1",
+            "audio_codec": "aac",
+            "audio_bitrate": "192k",
+            "contrast": 1.05,
+            "saturation": 1.1
+          }
+        },
+        {
+          "id_profile": "social_preview_webp",
+          "input_type": "video",
+          "config": {
+            "output_format": "webp",
+            "width": 640,
+            "height": 360,
+            "quality": 80,
+            "fps": 15,
+            "duration": 5.0,
+            "start_time": 10.0,
+            "animated": true,
+            "method": 4,
+            "target_size": 500
+          }
+        }
+      ]
+    },
+    "e_commerce_product_media": {
+      "description": "E-commerce product image/video processing",
+      "profiles": [
+        {
+          "id_profile": "product_image_webp_hq",
+          "input_type": "image",
+          "config": {
+            "output_format": "webp",
+            "width": 1200,
+            "height": 1200,
+            "quality": 90,
+            "lossless": false,
+            "method": 5,
+            "preset": "photo",
+            "alpha_quality": 100,
+            "enable_sharpening": true,
+            "contrast": 1.05,
+            "saturation": 1.1
+          }
+        },
+        {
+          "id_profile": "product_thumbnail_webp",
+          "input_type": "image",
+          "config": {
+            "output_format": "webp",
+            "width": 300,
+            "height": 300,
+            "quality": 85,
+            "method": 3,
+            "target_size": 50,
+            "auto_filter": true
+          }
+        },
+        {
+          "id_profile": "product_video_demo",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "fps": 30,
+            "duration": 30.0,
+            "codec": "h264",
+            "crf": 23,
+            "mp4_preset": "medium",
+            "profile": "main",
+            "level": "3.1",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "enable_sharpening": true,
+            "contrast": 1.1,
+            "saturation": 1.15
+          }
+        }
+      ]
+    }
+  }
+}

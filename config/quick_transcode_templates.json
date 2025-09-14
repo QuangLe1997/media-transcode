@@ -1,0 +1,238 @@
+{
+  "title": "Quick Transcode Templates for Fast Task Execution",
+  "description": "Ready-to-use config templates optimized for common transcode scenarios",
+  "version": "2.0",
+  "templates": {
+    "quick_web_video": {
+      "name": "Quick Web Video",
+      "description": "Fast web-ready MP4 conversion with good quality",
+      "use_case": "Web streaming and social media",
+      "config": [
+        {
+          "id_profile": "quick_web_video",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1280,
+            "height": 720,
+            "codec": "h264",
+            "crf": 23,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "level": "4.0",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_mobile_preview": {
+      "name": "Quick Mobile Preview",
+      "description": "Fast mobile-friendly WebP animation",
+      "use_case": "Mobile previews and thumbnails",
+      "config": [
+        {
+          "id_profile": "quick_mobile_preview",
+          "input_type": "video",
+          "config": {
+            "output_format": "webp",
+            "width": 640,
+            "height": 360,
+            "quality": 80,
+            "fps": 15,
+            "duration": 5.0,
+            "start_time": 1.0,
+            "animated": true,
+            "lossless": false,
+            "method": 2,
+            "preset": "default",
+            "loop": 0,
+            "target_size": 500,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_image_optimize": {
+      "name": "Quick Image Optimize",
+      "description": "Fast JPEG optimization for web galleries",
+      "use_case": "Image compression and web optimization",
+      "config": [
+        {
+          "id_profile": "quick_image_optimize",
+          "input_type": "image",
+          "config": {
+            "output_format": "jpeg",
+            "width": 1200,
+            "height": 800,
+            "quality": 85,
+            "jpeg_quality": 85,
+            "optimize": true,
+            "progressive": true,
+            "auto_filter": true,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_gif_preview": {
+      "name": "Quick GIF Preview",
+      "description": "Fast GIF creation for social media",
+      "use_case": "GIF previews and animations",
+      "config": [
+        {
+          "id_profile": "quick_gif_preview",
+          "input_type": "video",
+          "config": {
+            "output_format": "gif",
+            "width": 480,
+            "height": 270,
+            "fps": 12,
+            "duration": 3.0,
+            "start_time": 2.0,
+            "quality": 75,
+            "loop": 0,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_thumbnail": {
+      "name": "Quick Thumbnail",
+      "description": "Fast thumbnail extraction from video",
+      "use_case": "Video thumbnails and preview images",
+      "config": [
+        {
+          "id_profile": "quick_thumbnail",
+          "input_type": "video",
+          "config": {
+            "output_format": "jpeg",
+            "width": 400,
+            "height": 300,
+            "quality": 85,
+            "start_time": 3.0,
+            "jpeg_quality": 85,
+            "optimize": true,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_audio_extract": {
+      "name": "Quick Audio Extract",
+      "description": "Fast audio extraction and conversion",
+      "use_case": "Audio extraction and podcast optimization",
+      "config": [
+        {
+          "id_profile": "quick_audio_extract",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp3",
+            "audio_codec": "mp3",
+            "audio_bitrate": "128k",
+            "audio_sample_rate": 44100,
+            "audio_channels": 2,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "batch_social_media": {
+      "name": "Batch Social Media",
+      "description": "Multiple formats for social media distribution",
+      "use_case": "Social media content creation",
+      "config": [
+        {
+          "id_profile": "social_mp4",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "width": 1080,
+            "height": 1080,
+            "codec": "h264",
+            "crf": 25,
+            "mp4_preset": "fast",
+            "profile": "main",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "128k",
+            "verbose": false
+          }
+        },
+        {
+          "id_profile": "social_webp",
+          "input_type": "video",
+          "config": {
+            "output_format": "webp",
+            "width": 640,
+            "height": 640,
+            "quality": 80,
+            "fps": 15,
+            "duration": 4.0,
+            "animated": true,
+            "loop": 0,
+            "target_size": 800,
+            "verbose": false
+          }
+        }
+      ]
+    },
+    "quick_hd_preserve": {
+      "name": "Quick HD Preserve",
+      "description": "High quality preservation with minimal compression",
+      "use_case": "Archival and high-quality storage",
+      "config": [
+        {
+          "id_profile": "quick_hd_preserve",
+          "input_type": "video",
+          "config": {
+            "output_format": "mp4",
+            "codec": "h264",
+            "crf": 18,
+            "mp4_preset": "slow",
+            "profile": "high",
+            "level": "5.1",
+            "pixel_format": "yuv420p",
+            "audio_codec": "aac",
+            "audio_bitrate": "192k",
+            "hardware_accel": true,
+            "verbose": false
+          }
+        }
+      ]
+    }
+  },
+  "s3_templates": {
+    "quick_s3_web": {
+      "name": "Quick S3 Web Delivery",
+      "description": "S3 configuration optimized for web delivery",
+      "config": {
+        "bucket_name": "your-web-media-bucket",
+        "key_prefix": "transcoded/web/",
+        "public_read": true,
+        "storage_class": "STANDARD",
+        "metadata": {
+          "Content-Type": "video/mp4",
+          "Cache-Control": "max-age=31536000"
+        }
+      }
+    },
+    "quick_s3_archive": {
+      "name": "Quick S3 Archive",
+      "description": "S3 configuration for long-term storage",
+      "config": {
+        "bucket_name": "your-archive-bucket", 
+        "key_prefix": "archive/",
+        "public_read": false,
+        "storage_class": "GLACIER",
+        "metadata": {
+          "Archive-Date": "${date}",
+          "Original-Filename": "${filename}"
+        }
+      }
+    }
+  }
+}
