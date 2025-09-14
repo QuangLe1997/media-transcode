@@ -43,6 +43,7 @@ face-detection = [
 
 [project.scripts]
 transcode-api = "transcode_service.app:main"
+transcode-task-listener = "transcode_service.workers.task_listener:main"
 transcode-worker = "transcode_service.workers.transcode_worker:main"
 transcode-face-worker = "transcode_service.workers.face_detect_worker:main"
 
