@@ -284,24 +284,35 @@ class UniversalMediaConverter:
         if filters:
             cmd.extend(["-vf", ",".join(filters)])
         
-        # WebP codec
-        cmd.extend(["-c:v", "libwebp"])
-        
-        # WebP-specific parameters (only use FFmpeg libwebp supported options)
-        if kwargs['lossless']:
-            cmd.extend(["-lossless", "1"])
+        # WebP codec - different approach for images vs videos
+        if input_type == 'image':
+            # For static images, use format specifier instead of codec
+            cmd.extend(["-f", "webp"])
         else:
-            cmd.extend(["-quality", str(kwargs['quality'])])
+            # For videos, use libwebp codec
+            cmd.extend(["-c:v", "libwebp"])
         
-        # Only use valid preset values for FFmpeg libwebp
-        valid_presets = ['default', 'picture', 'photo', 'drawing', 'icon', 'text']
-        if kwargs['preset'] in valid_presets:
-            # Map preset string to FFmpeg preset number
-            preset_map = {
-                'default': 0, 'picture': 1, 'photo': 2, 
-                'drawing': 3, 'icon': 4, 'text': 5
-            }
-            cmd.extend(["-preset", str(preset_map[kwargs['preset']])])
+        # WebP-specific parameters 
+        if input_type == 'image':
+            # For static images with -f webp, use simpler parameters
+            if not kwargs['lossless']:
+                cmd.extend(["-q:v", str(int(kwargs['quality'] * 31 / 100))])  # Convert 0-100 to 0-31 scale
+        else:
+            # For videos with libwebp codec
+            if kwargs['lossless']:
+                cmd.extend(["-lossless", "1"])
+            else:
+                cmd.extend(["-quality", str(kwargs['quality'])])
+            
+            # Only use valid preset values for FFmpeg libwebp
+            valid_presets = ['default', 'picture', 'photo', 'drawing', 'icon', 'text']
+            if kwargs['preset'] in valid_presets:
+                # Map preset string to FFmpeg preset number
+                preset_map = {
+                    'default': 0, 'picture': 1, 'photo': 2, 
+                    'drawing': 3, 'icon': 4, 'text': 5
+                }
+                cmd.extend(["-preset", str(preset_map[kwargs['preset']])])
         
         # Animation settings for video or animated images
         if input_type == 'video' or self._is_animated_image(kwargs['input_path']):
@@ -310,18 +321,20 @@ class UniversalMediaConverter:
             else:
                 cmd.extend(["-frames:v", "1"])  # Single frame for static output
         
-        # Additional WebP parameters that work with FFmpeg libwebp
-        # Note: Some are undocumented but functional
-        if kwargs.get('method') is not None:
-            cmd.extend(["-method", str(kwargs['method'])])
+        # Additional WebP parameters - only for video/libwebp codec
+        if input_type == 'video':
+            # These parameters only work with libwebp codec, not with -f webp
+            if kwargs.get('method') is not None:
+                cmd.extend(["-method", str(kwargs['method'])])
+            
+            if kwargs.get('alpha_quality') is not None:
+                cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
+            
+            if kwargs.get('near_lossless') is not None:
+                cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
         
-        if kwargs.get('alpha_quality') is not None:
-            cmd.extend(["-alpha_quality", str(kwargs['alpha_quality'])])
-        
-        if kwargs.get('near_lossless') is not None:
-            cmd.extend(["-near_lossless", str(kwargs['near_lossless'])])
-        
-        if kwargs.get('target_size') is not None:
+        # Target size only for libwebp codec (video)
+        if input_type == 'video' and kwargs.get('target_size') is not None:
             cmd.extend(["-target_size", str(kwargs['target_size'] * 1024)])  # Convert KB to bytes
         
         # Note: alpha_method is NOT supported and will cause errors
