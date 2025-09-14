@@ -1510,11 +1510,32 @@ class FaceProcessor:
 
         filtered_groups = []
 
-        for group in groups:
+        logger.info(f"Quality filtering with thresholds: appearance_ratio>={min_appearance_ratio:.3f}, frontality>={min_frontality:.3f}")
+
+        for i, group in enumerate(groups):
             appearance_ratio = group["group_size"] / processed_frames
             min_frontality_score = group["metrics"]["pose_min_frontality"]
-            if appearance_ratio >= min_appearance_ratio and min_frontality_score >= min_frontality:
+            
+            # Check each condition
+            appearance_pass = appearance_ratio >= min_appearance_ratio
+            frontality_pass = min_frontality_score >= min_frontality
+            
+            logger.info(
+                f"Group {i}: appearance_ratio={appearance_ratio:.3f} ({'✓' if appearance_pass else '✗'}), "
+                f"frontality={min_frontality_score:.3f} ({'✓' if frontality_pass else '✗'}), "
+                f"group_size={group['group_size']}/{processed_frames} frames"
+            )
+            
+            if appearance_pass and frontality_pass:
                 filtered_groups.append(group)
+                logger.info(f"Group {i}: PASSED quality filter")
+            else:
+                reasons = []
+                if not appearance_pass:
+                    reasons.append(f"low appearance ratio ({appearance_ratio:.3f} < {min_appearance_ratio})")
+                if not frontality_pass:
+                    reasons.append(f"low frontality ({min_frontality_score:.3f} < {min_frontality})")
+                logger.info(f"Group {i}: FILTERED OUT - {', '.join(reasons)}")
 
         return filtered_groups
 
