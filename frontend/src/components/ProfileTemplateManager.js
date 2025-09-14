@@ -38,7 +38,8 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
   // Load templates on mount
   useEffect(() => {
     loadTemplates();
-    loadUniversalTemplates();
+    // Remove localStorage loading since API now supports v2 format
+    // loadUniversalTemplates();
   }, []);
 
   const loadUniversalTemplates = () => {
@@ -357,57 +358,7 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
                     </div>
                   ) : (
                     <>
-                      {/* Universal Templates (v2) */}
-                      {universalTemplates.map((template, index) => (
-                        <button
-                          key={`universal-${template.id}`}
-                          onClick={() => {
-                            // Convert universal template to legacy format for display
-                            const legacyFormat = {
-                              template_id: template.id,
-                              name: `${template.name} (v2)`,
-                              config: template.profiles,
-                              created_at: template.created_at,
-                              updated_at: template.created_at,
-                              format_version: 'v2'
-                            };
-                            setSelectedTemplate(legacyFormat);
-                            setTemplateProfiles(JSON.stringify(template.profiles, null, 2));
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            fontSize: '0.85rem',
-                            textAlign: 'left',
-                            border: 'none',
-                            borderBottom: '1px solid #f3f4f6',
-                            backgroundColor: selectedTemplate?.template_id === template.id ? '#eff6ff' : '#f8fafc',
-                            color: selectedTemplate?.template_id === template.id ? '#1e40af' : '#475569',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                          }}
-                          onMouseOver={(e) => {
-                            if (selectedTemplate?.template_id !== template.id) {
-                              e.target.style.backgroundColor = '#f1f5f9';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (selectedTemplate?.template_id !== template.id) {
-                              e.target.style.backgroundColor = '#f8fafc';
-                            }
-                          }}
-                        >
-                          <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '0.7rem', background: '#007bff', color: 'white', padding: '2px 6px', borderRadius: '3px' }}>v2</span>
-                            {template.name}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
-                            {template.profiles?.length || 0} profiles • Universal format
-                          </div>
-                        </button>
-                      ))}
-                      
-                      {/* Legacy Templates (v1) */}
+                      {/* Templates from API (now supports v2 format) */}
                       {templates.map((template, index) => (
                         <button
                           key={template.template_id}
@@ -436,11 +387,11 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
                           }}
                         >
                           <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '0.7rem', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '3px' }}>v1</span>
+                            <span style={{ fontSize: '0.7rem', background: '#007bff', color: 'white', padding: '2px 6px', borderRadius: '3px' }}>v2</span>
                             {template.name}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
-                            {template.config?.length || 0} profiles • Legacy format
+                            {template.config?.length || 0} profiles
                           </div>
                         </button>
                       ))}
