@@ -125,14 +125,7 @@ else
     echo '⚠️  Google Cloud key file not found, services may not work fully'
 fi
 
-echo '🤖 Checking face detection models...'
-if [ -d '../src/transcode_service/models_faces' ]; then
-    echo '✅ Face detection models directory exists'
-    MODEL_COUNT=\$(ls -1 ../src/transcode_service/models_faces/*.onnx 2>/dev/null | wc -l)
-    echo \"📊 Found \$MODEL_COUNT ONNX model files\"
-else
-    echo '⚠️  Face detection models directory not found'
-fi
+echo '🤖 Face detection models will be auto-downloaded on first use'
 
 echo '🛑 Stopping existing containers...'
 docker-compose down || echo 'No containers to stop'
