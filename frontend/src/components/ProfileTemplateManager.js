@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Editor from '@monaco-editor/react';
+import UniversalTemplateCreator from './UniversalTemplateCreator';
 
 const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose = null }) => {
   const [templates, setTemplates] = useState([]);
@@ -16,6 +17,8 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
   
   // Create new template state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showUniversalCreator, setShowUniversalCreator] = useState(false);
+  const [universalTemplates, setUniversalTemplates] = useState([]);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateProfiles, setNewTemplateProfiles] = useState(JSON.stringify([
     {
@@ -35,7 +38,23 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
   // Load templates on mount
   useEffect(() => {
     loadTemplates();
+    loadUniversalTemplates();
   }, []);
+
+  const loadUniversalTemplates = () => {
+    try {
+      const saved = localStorage.getItem('universal-templates');
+      if (saved) {
+        setUniversalTemplates(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Failed to load universal templates:', error);
+    }
+  };
+
+  const handleUniversalTemplateCreated = (newTemplate) => {
+    setUniversalTemplates([...universalTemplates, newTemplate]);
+  };
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -275,21 +294,38 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
                 marginBottom: '16px'
               }}>
                 <h3 style={{ margin: 0, color: '#374151' }}>📁 Templates</h3>
-                <button
-                  onClick={() => setShowCreateDialog(true)}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '0.8rem',
-                    backgroundColor: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontWeight: '600'
-                  }}
-                >
-                  + New Template
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setShowUniversalCreator(true)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    🎨 New Universal
+                  </button>
+                  <button
+                    onClick={() => setShowCreateDialog(true)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    + Legacy Template
+                  </button>
+                </div>
               </div>
 
               {loading ? (
@@ -312,39 +348,95 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
                       No templates found. Create one!
                     </div>
                   ) : (
-                    templates.map((template, index) => (
-                      <button
-                        key={template.template_id}
-                        onClick={() => loadTemplateDetail(template.template_id)}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          fontSize: '0.85rem',
-                          textAlign: 'left',
-                          border: 'none',
-                          borderBottom: index < templates.length - 1 ? '1px solid #f3f4f6' : 'none',
-                          backgroundColor: selectedTemplate?.template_id === template.template_id ? '#f0fdf4' : 'white',
-                          color: selectedTemplate?.template_id === template.template_id ? '#065f46' : '#374151',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          if (selectedTemplate?.template_id !== template.template_id) {
-                            e.target.style.backgroundColor = '#f9fafb';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (selectedTemplate?.template_id !== template.template_id) {
-                            e.target.style.backgroundColor = 'white';
-                          }
-                        }}
-                      >
-                        <div style={{ fontWeight: '600' }}>{template.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
-                          {template.config?.length || 0} profiles
-                        </div>
-                      </button>
-                    ))
+                    <>
+                      {/* Universal Templates (v2) */}
+                      {universalTemplates.map((template, index) => (
+                        <button
+                          key={`universal-${template.id}`}
+                          onClick={() => {
+                            // Convert universal template to legacy format for display
+                            const legacyFormat = {
+                              template_id: template.id,
+                              name: `${template.name} (v2)`,
+                              config: template.profiles,
+                              created_at: template.created_at,
+                              updated_at: template.created_at,
+                              format_version: 'v2'
+                            };
+                            setSelectedTemplate(legacyFormat);
+                            setTemplateProfiles(JSON.stringify(template.profiles, null, 2));
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            border: 'none',
+                            borderBottom: '1px solid #f3f4f6',
+                            backgroundColor: selectedTemplate?.template_id === template.id ? '#eff6ff' : '#f8fafc',
+                            color: selectedTemplate?.template_id === template.id ? '#1e40af' : '#475569',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            if (selectedTemplate?.template_id !== template.id) {
+                              e.target.style.backgroundColor = '#f1f5f9';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (selectedTemplate?.template_id !== template.id) {
+                              e.target.style.backgroundColor = '#f8fafc';
+                            }
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.7rem', background: '#007bff', color: 'white', padding: '2px 6px', borderRadius: '3px' }}>v2</span>
+                            {template.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
+                            {template.profiles?.length || 0} profiles • Universal format
+                          </div>
+                        </button>
+                      ))}
+                      
+                      {/* Legacy Templates (v1) */}
+                      {templates.map((template, index) => (
+                        <button
+                          key={template.template_id}
+                          onClick={() => loadTemplateDetail(template.template_id)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            border: 'none',
+                            borderBottom: index < templates.length - 1 ? '1px solid #f3f4f6' : 'none',
+                            backgroundColor: selectedTemplate?.template_id === template.template_id ? '#f0fdf4' : 'white',
+                            color: selectedTemplate?.template_id === template.template_id ? '#065f46' : '#374151',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            if (selectedTemplate?.template_id !== template.template_id) {
+                              e.target.style.backgroundColor = '#f9fafb';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (selectedTemplate?.template_id !== template.template_id) {
+                              e.target.style.backgroundColor = 'white';
+                            }
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.7rem', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '3px' }}>v1</span>
+                            {template.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                            {template.config?.length || 0} profiles • Legacy format
+                          </div>
+                        </button>
+                      ))}
+                    </>
                   )}
                 </div>
               )}
@@ -685,6 +777,14 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
               </div>
             </div>
           </div>
+        )}
+
+        {/* Universal Template Creator */}
+        {showUniversalCreator && (
+          <UniversalTemplateCreator
+            onClose={() => setShowUniversalCreator(false)}
+            onTemplateCreated={handleUniversalTemplateCreated}
+          />
         )}
       </div>
       
