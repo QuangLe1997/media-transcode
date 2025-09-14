@@ -267,35 +267,14 @@ async def create_transcode_task(
 
         logger.info(f"Detected media type: {detected_media_type}")
 
-        # Create v2 profiles from data
-        universal_profiles = []
-        for profile_data in profiles_data:
-            try:
-                # Parse v2 config
-                universal_config = UniversalConverterConfig(**profile_data["config"])
-
-                universal_profile = UniversalTranscodeProfile(
-                    id_profile=profile_data["id_profile"],
-                    input_type=profile_data.get("input_type"),
-                    output_filename=profile_data.get("output_filename"),
-                    config=universal_config,
-                )
-                universal_profiles.append(universal_profile)
-
-            except Exception as e:
-                raise HTTPException(
-                    400,
-                    f"Invalid profile {profile_data.get('id_profile', 'unknown')}: {e}",
-                ) from e
-
         # Create S3 config
         s3_config = S3OutputConfig.with_defaults(s3_config_data, settings)
 
-        # Filter profiles based on detected media type
+        # Filter profiles based on detected media type (use already validated profiles)
         filtered_profiles = []
         skipped_profiles = []
 
-        for profile in universal_profiles:
+        for profile in validated_profiles:
             if profile.input_type and profile.input_type != detected_media_type:
                 skipped_profiles.append(profile.id_profile)
             else:
@@ -303,7 +282,7 @@ async def create_transcode_task(
 
         # Get filtering summary
         filter_summary = media_detection_service.get_profile_summary(
-            original_count=len(universal_profiles),
+            original_count=len(validated_profiles),
             filtered_count=len(filtered_profiles),
             skipped_profiles=skipped_profiles,
             media_type=detected_media_type,
