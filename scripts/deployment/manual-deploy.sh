@@ -55,8 +55,8 @@ set +a
 KEY_JSON_PATH="$PROJECT_ROOT/src/transcode_service/key.json"
 if [ -f "$KEY_JSON_PATH" ]; then
     echo -e "${BLUE}📤 Uploading Google Cloud key.json...${NC}"
-    ssh "$USER@$SERVER" "mkdir -p ~/media-transcode/src/transcode_service"
-    scp "$KEY_JSON_PATH" "$USER@$SERVER:~/media-transcode/src/transcode_service/key.json"
+    ssh "$USER@$SERVER" "mkdir -p ~/media-transcode/src/transcode_service && rm -rf ~/media-transcode/src/transcode_service/key.json"
+    scp "$KEY_JSON_PATH" "$USER@$SERVER:~/media-transcode/src/transcode_service/"
     echo -e "${GREEN}✅ key.json uploaded${NC}"
 else
     echo -e "${YELLOW}⚠️  key.json not found locally, PubSub features may not work${NC}"
