@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
+import api from '../api';
 
 const UniversalTemplateCreator = ({ onClose, onTemplateCreated }) => {
   const [templateName, setTemplateName] = useState('');
@@ -127,12 +128,80 @@ const UniversalTemplateCreator = ({ onClose, onTemplateCreated }) => {
 
       const templateData = getTemplateData();
       
-      // Save to localStorage for now (since we removed the API endpoints)
+      // Convert v2 format to v1 legacy format for API compatibility
+      const legacyProfiles = templateData.profiles.map(profile => {
+        // Determine output_type based on config.output_format
+        let output_type = 'video'; // default
+        const outputFormat = profile.config.output_format;
+        
+        if (outputFormat === 'webp') {
+          output_type = 'webp';
+        } else if (outputFormat === 'jpg' || outputFormat === 'jpeg') {
+          output_type = 'image';
+        } else if (outputFormat === 'mp4') {
+          output_type = 'video';
+        }
+
+        // Create legacy profile structure
+        const legacyProfile = {
+          id_profile: profile.id_profile,
+          output_type: output_type,
+          input_type: profile.input_type || null
+        };
+
+        // Map config to appropriate legacy config structure
+        if (output_type === 'webp') {
+          legacyProfile.webp_config = {
+            width: profile.config.width || null,
+            height: profile.config.height || null,
+            quality: profile.config.quality || 85,
+            fps: profile.config.fps || null,
+            duration: profile.config.duration || null,
+            start_time: profile.config.start_time || 0,
+            speed: profile.config.speed || 1,
+            lossless: profile.config.lossless || false,
+            animated: profile.config.animated !== false,
+            loop: profile.config.loop || 0,
+            preset: profile.config.preset || 'default'
+          };
+        } else if (output_type === 'image') {
+          legacyProfile.image_config = {
+            quality: profile.config.jpeg_quality || profile.config.quality || 90,
+            optimize: profile.config.optimize !== false,
+            progressive: profile.config.progressive || false
+          };
+        } else if (output_type === 'video') {
+          legacyProfile.video_config = {
+            codec: profile.config.codec || 'h264',
+            crf: profile.config.crf || 23,
+            preset: profile.config.mp4_preset || 'medium',
+            profile: profile.config.profile || 'high',
+            level: profile.config.level || '4.1',
+            pixel_format: profile.config.pixel_format || 'yuv420p',
+            audio_codec: profile.config.audio_codec || 'aac',
+            audio_bitrate: profile.config.audio_bitrate || '128k',
+            audio_sample_rate: profile.config.audio_sample_rate || 44100,
+            two_pass: profile.config.two_pass || false,
+            hardware_accel: profile.config.hardware_accel || false
+          };
+        }
+
+        return legacyProfile;
+      });
+
+      // Create template using legacy API
+      const response = await api.post('/config-templates', {
+        name: `${templateData.name}_v2_universal`,
+        config: legacyProfiles
+      });
+
+      // Also save to localStorage for v2 format reference
       const existingTemplates = JSON.parse(localStorage.getItem('universal-templates') || '[]');
       const newTemplate = {
-        id: Date.now().toString(),
+        id: response.data.template_id,
+        api_id: response.data.template_id,
         ...templateData,
-        created_at: new Date().toISOString(),
+        created_at: response.data.created_at,
         format_version: 'v2'
       };
       
@@ -141,22 +210,28 @@ const UniversalTemplateCreator = ({ onClose, onTemplateCreated }) => {
       
       setValidationResult({
         type: 'success',
-        message: `✅ Template "${newTemplate.name}" created successfully! You can now use it in transcode operations.`
+        message: `✅ Template "${templateData.name}" created successfully!\n\nAPI ID: ${response.data.template_id}\nFormat: Universal v2\n\nYou can now use this template in transcode operations.`
       });
 
       if (onTemplateCreated) {
         onTemplateCreated(newTemplate);
       }
 
-      // Close after 2 seconds
+      // Close after 3 seconds
       setTimeout(() => {
         onClose();
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
+      let errorMessage = `❌ Save error: ${error.message}`;
+      
+      if (error.response?.data?.detail) {
+        errorMessage = `❌ API Error: ${error.response.data.detail}`;
+      }
+      
       setValidationResult({
         type: 'error',
-        message: `❌ Save error: ${error.message}`
+        message: errorMessage
       });
     } finally {
       setIsSaving(false);

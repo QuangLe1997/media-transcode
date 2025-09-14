@@ -54,6 +54,8 @@ const ProfileTemplateManager = ({ onProfilesLoad, showAsModal = false, onClose =
 
   const handleUniversalTemplateCreated = (newTemplate) => {
     setUniversalTemplates([...universalTemplates, newTemplate]);
+    // Also reload legacy templates in case it was saved to API
+    loadTemplates();
   };
 
   const loadTemplates = async () => {
