@@ -233,7 +233,7 @@ services:
     volumes:
       - ../src/transcode_service/key.json:/app/key.json:ro
       - ./logs:/app/logs
-      - ./models_faces:/app/models_faces  # Mount face detection models (read-write for auto-download)
+      - ../src/transcode_service/models_faces:/app/src/transcode_service/models_faces  # Mount face detection models
       - /tmp/transcode:/tmp/transcode  # Shared temp directory
       - shared-media:/shared/media     # Shared volume for downloaded media files
     restart: always
