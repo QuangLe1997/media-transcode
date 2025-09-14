@@ -413,7 +413,8 @@ const Upload = () => {
       
       // Create tasks for each media
       const results = [];
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8087';
+      // Use nginx proxy instead of direct API call
+      const apiUrl = '/api';
       
       for (let i = 0; i < mediaToUpload.length; i++) {
         const media = mediaToUpload[i];

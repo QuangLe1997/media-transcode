@@ -226,6 +226,8 @@ class TranscodeWorkerV2:
                 output_urls=output_urls,
                 metadata=metadata_list,
                 completed_at=datetime.now(timezone.utc),
+                input_type=message.profile.input_type,
+                output_format=output_format,
             )
             logger.info(
                 f"Publishing result for task {message.task_id}, profile {message.profile.id_profile}"
