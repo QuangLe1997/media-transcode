@@ -282,6 +282,115 @@
             background: #c82333;
         }
         
+        /* Template Modal Styles */
+        .profile-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .profile-block h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .profile-delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .profile-delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .profile-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .profile-fields label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .profile-fields input, .profile-fields select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .config-editor {
+            margin-top: 15px;
+        }
+        
+        .config-editor label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .config-editor textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            background: #f8f9fa;
+            resize: vertical;
+        }
+        
+        .config-editor textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            background: #ffffff;
+        }
+        
+        .template-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .template-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .template-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .template-status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
         .convert-btn {
             width: 100%;
             padding: 15px;
@@ -712,9 +821,10 @@
                     </div>
                     
                     <!-- Preset Controls -->
-                    <div class="preset-controls" style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                    <div class="preset-controls" style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
                         <input type="text" id="presetName" placeholder="Enter preset name..." style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
                         <button id="savePresetBtn" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">💾 Save Config</button>
+                        <button id="createTemplateBtn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">🎨 New Template</button>
                         <button id="clearPresetsBtn" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">🗑️ Clear All</button>
                     </div>
                 </div>
@@ -998,6 +1108,50 @@
         </div>
     </div>
 
+    <!-- Create Template Modal -->
+    <div class="modal" id="createTemplateModal" style="display: none;">
+        <div class="modal-content" style="width: 90%; max-width: 900px; max-height: 90vh; overflow: hidden;">
+            <span class="modal-close" id="templateModalClose">&times;</span>
+            <div style="padding: 20px; height: 80vh; overflow-y: auto;">
+                <h2 style="margin-top: 0;">🎨 Create New Template</h2>
+                
+                <!-- Template Basic Info -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                    <h3 style="margin-top: 0;">📋 Template Information</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Template Name</label>
+                            <input type="text" id="templateName" placeholder="e.g., my_custom_template" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Version</label>
+                            <input type="text" id="templateVersion" placeholder="e.g., 2.0" value="2.0" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <button id="addProfileBtn" style="margin-top: 25px; width: 100%; padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">➕ Add Profile</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Description</label>
+                        <textarea id="templateDescription" placeholder="Describe what this template is for..." rows="2" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Profiles Container -->
+                <div id="profilesContainer">
+                    <!-- Profile blocks will be added here -->
+                </div>
+
+                <!-- Template Actions -->
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                    <button id="validateTemplateBtn" style="padding: 10px 20px; background: #ffc107; color: #000; border: none; border-radius: 4px; cursor: pointer;">🔍 Validate</button>
+                    <button id="saveTemplateBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">💾 Save Template</button>
+                    <button id="cancelTemplateBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let selectedFile = null;
@@ -1005,6 +1159,7 @@
         let presets = {};
         let customPresets = {};
         let results = {}; // Store results for modal access
+        let templateProfiles = []; // Store profiles for template creation
 
         // DOM elements
         const fileSelection = document.getElementById('fileSelection');
@@ -1018,6 +1173,16 @@
         const presetNameInput = document.getElementById('presetName');
         const savePresetBtn = document.getElementById('savePresetBtn');
         const clearPresetsBtn = document.getElementById('clearPresetsBtn');
+        
+        // Template modal elements
+        const createTemplateBtn = document.getElementById('createTemplateBtn');
+        const createTemplateModal = document.getElementById('createTemplateModal');
+        const templateModalClose = document.getElementById('templateModalClose');
+        const addProfileBtn = document.getElementById('addProfileBtn');
+        const profilesContainer = document.getElementById('profilesContainer');
+        const validateTemplateBtn = document.getElementById('validateTemplateBtn');
+        const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+        const cancelTemplateBtn = document.getElementById('cancelTemplateBtn');
 
         // Media type buttons
         const mediaTypeButtons = document.querySelectorAll('.media-type-btn');
@@ -1031,6 +1196,7 @@
             setupEventListeners();
             setupModalEventListeners();
             setupCustomPresetListeners();
+            setupTemplateModalListeners();
             loadPresets();
             loadCustomPresets();
             loadExistingResults();
@@ -1771,6 +1937,274 @@
             
             // Show/hide custom presets section
             customPresetsContainer.style.display = Object.keys(customPresets).length > 0 ? 'block' : 'none';
+        }
+
+        // Template Modal Functions
+        function setupTemplateModalListeners() {
+            createTemplateBtn.addEventListener('click', openTemplateModal);
+            templateModalClose.addEventListener('click', closeTemplateModal);
+            addProfileBtn.addEventListener('click', addProfileBlock);
+            validateTemplateBtn.addEventListener('click', validateTemplate);
+            saveTemplateBtn.addEventListener('click', saveTemplate);
+            cancelTemplateBtn.addEventListener('click', closeTemplateModal);
+            
+            // Close modal when clicking outside
+            createTemplateModal.addEventListener('click', (e) => {
+                if (e.target === createTemplateModal) {
+                    closeTemplateModal();
+                }
+            });
+        }
+        
+        function openTemplateModal() {
+            templateProfiles = [];
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateVersion').value = '2.0';
+            document.getElementById('templateDescription').value = '';
+            profilesContainer.innerHTML = '';
+            createTemplateModal.style.display = 'block';
+            addProfileBlock(); // Start with one profile
+        }
+        
+        function closeTemplateModal() {
+            createTemplateModal.style.display = 'none';
+            templateProfiles = [];
+            removeTemplateStatus();
+        }
+        
+        function addProfileBlock() {
+            const profileId = `profile_${templateProfiles.length}`;
+            const profileIndex = templateProfiles.length;
+            
+            const profileBlock = document.createElement('div');
+            profileBlock.className = 'profile-block';
+            profileBlock.id = `profile_${profileIndex}`;
+            
+            profileBlock.innerHTML = `
+                <h4>
+                    🎯 Profile ${profileIndex + 1}
+                    <button class="profile-delete-btn" onclick="removeProfileBlock(${profileIndex})">🗑️ Remove</button>
+                </h4>
+                
+                <div class="profile-fields">
+                    <div>
+                        <label>Profile ID</label>
+                        <input type="text" id="profileId_${profileIndex}" placeholder="e.g., webp_preview_high" required>
+                    </div>
+                    <div>
+                        <label>Input Type</label>
+                        <select id="inputType_${profileIndex}">
+                            <option value="">Any</option>
+                            <option value="video">Video</option>
+                            <option value="image">Image</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Output Filename</label>
+                        <input type="text" id="outputFilename_${profileIndex}" placeholder="e.g., preview_hd">
+                    </div>
+                </div>
+                
+                <div class="config-editor">
+                    <label>Configuration (JSON)</label>
+                    <textarea id="config_${profileIndex}" placeholder='Paste your config JSON here, e.g.:
+{
+  "output_format": "webp",
+  "width": 720,
+  "quality": 85,
+  "fps": 12.0,
+  "duration": 3.0,
+  "animated": true,
+  "lossless": false
+}'></textarea>
+                </div>
+            `;
+            
+            profilesContainer.appendChild(profileBlock);
+            templateProfiles.push({
+                index: profileIndex,
+                block: profileBlock
+            });
+        }
+        
+        function removeProfileBlock(profileIndex) {
+            const profileBlock = document.getElementById(`profile_${profileIndex}`);
+            if (profileBlock) {
+                profileBlock.remove();
+                // Update templateProfiles array
+                templateProfiles = templateProfiles.filter(p => p.index !== profileIndex);
+                // Re-number remaining profiles
+                updateProfileNumbers();
+            }
+        }
+        
+        function updateProfileNumbers() {
+            const remainingBlocks = document.querySelectorAll('.profile-block');
+            remainingBlocks.forEach((block, index) => {
+                const header = block.querySelector('h4');
+                header.innerHTML = `
+                    🎯 Profile ${index + 1}
+                    <button class="profile-delete-btn" onclick="removeProfileBlock(${index})">🗑️ Remove</button>
+                `;
+                
+                // Update IDs
+                const oldIndex = parseInt(block.id.split('_')[1]);
+                const newIndex = index;
+                
+                if (oldIndex !== newIndex) {
+                    block.id = `profile_${newIndex}`;
+                    block.querySelector(`#profileId_${oldIndex}`).id = `profileId_${newIndex}`;
+                    block.querySelector(`#inputType_${oldIndex}`).id = `inputType_${newIndex}`;
+                    block.querySelector(`#outputFilename_${oldIndex}`).id = `outputFilename_${newIndex}`;
+                    block.querySelector(`#config_${oldIndex}`).id = `config_${newIndex}`;
+                }
+            });
+            
+            // Update templateProfiles array
+            templateProfiles = Array.from(remainingBlocks).map((block, index) => ({
+                index: index,
+                block: block
+            }));
+        }
+        
+        function collectTemplateData() {
+            const templateName = document.getElementById('templateName').value.trim();
+            const templateDescription = document.getElementById('templateDescription').value.trim();
+            const templateVersion = document.getElementById('templateVersion').value.trim();
+            
+            if (!templateName) {
+                throw new Error('Template name is required');
+            }
+            
+            const profiles = [];
+            const profileBlocks = document.querySelectorAll('.profile-block');
+            
+            profileBlocks.forEach((block, index) => {
+                const profileId = document.getElementById(`profileId_${index}`).value.trim();
+                const inputType = document.getElementById(`inputType_${index}`).value;
+                const outputFilename = document.getElementById(`outputFilename_${index}`).value.trim();
+                const configText = document.getElementById(`config_${index}`).value.trim();
+                
+                if (!profileId) {
+                    throw new Error(`Profile ${index + 1}: Profile ID is required`);
+                }
+                
+                let config;
+                try {
+                    config = configText ? JSON.parse(configText) : {};
+                } catch (e) {
+                    throw new Error(`Profile ${index + 1}: Invalid JSON in configuration: ${e.message}`);
+                }
+                
+                const profile = {
+                    id_profile: profileId,
+                    config: config
+                };
+                
+                if (inputType) profile.input_type = inputType;
+                if (outputFilename) profile.output_filename = outputFilename;
+                
+                profiles.push(profile);
+            });
+            
+            if (profiles.length === 0) {
+                throw new Error('At least one profile is required');
+            }
+            
+            return {
+                name: templateName,
+                description: templateDescription || undefined,
+                profiles: profiles
+            };
+        }
+        
+        async function validateTemplate() {
+            try {
+                removeTemplateStatus();
+                const templateData = collectTemplateData();
+                
+                showTemplateStatus('Validating template...', 'warning');
+                
+                const response = await fetch('/universal-config-templates/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    if (result.overall_status === 'valid') {
+                        showTemplateStatus(`✅ Template is valid! All ${result.valid_profiles} profiles passed validation.`, 'success');
+                    } else {
+                        let message = `⚠️ Template has issues: ${result.invalid_profiles} of ${result.profiles_validated} profiles are invalid.\n\n`;
+                        result.validation_results.forEach(r => {
+                            if (r.status === 'invalid') {
+                                message += `❌ ${r.id_profile}: ${r.message}\n`;
+                            }
+                        });
+                        showTemplateStatus(message, 'error');
+                    }
+                } else {
+                    showTemplateStatus(`❌ Validation failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showTemplateStatus(`❌ Validation error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function saveTemplate() {
+            try {
+                removeTemplateStatus();
+                const templateData = collectTemplateData();
+                
+                showTemplateStatus('Saving template...', 'warning');
+                
+                const response = await fetch('/universal-config-templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showTemplateStatus(`✅ Template "${result.name}" created successfully! ID: ${result.template_id}`, 'success');
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        closeTemplateModal();
+                    }, 2000);
+                } else {
+                    showTemplateStatus(`❌ Save failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showTemplateStatus(`❌ Save error: ${error.message}`, 'error');
+            }
+        }
+        
+        function showTemplateStatus(message, type) {
+            removeTemplateStatus();
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'templateStatus';
+            statusDiv.className = `template-status ${type}`;
+            statusDiv.style.whiteSpace = 'pre-wrap';
+            statusDiv.textContent = message;
+            
+            const actionsDiv = document.querySelector('#createTemplateModal .modal-content > div > div:last-child');
+            actionsDiv.parentNode.insertBefore(statusDiv, actionsDiv);
+        }
+        
+        function removeTemplateStatus() {
+            const existing = document.getElementById('templateStatus');
+            if (existing) {
+                existing.remove();
+            }
         }
 
         function showError(message) {
