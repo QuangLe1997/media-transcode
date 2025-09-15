@@ -6,7 +6,7 @@
     "config": {
       "output_format": "gif",
       "width": 120,
-      "fps": 10,
+      "fps": 8,
       "duration": 3,
       "start_time": 0,
       "speed": 1.2,
@@ -15,8 +15,7 @@
       "saturation": 1.1,
       "enable_denoising": true,
       "enable_sharpening": false,
-      "loop": 0,
-      "verbose": true
+      "loop": 0
     }
   },
   {
@@ -291,6 +290,23 @@
       "loop": 0,
       "pass_count": 2,
       "verbose": true
+    }
+  },
+  {
+    "id_profile": "preview_image_low_bk",
+    "input_type": "image",
+    "output_filename": "preview_image_low_bk",
+    "config": {
+      "output_format": "jpg",
+      "width": 160,
+      "jpeg_quality": 85,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_denoising": true,
+      "enable_sharpening": false
     }
   },
   {

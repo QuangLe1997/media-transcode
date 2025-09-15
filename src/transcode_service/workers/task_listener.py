@@ -118,12 +118,19 @@ class PubSubTaskListenerV2:
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
             filtered_profiles = []
             for profile in profiles:
-                if detected_media_type == profile.input_type:
-                    filtered_profiles.append(
-                        UniversalTranscodeProfile(
-                            **profile
+                # Handle both dict and object formats
+                if isinstance(profile, dict):
+                    profile_input_type = profile.get('input_type')
+                else:
+                    profile_input_type = getattr(profile, 'input_type', None)
+                
+                if detected_media_type == profile_input_type:
+                    if isinstance(profile, dict):
+                        filtered_profiles.append(
+                            UniversalTranscodeProfile(**profile)
                         )
-                    )
+                    else:
+                        filtered_profiles.append(profile)
             # Create final config
             transcode_config = UniversalTranscodeConfig(
                 profiles=filtered_profiles,
