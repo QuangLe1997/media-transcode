@@ -25,7 +25,7 @@ class UniversalMediaConverter:
         self.image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.heic', '.raw'}
         
         # Output formats
-        self.supported_outputs = {'webp', 'jpg', 'jpeg', 'mp4'}
+        self.supported_outputs = {'webp', 'jpg', 'jpeg', 'mp4', 'gif'}
 
     def _detect_media_type(self, input_path: str) -> str:
         """Detect if input is video or image"""
@@ -171,6 +171,17 @@ class UniversalMediaConverter:
                     contrast=contrast, brightness=brightness, saturation=saturation, gamma=gamma,
                     enable_denoising=enable_denoising, enable_sharpening=enable_sharpening,
                     verbose=verbose
+                )
+            elif output_format == 'gif':
+                cmd = self._build_gif_command(
+                    input_path=input_path,
+                    output_path=output_path,
+                    input_type=input_type,
+                    width=width, height=height,
+                    fps=fps, duration=duration, start_time=start_time, speed=speed,
+                    contrast=contrast, brightness=brightness, saturation=saturation,
+                    enable_denoising=enable_denoising, enable_sharpening=enable_sharpening,
+                    auto_filter=auto_filter, verbose=verbose
                 )
             elif output_format == 'mp4':
                 cmd = self._build_mp4_command(
@@ -754,6 +765,76 @@ class UniversalMediaConverter:
                 pass
         
         return width, height, fps, bitrate, crf
+
+    def _build_gif_command(self, **kwargs) -> list:
+        """Build FFmpeg command for GIF conversion"""
+        cmd = [self.ffmpeg_path, "-y"]
+
+        input_type = kwargs['input_type']
+
+        # Input handling
+        if input_type == 'video' and kwargs['start_time'] > 0:
+            cmd.extend(["-ss", str(kwargs['start_time'])])
+
+        cmd.extend(["-i", kwargs['input_path']])
+
+        # Duration for video
+        if input_type == 'video' and kwargs['duration']:
+            cmd.extend(["-t", str(kwargs['duration'])])
+
+        # Build video filters
+        filters = []
+
+        # Scale filter
+        if kwargs['width'] or kwargs['height']:
+            if kwargs['width'] and kwargs['height']:
+                filters.append(f"scale={kwargs['width']}:{kwargs['height']}")
+            elif kwargs['width'] and not kwargs['height']:
+                filters.append(f"scale={kwargs['width']}:-2")
+            elif kwargs['height'] and not kwargs['width']:
+                filters.append(f"scale=-2:{kwargs['height']}")
+
+        # FPS filter for video
+        if input_type == 'video' and kwargs.get('fps'):
+            filters.append(f"fps={kwargs['fps']}")
+
+        # Speed adjustment for video
+        if input_type == 'video' and kwargs.get('speed', 1.0) != 1.0:
+            speed = kwargs['speed']
+            filters.append(f"setpts={1/speed}*PTS")
+
+        # Color adjustments
+        if (kwargs.get('contrast', 1.0) != 1.0 or kwargs.get('brightness', 0.0) != 0.0 or
+                kwargs.get('saturation', 1.0) != 1.0):
+            eq_filter = f"eq=contrast={kwargs.get('contrast', 1.0)}:brightness={kwargs.get('brightness', 0.0)}:saturation={kwargs.get('saturation', 1.0)}"
+            filters.append(eq_filter)
+
+        # Denoising
+        if kwargs.get('enable_denoising'):
+            filters.append("hqdn3d")
+
+        # Sharpening
+        if kwargs.get('enable_sharpening'):
+            filters.append("unsharp=5:5:1.0")
+
+        # Apply filters
+        if filters:
+            cmd.extend(["-vf", ",".join(filters)])
+
+        # GIF specific parameters - no audio for GIF
+        cmd.extend(["-an"])  # Remove audio
+        
+        # GIF format
+        cmd.extend(["-f", "gif"])
+
+        # Verbose/quiet
+        if not kwargs.get('verbose', True):
+            cmd.extend(["-loglevel", "error"])
+
+        # Output file
+        cmd.append(kwargs['output_path'])
+
+        return cmd
 
 
 def main():
