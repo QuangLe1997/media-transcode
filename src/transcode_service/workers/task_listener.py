@@ -211,15 +211,16 @@ class PubSubTaskListenerV2:
                             )
                             logger.info(f"📁 Using shared file path: {shared_file_path}")
                         else:
-                            message = UniversalTranscodeMessage(
-                                task_id=task_id,
-                                source_url=media_url,
-                                source_path=None,
-                                profile=profile,
-                                s3_output_config=enhanced_s3_config,
-                                source_key=None,
-                            )
-                            logger.info(f"🔗 Using source URL: {media_url}")
+                            # message = UniversalTranscodeMessage(
+                            #     task_id=task_id,
+                            #     source_url=media_url,
+                            #     source_path=None,
+                            #     profile=profile,
+                            #     s3_output_config=enhanced_s3_config,
+                            #     source_key=None,
+                            # )
+                            # logger.info(f"🔗 Using source URL: {media_url}")
+                            raise Exception(f"Failed to publish v2 to shared volume: {shared_file_path}")
 
                         message_id = pubsub_service.publish_universal_transcode_task(message)
                         published_count += 1
