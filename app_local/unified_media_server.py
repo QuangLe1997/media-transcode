@@ -317,7 +317,7 @@ def transcode_media():
 
             # Video settings
             'codec': request.form.get('codec', 'h264'),
-            'crf': int(request.form.get('crf', 23)),
+            'crf': int(request.form.get('crf')) if request.form.get('crf') else None,
             'preset': request.form.get('preset', 'medium'),
             'fps': float(request.form.get('fps')) if request.form.get('fps') else None,
             'duration': float(request.form.get('duration')) if request.form.get('duration') else None,
@@ -397,7 +397,7 @@ def transcode_media():
             progressive=config.get('progressive', False),
             # Video-specific
             codec=config.get('codec', 'h264'),
-            crf=config.get('crf', 23),
+            crf=config.get('crf'),
             mp4_preset=config.get('preset', 'medium'),
             fps=config.get('fps'),
             duration=config.get('duration'),
