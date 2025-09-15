@@ -1,0 +1,16 @@
+{
+  "bucket": "dev-media-transcode-bucket",
+  "base_path": "transcode-outputs",
+  "folder_structure": "{task_id}/profiles/{profile_id}",
+  "face_avatar_path": "{task_id}/faces/avatars",
+  "face_image_path": "{task_id}/faces/images",
+  "aws_access_key_id": "AKIAIOSFODNN7EXAMPLE",
+  "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+  "aws_endpoint_url": "https://s3.amazonaws.com",
+  "aws_endpoint_public_url": "https://s3.amazonaws.com",
+  "cleanup_on_task_reset": true,
+  "cleanup_temp_files": true,
+  "cleanup_failed_outputs": false,
+  "upload_timeout": 900,
+  "max_retries": 3
+}

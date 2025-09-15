@@ -5,9 +5,11 @@ import Editor from '@monaco-editor/react';
 
 const ConfigTemplatesPage = () => {
   const [templates, setTemplates] = useState([]);
+  const [sampleProfiles, setSampleProfiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('api'); // 'api' or 'samples'
   
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -21,34 +23,115 @@ const ConfigTemplatesPage = () => {
   const [templateProfiles, setTemplateProfiles] = useState(JSON.stringify([
     {
       "id_profile": "example_profile",
-      "output_type": "video",
       "input_type": "video",
-      "video_config": {
-        "codec": "libx264",
-        "max_width": 1280,
-        "max_height": 720,
+      "config": {
+        "output_format": "mp4",
+        "width": 720,
+        "codec": "h264",
         "crf": 23,
-        "preset": "medium"
+        "audio_codec": "aac"
       }
     }
   ], null, 2));
 
-  // Load templates on component mount
+  // Load templates and sample profiles on component mount
   useEffect(() => {
     loadTemplates();
+    loadSampleProfiles();
   }, []);
 
   const loadTemplates = async () => {
     setLoading(true);
     try {
       const response = await api.get('/config-templates');
+      // API returns templates with full data, no need for detail calls
       setTemplates(response.data.templates || []);
-      setMessage({ type: 'success', text: `Loaded ${response.data.templates?.length || 0} templates` });
+      setMessage({ type: 'success', text: `Loaded ${response.data.templates?.length || 0} API templates` });
     } catch (error) {
       console.error('Error loading templates:', error);
       setMessage({ type: 'error', text: 'Failed to load config templates' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSampleProfiles = async () => {
+    try {
+      // Sample profile files with example data
+      const sampleFiles = [
+        {
+          filename: 'faces_swap_cleaned.json',
+          name: 'FACES SWAP CLEANED',
+          description: 'Face swap processing profiles with video/image variants',
+          profiles: [
+            { id_profile: "profile_bk", input_type: "video", config: { output_format: "gif", width: 120 }},
+            { id_profile: "profile_1", input_type: "video", config: { output_format: "webp", width: 120 }},
+            { id_profile: "profile_2", input_type: "video", config: { output_format: "webp", width: 160 }},
+            { id_profile: "profile_3", input_type: "video", config: { output_format: "webp", width: 240 }}
+          ]
+        },
+        {
+          filename: 'icon.json',
+          name: 'ICON PROFILES',
+          description: 'Icon generation in multiple sizes (16px to 512px)',
+          profiles: [
+            { id_profile: "icon_16", input_type: "image", config: { output_format: "jpg", width: 16, height: 16 }},
+            { id_profile: "icon_32", input_type: "image", config: { output_format: "jpg", width: 32, height: 32 }},
+            { id_profile: "icon_64", input_type: "image", config: { output_format: "jpg", width: 64, height: 64 }}
+          ]
+        },
+        {
+          filename: 'popup_home.json', 
+          name: 'POPUP HOME',
+          description: 'Home popup content profiles with backup formats',
+          profiles: [
+            { id_profile: "profile_1", input_type: "video", config: { output_format: "webp", width: 360 }},
+            { id_profile: "profile_bk", input_type: "video", config: { output_format: "gif", width: 360 }}
+          ]
+        },
+        {
+          filename: 'promoted_banner.json',
+          name: 'PROMOTED BANNER', 
+          description: 'Promotional banner profiles for marketing content',
+          profiles: [
+            { id_profile: "banner_small", input_type: "video", config: { output_format: "webp", width: 320 }},
+            { id_profile: "banner_small_bk", input_type: "video", config: { output_format: "gif", width: 320 }}
+          ]
+        },
+        {
+          filename: 'promoted_baner.json',
+          name: 'PROMOTED BANER (ALT)',
+          description: 'Alternative promotional banner configurations', 
+          profiles: [
+            { id_profile: "profile_1", input_type: "video", config: { output_format: "webp", width: 360 }},
+            { id_profile: "profile_bk", input_type: "video", config: { output_format: "gif", width: 360 }}
+          ]
+        },
+        {
+          filename: 'thumbnail.json',
+          name: 'THUMBNAIL PROFILES',
+          description: 'Video thumbnail generation with various qualities',
+          profiles: [
+            { id_profile: "profile_1", input_type: "video", config: { output_format: "webp", width: 120 }},
+            { id_profile: "profile_bk", input_type: "video", config: { output_format: "gif", width: 120 }},
+            { id_profile: "promoted_banner_bk", input_type: "video", config: { output_format: "gif", width: 320 }}
+          ]
+        }
+      ];
+      
+      const samples = sampleFiles.map(file => ({
+        template_id: `sample_${file.filename.replace('.json', '')}`,
+        name: file.name,
+        filename: file.filename,
+        type: 'sample',
+        created_at: '2024-01-01T00:00:00Z',
+        profiles: file.profiles,
+        description: file.description
+      }));
+      
+      setSampleProfiles(samples);
+    } catch (error) {
+      console.error('Error loading sample profiles:', error);
     }
   };
 
@@ -193,6 +276,13 @@ const ConfigTemplatesPage = () => {
     });
   };
 
+  const useSampleProfile = (sample) => {
+    // When user wants to use a sample profile as template
+    setTemplateName(sample.name);
+    setTemplateProfiles(JSON.stringify(sample.profiles || [], null, 2));
+    setShowCreateModal(true);
+  };
+
   const formatJson = (jsonString) => {
     try {
       const parsed = JSON.parse(jsonString);
@@ -202,11 +292,19 @@ const ConfigTemplatesPage = () => {
     }
   };
 
-  // Filter templates based on search term
+  // Filter templates and samples based on search term and active tab
   const filteredTemplates = templates.filter(template => 
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.template_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const filteredSamples = sampleProfiles.filter(sample =>
+    sample.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sample.filename.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const currentItems = activeTab === 'api' ? filteredTemplates : filteredSamples;
+  const totalItems = activeTab === 'api' ? templates.length : sampleProfiles.length;
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
@@ -271,6 +369,50 @@ const ConfigTemplatesPage = () => {
         </div>
       )}
 
+      {/* Tabs */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ 
+          display: 'flex', 
+          borderBottom: '2px solid #e2e8f0',
+          gap: '0'
+        }}>
+          <button
+            onClick={() => setActiveTab('api')}
+            style={{
+              padding: '12px 24px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              backgroundColor: activeTab === 'api' ? '#3b82f6' : 'transparent',
+              color: activeTab === 'api' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'api' ? '2px solid #3b82f6' : '2px solid transparent',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            🌐 API Templates ({templates.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('samples')}
+            style={{
+              padding: '12px 24px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              backgroundColor: activeTab === 'samples' ? '#10b981' : 'transparent',
+              color: activeTab === 'samples' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'samples' ? '2px solid #10b981' : '2px solid transparent',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            📁 Sample Profiles ({sampleProfiles.length})
+          </button>
+        </div>
+      </div>
+
       {/* Search and Stats */}
       <div style={{ 
         display: 'flex', 
@@ -315,25 +457,30 @@ const ConfigTemplatesPage = () => {
         </div>
         
         <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-          📊 Total: <strong>{filteredTemplates.length}</strong> templates
-          {searchTerm && ` (filtered from ${templates.length})`}
+          📊 Total: <strong>{currentItems.length}</strong> {activeTab === 'api' ? 'templates' : 'samples'}
+          {searchTerm && ` (filtered from ${totalItems})`}
         </div>
       </div>
 
-      {/* Templates Grid */}
+      {/* Main Content Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
           <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
-          Loading config templates...
+          Loading {activeTab === 'api' ? 'templates' : 'sample profiles'}...
         </div>
-      ) : filteredTemplates.length === 0 ? (
+      ) : currentItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
           <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📭</div>
-          <h3 style={{ margin: '0 0 8px 0' }}>No templates found</h3>
+          <h3 style={{ margin: '0 0 8px 0' }}>No {activeTab === 'api' ? 'templates' : 'samples'} found</h3>
           <p style={{ margin: 0 }}>
-            {searchTerm ? `No templates match "${searchTerm}"` : 'Create your first config template to get started'}
+            {searchTerm 
+              ? `No ${activeTab === 'api' ? 'templates' : 'samples'} match "${searchTerm}"` 
+              : activeTab === 'api' 
+                ? 'Create your first config template to get started'
+                : 'Sample profiles will be loaded automatically'
+            }
           </p>
-          {!searchTerm && (
+          {!searchTerm && activeTab === 'api' && (
             <button
               onClick={openCreateModal}
               style={{
@@ -353,7 +500,9 @@ const ConfigTemplatesPage = () => {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-          {filteredTemplates.map((template) => (
+          {activeTab === 'api' ? (
+            // API Templates
+            filteredTemplates.map((template) => (
             <div
               key={template.template_id}
               style={{
@@ -481,7 +630,101 @@ const ConfigTemplatesPage = () => {
                 </button>
               </div>
             </div>
-          ))}
+            ))
+          ) : (
+            // Sample Profiles
+            filteredSamples.map((sample) => (
+              <div
+                key={sample.template_id}
+                style={{
+                  border: '1px solid #10b981',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  backgroundColor: '#f0fdf4',
+                  boxShadow: '0 1px 3px rgba(16, 185, 129, 0.1)',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(16, 185, 129, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(16, 185, 129, 0.1)';
+                }}
+              >
+                {/* Sample Header */}
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ 
+                    margin: '0 0 8px 0', 
+                    fontSize: '1.1rem', 
+                    fontWeight: '600',
+                    color: '#065f46',
+                    lineHeight: '1.3'
+                  }}>
+                    📁 {sample.name}
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#059669', fontFamily: 'monospace' }}>
+                    File: {sample.filename}
+                  </div>
+                </div>
+
+                {/* Sample Info */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ 
+                    fontSize: '0.85rem', 
+                    color: '#047857',
+                    marginBottom: '8px'
+                  }}>
+                    {sample.description}
+                  </div>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: '#059669',
+                    padding: '2px 8px',
+                    backgroundColor: '#d1fae5',
+                    borderRadius: '4px'
+                  }}>
+                    📦 Sample Profile
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => useSampleProfile(sample)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      flex: 1
+                    }}
+                  >
+                    ✨ Use as Template
+                  </button>
+                  <button
+                    onClick={() => openViewModal(sample)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      backgroundColor: '#059669',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      flex: 1
+                    }}
+                  >
+                    👁️ Preview
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -764,13 +1007,16 @@ const ConfigTemplatesPage = () => {
               👁️ View Template: {selectedTemplate.name}
             </h3>
             
-            {/* Template Info */}
-            <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
+            {/* Template/Sample Info */}
+            <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: selectedTemplate.type === 'sample' ? '#f0fdf4' : '#f8fafc', borderRadius: '6px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.9rem' }}>
-                <div><strong>Template ID:</strong> {selectedTemplate.template_id}</div>
+                <div><strong>{selectedTemplate.type === 'sample' ? 'File' : 'Template'} ID:</strong> {selectedTemplate.template_id}</div>
                 <div><strong>Created:</strong> {new Date(selectedTemplate.created_at).toLocaleString()}</div>
-                <div><strong>Profiles Count:</strong> {selectedTemplate.config?.length || 0}</div>
-                <div><strong>Updated:</strong> {selectedTemplate.updated_at ? new Date(selectedTemplate.updated_at).toLocaleString() : 'Never'}</div>
+                <div><strong>Type:</strong> {selectedTemplate.type === 'sample' ? '📦 Sample Profile' : '🌐 API Template'}</div>
+                <div><strong>Profiles Count:</strong> {selectedTemplate.config?.length || selectedTemplate.profiles?.length || 0}</div>
+                {selectedTemplate.filename && (
+                  <div style={{ gridColumn: 'span 2' }}><strong>Filename:</strong> {selectedTemplate.filename}</div>
+                )}
               </div>
             </div>
 
@@ -787,7 +1033,7 @@ const ConfigTemplatesPage = () => {
                 <Editor
                   height="400px"
                   defaultLanguage="json"
-                  value={JSON.stringify(selectedTemplate.config, null, 2)}
+                  value={JSON.stringify(selectedTemplate.config || selectedTemplate.profiles || [], null, 2)}
                   theme="vs-light"
                   options={{
                     readOnly: true,
@@ -805,7 +1051,7 @@ const ConfigTemplatesPage = () => {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => copyToClipboard(JSON.stringify(selectedTemplate.config, null, 2))}
+                onClick={() => copyToClipboard(JSON.stringify(selectedTemplate.config || selectedTemplate.profiles || [], null, 2))}
                 style={{
                   padding: '8px 16px',
                   fontSize: '0.9rem',
