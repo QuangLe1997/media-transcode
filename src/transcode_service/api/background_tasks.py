@@ -13,6 +13,62 @@ from ..services.s3_service import s3_service
 logger = logging.getLogger(__name__)
 
 
+def _create_callback_message(task) -> dict:
+    """Create callback message compatible with TranscodeCallbackSchema"""
+    # Count completed/failed profiles
+    completed_count = len(task.outputs) if task.outputs else 0
+    failed_count = len(task.failed_profiles) if task.failed_profiles else 0
+    expected_count = len(task.config.get("profiles", [])) if task.config else 0
+    
+    # Convert outputs to expected format
+    formatted_outputs = []
+    if task.outputs:
+        for output in task.outputs:
+            if isinstance(output, dict) and 'profile_id' in output and 'urls' in output:
+                # Take first URL if multiple
+                url = output['urls'][0] if output['urls'] else None
+                formatted_outputs.append({
+                    "profile": output['profile_id'],
+                    "url": url,
+                    "metadata": output.get('metadata', {}),
+                    "size": None
+                })
+    
+    # Check face detection
+    face_detection_enabled = bool(task.config.get("face_detection_config")) if task.config else False
+    face_detection_status = None
+    if face_detection_enabled:
+        if hasattr(task, 'face_detection_status') and task.face_detection_status:
+            face_detection_status = "completed" if task.face_detection_status == TaskStatus.COMPLETED else "failed"
+    
+    # Determine overall status
+    status = "completed"
+    error_message = None
+    if task.status == TaskStatus.FAILED:
+        status = "failed"
+        error_message = task.error_message
+    elif task.status == TaskStatus.COMPLETED and task.error_message:
+        # Partial completion
+        status = "completed"
+        error_message = task.error_message
+    
+    return {
+        "task_id": task.task_id,
+        "status": status,
+        "source_url": task.source_url,
+        "expected_profiles": expected_count,
+        "completed_profiles": completed_count,
+        "failed_profiles": failed_count,
+        "face_detection_enabled": face_detection_enabled,
+        "face_detection_status": face_detection_status,
+        "face_detection_results": task.face_detection_results,
+        "outputs": formatted_outputs,
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+        "error_message": error_message
+    }
+
+
 async def handle_transcode_result(result: UniversalTranscodeResult):
     """Handle transcode result from Pub/Sub - V2 ONLY"""
     await _handle_transcode_result_common(result)
@@ -89,6 +145,22 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
                 if updated_task and updated_task.status == TaskStatus.COMPLETED:
                     logger.info(f"🎉 Task fully completed: {result.task_id}")
 
+                    # Push result to PubSub topic if configured
+                    if updated_task.pubsub_topic:
+                        try:
+                            # Create task result data compatible with TranscodeCallbackSchema
+                            task_result = _create_callback_message(updated_task)
+                            
+                            # Publish to the specified topic
+                            await pubsub_service.publish_message(
+                                topic=updated_task.pubsub_topic,
+                                message=task_result
+                            )
+                            logger.info(f"📡 Published task result to PubSub topic {updated_task.pubsub_topic}")
+                            
+                        except Exception as e:
+                            logger.error(f"❌ Failed to publish task result to PubSub: {e}")
+
                     # Delete source file only if it was uploaded (has source_key)
                     if updated_task.source_key:
                         try:
@@ -144,6 +216,22 @@ async def _handle_transcode_result_common(result: UniversalTranscodeResult):
 
                     # Get updated task for accurate data
                     updated_task = await TaskCRUD.get_task(db, result.task_id)
+
+                    # Push result to PubSub topic if configured
+                    if updated_task.pubsub_topic:
+                        try:
+                            # Create task result data compatible with TranscodeCallbackSchema
+                            task_result = _create_callback_message(updated_task)
+                            
+                            # Publish to the specified topic
+                            await pubsub_service.publish_message(
+                                topic=updated_task.pubsub_topic,
+                                message=task_result
+                            )
+                            logger.info(f"📡 Published task result to PubSub topic {updated_task.pubsub_topic}")
+                            
+                        except Exception as e:
+                            logger.error(f"❌ Failed to publish task result to PubSub: {e}")
 
                     # Delete source file only if it was uploaded (has
                     # source_key)
@@ -229,6 +317,22 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                 if updated_task and updated_task.status == TaskStatus.COMPLETED:
                     logger.info(f"🎉 Task fully completed: {result.task_id}")
 
+                    # Push result to PubSub topic if configured
+                    if updated_task.pubsub_topic:
+                        try:
+                            # Create task result data compatible with TranscodeCallbackSchema
+                            task_result = _create_callback_message(updated_task)
+                            
+                            # Publish to the specified topic
+                            await pubsub_service.publish_message(
+                                topic=updated_task.pubsub_topic,
+                                message=task_result
+                            )
+                            logger.info(f"📡 Published face detection task result to PubSub topic {updated_task.pubsub_topic}")
+                            
+                        except Exception as e:
+                            logger.error(f"❌ Failed to publish face detection task result to PubSub: {e}")
+
                     # Delete source file only if it was uploaded (has
                     # source_key)
                     if updated_task.source_key:
@@ -270,6 +374,22 @@ async def handle_face_detection_result(result: FaceDetectionResult):
                         TaskStatus.COMPLETED,
                         error_message=f"Completed with face detection failure: {result.error_message}",
                     )
+
+                    # Push result to PubSub topic if configured
+                    if task.pubsub_topic:
+                        try:
+                            # Create task result data compatible with TranscodeCallbackSchema
+                            task_result = _create_callback_message(task)
+                            
+                            # Publish to the specified topic
+                            await pubsub_service.publish_message(
+                                topic=task.pubsub_topic,
+                                message=task_result
+                            )
+                            logger.info(f"📡 Published partial completion result to PubSub topic {task.pubsub_topic}")
+                            
+                        except Exception as e:
+                            logger.error(f"❌ Failed to publish partial completion result to PubSub: {e}")
 
                     # Send callback for partial completion
                     if task.callback_url:
