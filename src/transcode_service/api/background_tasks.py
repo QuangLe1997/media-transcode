@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from ..core.db.crud import TaskCRUD
 from ..core.db.database import get_db
@@ -514,7 +514,7 @@ async def result_subscriber():
 
     try:
         logger.info("Creating background task coroutines...")
-        
+
         # Run v2, face detection subscribers, and cleanup task
         results = await asyncio.gather(
             universal_transcode_result_subscriber(),  # v2 results only
@@ -522,8 +522,8 @@ async def result_subscriber():
             cleanup_old_tasks(),  # scheduled cleanup every 15 minutes
             return_exceptions=True,
         )
-        
+
         logger.info(f"Background tasks completed with results: {results}")
-        
+
     except Exception as e:
         logger.error(f"Critical error in result_subscriber: {e}", exc_info=True)

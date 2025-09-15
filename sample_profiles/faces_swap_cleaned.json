@@ -1,8 +1,8 @@
 [
   {
-    "id_profile": "preview_video_bk",
+    "id_profile": "profile_bk",
     "input_type": "video",
-    "output_filename": "preview_video_bk",
+    "output_filename": "profile_bk",
     "config": {
       "output_format": "gif",
       "width": 120,
@@ -19,9 +19,9 @@
     }
   },
   {
-    "id_profile": "preview_video_1",
+    "id_profile": "profile_1",
     "input_type": "video",
-    "output_filename": "preview_video_1",
+    "output_filename": "profile_1",
     "config": {
       "output_format": "webp",
       "width": 120,
@@ -48,9 +48,9 @@
     }
   },
   {
-    "id_profile": "preview_video_2",
+    "id_profile": "profile_2",
     "input_type": "video",
-    "output_filename": "preview_video_2",
+    "output_filename": "profile_2",
     "config": {
       "output_format": "webp",
       "width": 160,
@@ -77,9 +77,9 @@
     }
   },
   {
-    "id_profile": "preview_video_3",
+    "id_profile": "profile_3",
     "input_type": "video",
-    "output_filename": "preview_video_3",
+    "output_filename": "profile_3",
     "config": {
       "output_format": "webp",
       "width": 240,
@@ -105,9 +105,9 @@
     }
   },
   {
-    "id_profile": "detail_video_1",
+    "id_profile": "detail_1",
     "input_type": "video",
-    "output_filename": "detail_video_1",
+    "output_filename": "detail_1",
     "config": {
       "output_format": "mp4",
       "width": 360,
@@ -129,9 +129,9 @@
     }
   },
   {
-    "id_profile": "detail_video_2",
+    "id_profile": "detail_2",
     "input_type": "video",
-    "output_filename": "detail_video_2",
+    "output_filename": "detail_2",
     "config": {
       "output_format": "mp4",
       "width": 480,
@@ -153,9 +153,9 @@
     }
   },
   {
-    "id_profile": "detail_video_3",
+    "id_profile": "detail_3",
     "input_type": "video",
-    "output_filename": "detail_video_3",
+    "output_filename": "detail_3",
     "config": {
       "output_format": "mp4",
       "width": 720,
@@ -177,9 +177,9 @@
     }
   },
   {
-    "id_profile": "ai_video_3",
+    "id_profile": "ai_process_3",
     "input_type": "video",
-    "output_filename": "ai_video_3",
+    "output_filename": "ai_process_3",
     "config": {
       "output_format": "mp4",
       "width": 720,
@@ -199,9 +199,9 @@
     }
   },
   {
-    "id_profile": "ai_video_1",
+    "id_profile": "ai_process_1",
     "input_type": "video",
-    "output_filename": "ai_video_1",
+    "output_filename": "ai_process_1",
     "config": {
       "output_format": "mp4",
       "width": 360,
@@ -221,9 +221,9 @@
     }
   },
   {
-    "id_profile": "ai_video_2",
+    "id_profile": "ai_process_2",
     "input_type": "video",
-    "output_filename": "ai_video_2",
+    "output_filename": "ai_process_2",
     "config": {
       "output_format": "mp4",
       "width": 480,
@@ -243,9 +243,9 @@
     }
   },
   {
-    "id_profile": "preview_image_3",
+    "id_profile": "profile_3",
     "input_type": "image",
-    "output_filename": "preview_image_3",
+    "output_filename": "profile_3",
     "config": {
       "output_format": "webp",
       "width": 280,
@@ -268,9 +268,9 @@
     }
   },
   {
-    "id_profile": "preview_image_1",
+    "id_profile": "profile_1",
     "input_type": "image",
-    "output_filename": "preview_image_1",
+    "output_filename": "profile_1",
     "config": {
       "output_format": "webp",
       "width": 160,
@@ -293,26 +293,9 @@
     }
   },
   {
-    "id_profile": "preview_image_bk",
+    "id_profile": "profile_2",
     "input_type": "image",
-    "output_filename": "preview_image_bk",
-    "config": {
-      "output_format": "jpg",
-      "width": 160,
-      "jpeg_quality": 85,
-      "optimize": true,
-      "contrast": 1,
-      "brightness": 0,
-      "saturation": 1.1,
-      "gamma": 1,
-      "enable_denoising": true,
-      "enable_sharpening": false
-    }
-  },
-  {
-    "id_profile": "preview_image_2",
-    "input_type": "image",
-    "output_filename": "preview_image_2",
+    "output_filename": "profile_2",
     "config": {
       "output_format": "webp",
       "width": 220,
@@ -336,9 +319,26 @@
     }
   },
   {
-    "id_profile": "detail_image_3",
+    "id_profile": "profile_bk",
     "input_type": "image",
-    "output_filename": "detail_image_3",
+    "output_filename": "profile_bk",
+    "config": {
+      "output_format": "jpg",
+      "width": 160,
+      "jpeg_quality": 85,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_denoising": true,
+      "enable_sharpening": false
+    }
+  },
+  {
+    "id_profile": "detail_3",
+    "input_type": "image",
+    "output_filename": "detail_3",
     "config": {
       "output_format": "webp",
       "width": 720,
@@ -362,9 +362,9 @@
     }
   },
   {
-    "id_profile": "detail_image_1",
+    "id_profile": "detail_1",
     "input_type": "image",
-    "output_filename": "detail_image_1",
+    "output_filename": "detail_1",
     "config": {
       "output_format": "webp",
       "width": 360,
@@ -388,9 +388,9 @@
     }
   },
   {
-    "id_profile": "detail_image_2",
+    "id_profile": "detail_2",
     "input_type": "image",
-    "output_filename": "detail_image_2",
+    "output_filename": "detail_2",
     "config": {
       "output_format": "webp",
       "width": 480,
@@ -414,9 +414,9 @@
     }
   },
   {
-    "id_profile": "ai_image_3",
+    "id_profile": "ai_process_3",
     "input_type": "image",
-    "output_filename": "ai_image_3",
+    "output_filename": "ai_process_3",
     "config": {
       "output_format": "jpg",
       "width": 720,
@@ -429,9 +429,9 @@
     }
   },
   {
-    "id_profile": "ai_image_1",
+    "id_profile": "ai_process_1",
     "input_type": "image",
-    "output_filename": "ai_image_1",
+    "output_filename": "ai_process_1",
     "config": {
       "output_format": "jpg",
       "width": 360,
@@ -444,9 +444,9 @@
     }
   },
   {
-    "id_profile": "ai_image_2",
+    "id_profile": "ai_process_2",
     "input_type": "image",
-    "output_filename": "ai_image_2",
+    "output_filename": "ai_process_2",
     "config": {
       "output_format": "jpg",
       "width": 480,

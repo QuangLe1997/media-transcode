@@ -123,7 +123,7 @@ class PubSubTaskListenerV2:
                     profile_input_type = profile.get('input_type')
                 else:
                     profile_input_type = getattr(profile, 'input_type', None)
-                
+
                 if detected_media_type == profile_input_type:
                     if isinstance(profile, dict):
                         filtered_profiles.append(

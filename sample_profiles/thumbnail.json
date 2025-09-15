@@ -192,41 +192,5 @@
       "enable_denoising": true,
       "enable_sharpening": false
     }
-  },
-  {
-    "id_profile": "promoted_banner_bk",
-    "input_type": "video",
-    "output_filename": "promoted_banner_bk",
-    "config": {
-      "output_format": "gif",
-      "width": 320,
-      "fps": 12,
-      "duration": 8,
-      "start_time": 0,
-      "speed": 1,
-      "contrast": 1,
-      "brightness": 0,
-      "saturation": 1.1,
-      "enable_denoising": true,
-      "enable_sharpening": false,
-      "loop": 0
-    }
-  },
-  {
-    "id_profile": "promoted_banner_bk",
-    "input_type": "image",
-    "output_filename": "promoted_banner_bk",
-    "config": {
-      "output_format": "jpg",
-      "width": 320,
-      "jpeg_quality": 85,
-      "optimize": true,
-      "contrast": 1,
-      "brightness": 0,
-      "saturation": 1.1,
-      "gamma": 1,
-      "enable_denoising": true,
-      "enable_sharpening": false
-    }
   }
 ]
