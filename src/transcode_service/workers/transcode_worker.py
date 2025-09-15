@@ -348,6 +348,10 @@ class TranscodeWorkerV2:
 
         # Validate and adjust parameters based on source info
         validated_config = self._validate_target_params(config, source_info) if source_info else config
+        
+        # Log warning if both CRF and bitrate are set
+        if validated_config.crf and validated_config.bitrate:
+            logger.warning(f"⚠️  Both CRF ({validated_config.crf}) and bitrate ({validated_config.bitrate}) are set. FFmpeg will prioritize CRF and ignore bitrate!")
 
         # Convert config to UniversalMediaConverter parameters
         convert_params = {
