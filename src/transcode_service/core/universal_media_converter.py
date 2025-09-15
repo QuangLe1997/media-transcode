@@ -95,7 +95,7 @@ class UniversalMediaConverter:
 
                 # MP4-specific settings
                 codec: str = "h264",
-                crf: int = 23,
+                crf: Optional[int] = None,
                 mp4_preset: str = "medium",
                 bitrate: Optional[str] = None,
                 max_bitrate: Optional[str] = None,
@@ -467,8 +467,9 @@ class UniversalMediaConverter:
         else:
             cmd.extend(["-c:v", "libx264"])
 
-        # CRF (Constant Rate Factor)
-        cmd.extend(["-crf", str(kwargs['crf'])])
+        # CRF (Constant Rate Factor) - only add if specified
+        if kwargs.get('crf') is not None:
+            cmd.extend(["-crf", str(kwargs['crf'])])
 
         # Preset
         cmd.extend(["-preset", kwargs['preset']])

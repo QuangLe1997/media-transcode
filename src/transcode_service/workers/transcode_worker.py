@@ -349,9 +349,23 @@ class TranscodeWorkerV2:
         # Validate and adjust parameters based on source info
         validated_config = self._validate_target_params(config, source_info) if source_info else config
         
-        # Log warning if both CRF and bitrate are set
-        if validated_config.crf and validated_config.bitrate:
+        # Handle CRF vs Bitrate mode selection
+        has_explicit_crf = hasattr(config, 'crf') and config.crf is not None
+        has_explicit_bitrate = hasattr(config, 'bitrate') and config.bitrate is not None
+        
+        if has_explicit_crf and has_explicit_bitrate:
             logger.warning(f"⚠️  Both CRF ({validated_config.crf}) and bitrate ({validated_config.bitrate}) are set. FFmpeg will prioritize CRF and ignore bitrate!")
+        elif has_explicit_bitrate and not has_explicit_crf:
+            # Pure bitrate mode
+            logger.info(f"Using bitrate mode ({validated_config.bitrate})")
+            validated_config.crf = None
+        elif has_explicit_crf and not has_explicit_bitrate:
+            # Pure CRF mode  
+            logger.info(f"Using CRF mode ({validated_config.crf})")
+        else:
+            # No explicit mode set - let FFmpeg use its defaults
+            logger.info(f"No encoding mode specified, using FFmpeg defaults")
+            validated_config.crf = None
 
         # Convert config to UniversalMediaConverter parameters
         convert_params = {
@@ -586,7 +600,27 @@ class TranscodeWorkerV2:
             except (ValueError, AttributeError):
                 pass
         
+        # Adaptive CRF based on resolution (if CRF is used)
+        if config.crf and not config.bitrate:  # Only adjust if using CRF mode
+            target_width = validated_config.width or source_info.get("width", 720)
+            adaptive_crf = self._get_adaptive_crf(target_width, config.crf)
+            if adaptive_crf != config.crf:
+                logger.info(f"Adjusting CRF from {config.crf} to {adaptive_crf} based on resolution {target_width}p")
+                validated_config.crf = adaptive_crf
+        
         return validated_config
+
+    def _get_adaptive_crf(self, width: int, base_crf: int) -> int:
+        """Get adaptive CRF based on resolution - optimize for smaller file size"""
+        # Resolution-based CRF adjustment (higher CRF = smaller file)
+        if width >= 1920:    # 4K/1080p+
+            return min(base_crf + 1, 28)  # Increase CRF for smaller file at high res
+        elif width >= 1280:  # 720p
+            return base_crf  # Keep original
+        elif width >= 640:   # 480p
+            return max(base_crf - 1, 18)  # Decrease CRF to maintain quality at low res
+        else:                # Very low res
+            return max(base_crf - 2, 18)  # Much better quality needed for very low res
 
 
 def main():
