@@ -95,7 +95,7 @@ class UniversalMediaConverter:
                 
                 # MP4-specific settings
                 codec: str = "h264",
-                crf: int = 23,
+                crf: Optional[int] = None,
                 mp4_preset: str = "medium",
                 bitrate: Optional[str] = None,
                 max_bitrate: Optional[str] = None,
@@ -134,6 +134,19 @@ class UniversalMediaConverter:
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
             
+            # Get source info for validation if input is video and output is mp4
+            source_info = None
+            if input_type == 'video' and output_format == 'mp4':
+                source_info = self._get_source_video_info(input_path)
+                if verbose:
+                    print(f"📊 Source info: {source_info}")
+
+            # Validate and adjust parameters based on source
+            if source_info:
+                width, height, fps, bitrate, crf = self._validate_params_against_source(
+                    width, height, fps, bitrate, crf, source_info, verbose
+                )
+
             # Build command based on output format
             if output_format == 'webp':
                 cmd = self._build_webp_command(
@@ -483,8 +496,9 @@ class UniversalMediaConverter:
         else:
             cmd.extend(["-c:v", "libx264"])
         
-        # CRF (Constant Rate Factor)
-        cmd.extend(["-crf", str(kwargs['crf'])])
+        # CRF (Constant Rate Factor) - only add if specified
+        if kwargs.get('crf') is not None:
+            cmd.extend(["-crf", str(kwargs['crf'])])
         
         # Preset
         cmd.extend(["-preset", kwargs['preset']])
@@ -632,6 +646,114 @@ class UniversalMediaConverter:
             print(f"🚫 Error: {result.get('error', 'Unknown error')}")
         
         print("=" * 80)
+
+    def _get_source_video_info(self, input_path: str) -> dict:
+        """Get source video information using ffprobe"""
+        import subprocess
+        import json
+        
+        try:
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-show_entries", "stream=bit_rate,width,height,r_frame_rate,sample_rate",
+                "-select_streams", "v:0",  # First video stream
+                "-of", "json",
+                input_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            
+            stream = data.get("streams", [{}])[0]
+            
+            # Parse frame rate (e.g., "30/1" -> 30.0)
+            fps_str = stream.get("r_frame_rate", "0/1")
+            if "/" in fps_str:
+                num, den = fps_str.split("/")
+                fps = float(num) / float(den) if float(den) != 0 else 0.0
+            else:
+                fps = float(fps_str)
+            
+            # Get audio info
+            audio_cmd = [
+                "ffprobe",
+                "-v", "quiet", 
+                "-show_entries", "stream=bit_rate,sample_rate",
+                "-select_streams", "a:0",  # First audio stream
+                "-of", "json",
+                input_path
+            ]
+            
+            audio_result = subprocess.run(audio_cmd, capture_output=True, text=True)
+            audio_data = {}
+            if audio_result.returncode == 0:
+                audio_json = json.loads(audio_result.stdout)
+                audio_stream = audio_json.get("streams", [{}])[0]
+                audio_data = {
+                    "audio_bitrate": audio_stream.get("bit_rate"),
+                    "audio_sample_rate": audio_stream.get("sample_rate")
+                }
+            
+            source_info = {
+                "width": stream.get("width"),
+                "height": stream.get("height"),
+                "fps": fps,
+                "bitrate": stream.get("bit_rate"),
+                **audio_data
+            }
+            
+            return source_info
+            
+        except Exception as e:
+            print(f"⚠️  Failed to get source video info: {e}")
+            return {}
+
+    def _validate_params_against_source(self, width, height, fps, bitrate, crf, source_info, verbose=True):
+        """Validate and adjust target parameters to not exceed source"""
+        if not source_info:
+            return width, height, fps, bitrate, crf
+            
+        # Validate width/height
+        if source_info.get("width") and width:
+            if width > source_info["width"]:
+                if verbose:
+                    print(f"⚠️  Target width {width} > source {source_info['width']}, adjusting to source")
+                width = source_info["width"]
+                
+        if source_info.get("height") and height:
+            if height > source_info["height"]:
+                if verbose:
+                    print(f"⚠️  Target height {height} > source {source_info['height']}, adjusting to source")
+                height = source_info["height"]
+        
+        # Validate FPS
+        if source_info.get("fps") and fps:
+            if fps > source_info["fps"]:
+                if verbose:
+                    print(f"⚠️  Target fps {fps} > source {source_info['fps']}, adjusting to source")
+                fps = source_info["fps"]
+        
+        # Validate bitrate (convert string to int for comparison)
+        if source_info.get("bitrate") and bitrate:
+            try:
+                source_bitrate = int(source_info["bitrate"])
+                target_bitrate_str = bitrate.replace("M", "000000").replace("k", "000")
+                target_bitrate = int(float(target_bitrate_str))
+                
+                if target_bitrate > source_bitrate:
+                    # Convert back to appropriate format
+                    if source_bitrate >= 1000000:
+                        new_bitrate = f"{source_bitrate / 1000000:.1f}M"
+                    else:
+                        new_bitrate = f"{source_bitrate / 1000:.0f}k"
+                    if verbose:
+                        print(f"⚠️  Target bitrate {bitrate} > source {source_bitrate}, adjusting to {new_bitrate}")
+                    bitrate = new_bitrate
+            except (ValueError, AttributeError):
+                pass
+        
+        return width, height, fps, bitrate, crf
 
 
 def main():
