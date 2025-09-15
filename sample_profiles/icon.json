@@ -98,44 +98,5 @@
       "saturation": 1.1,
       "gamma": 1
     }
-  },
-  {
-    "id_profile": "icon_webp_64",
-    "input_type": "image",
-    "output_filename": "icon_webp_64",
-    "config": {
-      "output_format": "webp",
-      "width": 64,
-      "height": 64,
-      "quality": 95,
-      "lossless": false,
-      "method": 6,
-      "preset": "icon",
-      "contrast": 1,
-      "brightness": 0,
-      "saturation": 1.1,
-      "gamma": 1,
-      "enable_sharpening": true,
-      "alpha_quality": 100
-    }
-  },
-  {
-    "id_profile": "icon_webp_128",
-    "input_type": "image",
-    "output_filename": "icon_webp_128",
-    "config": {
-      "output_format": "webp", 
-      "width": 128,
-      "height": 128,
-      "quality": 100,
-      "lossless": true,
-      "method": 6,
-      "preset": "icon",
-      "contrast": 1,
-      "brightness": 0,
-      "saturation": 1.1,
-      "gamma": 1,
-      "alpha_quality": 100
-    }
   }
 ]
