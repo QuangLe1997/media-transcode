@@ -88,20 +88,56 @@ if [ ! -d /quang/quang/dev-media-transcode ]; then
     sudo mkdir -p /quang/quang
     sudo chown $USER:$USER /quang/quang
     cd /quang/quang
-    git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+    
+    # Test internet connectivity for git clone
+    if ping -c 1 github.com &> /dev/null; then
+        echo '🌐 Cloning from GitHub...'
+        git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+    else
+        echo '❌ Cannot reach GitHub for cloning. Server needs internet access or manual file transfer.'
+        exit 1
+    fi
     cd /quang/quang/dev-media-transcode
 elif [ ! -d /quang/quang/dev-media-transcode/.git ]; then
     echo '⚠️  Directory exists but not a git repository. Re-cloning...'
     sudo rm -rf /quang/quang/dev-media-transcode
     sudo chown $USER:$USER /quang/quang
     cd /quang/quang
-    git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+    
+    # Test internet connectivity for git clone
+    if ping -c 1 github.com &> /dev/null; then
+        echo '🌐 Cloning from GitHub...'
+        git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+    else
+        echo '❌ Cannot reach GitHub for cloning. Server needs internet access or manual file transfer.'
+        exit 1
+    fi
     cd /quang/quang/dev-media-transcode
 else
     echo '📂 Navigating to existing repository...'
     cd /quang/quang/dev-media-transcode
-    echo '📥 Pulling latest code...'
-    git pull origin master
+    
+    # Check if we can pull (git repository exists and has remote)
+    if [ -d .git ] && git remote get-url origin &> /dev/null; then
+        echo '📥 Pulling latest code...'
+        if ping -c 1 github.com &> /dev/null; then
+            git pull origin master
+        else
+            echo '⚠️  Cannot reach GitHub for pulling. Using existing code.'
+        fi
+    else
+        echo '⚠️  Git repository corrupted or no remote configured.'
+        echo '🔧 Re-initializing git repository...'
+        rm -rf .git
+        git init
+        if ping -c 1 github.com &> /dev/null; then
+            git remote add origin https://github.com/QuangLe1997/media-transcode.git
+            git fetch origin
+            git checkout -b master origin/master
+        else
+            echo '⚠️  Cannot reach GitHub. Using existing files without git.'
+        fi
+    fi
 fi
 
 echo '📝 Creating .env file...'

@@ -211,13 +211,46 @@ const Upload = () => {
   }, []);
 
   // Load selected template
+  const cleanProfilesForFormat = (profiles) => {
+    // Clean up profile data based on output format
+    return profiles.map(profile => {
+      if (profile.config && profile.config.output_format === 'gif') {
+        // Remove unnecessary fields for GIF
+        const cleanConfig = {...profile.config};
+        delete cleanConfig.quality; // GIF doesn't use quality parameter
+        delete cleanConfig.height; // Let GIF maintain aspect ratio  
+        delete cleanConfig.jpeg_quality;
+        delete cleanConfig.lossless;
+        delete cleanConfig.method;
+        delete cleanConfig.preset;
+        delete cleanConfig.alpha_quality;
+        delete cleanConfig.animated;
+        delete cleanConfig.pass_count;
+        delete cleanConfig.save_frames;
+        delete cleanConfig.auto_filter;
+        delete cleanConfig.verbose;
+        delete cleanConfig.gamma;
+        delete cleanConfig.near_lossless;
+        delete cleanConfig.target_size;
+        delete cleanConfig.optimize;
+        delete cleanConfig.progressive;
+        delete cleanConfig.two_pass;
+        delete cleanConfig.hardware_accel;
+        return {...profile, config: cleanConfig};
+      }
+      return profile;
+    });
+  };
+
   const loadTemplate = async (templateId) => {
     if (!templateId) return;
     
     try {
       const response = await api.get(`/config-templates/${templateId}`);
       const template = response.data;
-      setProfilesJson(JSON.stringify(template.config, null, 2));
+      // Clean profiles based on output format
+      const cleanedProfiles = cleanProfilesForFormat(template.config || template.profiles || []);
+      setProfilesJson(JSON.stringify(cleanedProfiles, null, 2));
       setMessage({ type: 'success', text: `Loaded template: ${template.name}` });
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to load template' });
