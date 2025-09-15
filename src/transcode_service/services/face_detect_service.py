@@ -58,6 +58,60 @@ Embedding = np.ndarray
 _face_analyser_instance = None
 
 
+def cleanup_face_analyser():
+    """Cleanup global face analyser instance and free GPU resources"""
+    global _face_analyser_instance
+    
+    if _face_analyser_instance is not None:
+        try:
+            logger.info("🧹 Cleaning up face analyser instance...")
+            
+            # Close ONNX Runtime sessions if they exist
+            if hasattr(_face_analyser_instance, 'face_detector') and _face_analyser_instance.face_detector:
+                try:
+                    # ONNX Runtime doesn't have explicit close, but setting to None helps GC
+                    _face_analyser_instance.face_detector = None
+                except:
+                    pass
+                    
+            if hasattr(_face_analyser_instance, 'face_recognizer') and _face_analyser_instance.face_recognizer:
+                try:
+                    _face_analyser_instance.face_recognizer = None
+                except:
+                    pass
+                    
+            if hasattr(_face_analyser_instance, 'face_landmarker_68') and _face_analyser_instance.face_landmarker_68:
+                try:
+                    _face_analyser_instance.face_landmarker_68 = None
+                except:
+                    pass
+                    
+            if hasattr(_face_analyser_instance, 'face_landmarker_68_5') and _face_analyser_instance.face_landmarker_68_5:
+                try:
+                    _face_analyser_instance.face_landmarker_68_5 = None
+                except:
+                    pass
+                    
+            if hasattr(_face_analyser_instance, 'gender_age') and _face_analyser_instance.gender_age:
+                try:
+                    _face_analyser_instance.gender_age = None
+                except:
+                    pass
+            
+            # Clear the global instance
+            _face_analyser_instance = None
+            
+            # Force garbage collection
+            gc.collect()
+            
+            logger.info("✅ Face analyser cleanup completed")
+            
+        except Exception as e:
+            logger.warning(f"Error during face analyser cleanup: {e}")
+            # Force clear anyway
+            _face_analyser_instance = None
+
+
 class Face:
     def __init__(
             self,

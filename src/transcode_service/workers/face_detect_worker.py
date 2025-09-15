@@ -169,9 +169,44 @@ class FaceDetectionWorker:
         return health_status
 
     def __del__(self):
-        """Cleanup temp directory on destruction"""
+        """Cleanup temp directory and GPU resources on destruction"""
         if hasattr(self, "temp_dir") and os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
+        
+        # Cleanup GPU resources
+        self._cleanup_gpu_resources()
+    
+    def _cleanup_gpu_resources(self):
+        """Explicit cleanup of GPU/VRAM resources"""
+        try:
+            import gc
+            
+            # Force cleanup of face processor global instance
+            from ..services.face_detect_service import cleanup_face_analyser
+            cleanup_face_analyser()
+            
+            # Force garbage collection
+            gc.collect()
+            
+            # Try CUDA cleanup if available
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+                    logger.info("🧹 Cleared CUDA cache")
+            except ImportError:
+                pass
+                
+            logger.info("🧹 GPU resources cleanup completed")
+            
+        except Exception as e:
+            logger.warning(f"Error during GPU cleanup: {e}")
+    
+    def cleanup_and_exit(self):
+        """Explicit cleanup method to be called before worker shutdown"""
+        logger.info("🧹 Starting explicit worker cleanup...")
+        self._cleanup_gpu_resources()
 
     def process_task(self, message: FaceDetectionMessage):
         """Process face detection task"""
@@ -285,6 +320,11 @@ class FaceDetectionWorker:
             elif temp_input and temp_input != message.source_url and os.path.exists(temp_input):
                 # Fallback cleanup for individual input file
                 os.remove(temp_input)
+            
+            # Force garbage collection after each task to free GPU memory
+            import gc
+            gc.collect()
+            logger.info(f"🧹 Completed memory cleanup for task {message.task_id}")
 
     def _download_media(self, source_url: str, task_id: str, task_temp_dir: str = None) -> str:
         """Download media from URL or S3"""
@@ -404,6 +444,11 @@ class FaceDetectionWorker:
 
             processor = FaceProcessor(processor_config)
             result = processor.process_video(video_path)
+            
+            # Cleanup processor after use
+            del processor
+            import gc
+            gc.collect()
 
             return result
 
@@ -430,6 +475,11 @@ class FaceDetectionWorker:
 
             processor = FaceProcessor(processor_config)
             result = processor.process_image(image_path)
+            
+            # Cleanup processor after use
+            del processor
+            import gc
+            gc.collect()
 
             return result
 
@@ -583,6 +633,10 @@ def main():
     except Exception as e:
         logger.error(f"Worker error: {e}")
         raise
+    finally:
+        # Explicit cleanup on worker shutdown
+        logger.info("🧹 Shutting down worker, cleaning up resources...")
+        worker.cleanup_and_exit()
 
 
 if __name__ == "__main__":
