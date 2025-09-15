@@ -476,6 +476,13 @@ class UniversalMediaConverter:
         # GIF specific parameters - no audio for GIF
         cmd.extend(["-an"])  # Remove audio
         
+        # Loop control for GIF (0 = infinite, -1 = no loop, n = loop n times)
+        # Note: loop parameter is metadata, set via -loop option
+        if 'loop' in kwargs:
+            cmd.extend(["-loop", str(kwargs['loop'])])
+        else:
+            cmd.extend(["-loop", "0"])  # Default to infinite loop
+        
         # GIF format
         cmd.extend(["-f", "gif"])
 
