@@ -812,7 +812,7 @@ Examples:
     
     # MP4 settings
     parser.add_argument("--codec", choices=["h264", "h265"], default="h264", help="Video codec")
-    parser.add_argument("--crf", type=int, default=23, help="CRF value 0-51 (lower=better)")
+    parser.add_argument("--crf", type=int, help="CRF value 0-51 (lower=better)")
     parser.add_argument("--mp4-preset", choices=["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"], default="medium")
     parser.add_argument("--bitrate", help="Video bitrate (e.g., 2M, 5000k)")
     parser.add_argument("--audio-codec", choices=["aac", "mp3", "none"], default="aac")
