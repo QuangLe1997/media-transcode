@@ -1,8 +1,8 @@
 [
   {
-    "id_profile": "preview_video_low_bk",
+    "id_profile": "preview_video_bk",
     "input_type": "video",
-    "output_filename": "preview_video_low_bk",
+    "output_filename": "preview_video_bk",
     "config": {
       "output_format": "gif",
       "width": 120,
@@ -19,9 +19,9 @@
     }
   },
   {
-    "id_profile": "preview_video_low",
+    "id_profile": "preview_video_1",
     "input_type": "video",
-    "output_filename": "preview_video_low",
+    "output_filename": "preview_video_1",
     "config": {
       "output_format": "webp",
       "width": 120,
@@ -48,9 +48,9 @@
     }
   },
   {
-    "id_profile": "preview_video_mid",
+    "id_profile": "preview_video_2",
     "input_type": "video",
-    "output_filename": "preview_video_mid",
+    "output_filename": "preview_video_2",
     "config": {
       "output_format": "webp",
       "width": 160,
@@ -77,9 +77,9 @@
     }
   },
   {
-    "id_profile": "preview_video_high",
+    "id_profile": "preview_video_3",
     "input_type": "video",
-    "output_filename": "preview_video_high",
+    "output_filename": "preview_video_3",
     "config": {
       "output_format": "webp",
       "width": 240,
@@ -105,9 +105,9 @@
     }
   },
   {
-    "id_profile": "detail_video_low",
+    "id_profile": "detail_video_1",
     "input_type": "video",
-    "output_filename": "detail_video_low",
+    "output_filename": "detail_video_1",
     "config": {
       "output_format": "mp4",
       "width": 360,
@@ -129,9 +129,9 @@
     }
   },
   {
-    "id_profile": "detail_video_mid",
+    "id_profile": "detail_video_2",
     "input_type": "video",
-    "output_filename": "detail_video_mid",
+    "output_filename": "detail_video_2",
     "config": {
       "output_format": "mp4",
       "width": 480,
@@ -153,9 +153,9 @@
     }
   },
   {
-    "id_profile": "detail_video_high",
+    "id_profile": "detail_video_3",
     "input_type": "video",
-    "output_filename": "detail_video_high",
+    "output_filename": "detail_video_3",
     "config": {
       "output_format": "mp4",
       "width": 720,
@@ -177,9 +177,9 @@
     }
   },
   {
-    "id_profile": "ai_video_high",
+    "id_profile": "ai_video_3",
     "input_type": "video",
-    "output_filename": "ai_video_high",
+    "output_filename": "ai_video_3",
     "config": {
       "output_format": "mp4",
       "width": 720,
@@ -199,9 +199,9 @@
     }
   },
   {
-    "id_profile": "ai_video_low",
+    "id_profile": "ai_video_1",
     "input_type": "video",
-    "output_filename": "ai_video_low",
+    "output_filename": "ai_video_1",
     "config": {
       "output_format": "mp4",
       "width": 360,
@@ -221,9 +221,9 @@
     }
   },
   {
-    "id_profile": "ai_video_mid",
+    "id_profile": "ai_video_2",
     "input_type": "video",
-    "output_filename": "ai_video_mid",
+    "output_filename": "ai_video_2",
     "config": {
       "output_format": "mp4",
       "width": 480,
@@ -243,9 +243,9 @@
     }
   },
   {
-    "id_profile": "preview_image_high",
+    "id_profile": "preview_image_3",
     "input_type": "image",
-    "output_filename": "preview_image_high",
+    "output_filename": "preview_image_3",
     "config": {
       "output_format": "webp",
       "width": 280,
@@ -268,9 +268,9 @@
     }
   },
   {
-    "id_profile": "preview_image_low",
+    "id_profile": "preview_image_1",
     "input_type": "image",
-    "output_filename": "preview_image_low",
+    "output_filename": "preview_image_1",
     "config": {
       "output_format": "webp",
       "width": 160,
@@ -293,9 +293,9 @@
     }
   },
   {
-    "id_profile": "preview_image_low_bk",
+    "id_profile": "preview_image_bk",
     "input_type": "image",
-    "output_filename": "preview_image_low_bk",
+    "output_filename": "preview_image_bk",
     "config": {
       "output_format": "jpg",
       "width": 160,
@@ -310,9 +310,9 @@
     }
   },
   {
-    "id_profile": "preview_image_mid",
+    "id_profile": "preview_image_2",
     "input_type": "image",
-    "output_filename": "preview_image_mid",
+    "output_filename": "preview_image_2",
     "config": {
       "output_format": "webp",
       "width": 220,
@@ -336,9 +336,9 @@
     }
   },
   {
-    "id_profile": "detail_image_high",
+    "id_profile": "detail_image_3",
     "input_type": "image",
-    "output_filename": "detail_image_high",
+    "output_filename": "detail_image_3",
     "config": {
       "output_format": "webp",
       "width": 720,
@@ -362,9 +362,9 @@
     }
   },
   {
-    "id_profile": "detail_image_low",
+    "id_profile": "detail_image_1",
     "input_type": "image",
-    "output_filename": "detail_image_low",
+    "output_filename": "detail_image_1",
     "config": {
       "output_format": "webp",
       "width": 360,
@@ -388,9 +388,9 @@
     }
   },
   {
-    "id_profile": "detail_image_mid",
+    "id_profile": "detail_image_2",
     "input_type": "image",
-    "output_filename": "detail_image_mid",
+    "output_filename": "detail_image_2",
     "config": {
       "output_format": "webp",
       "width": 480,
@@ -414,9 +414,9 @@
     }
   },
   {
-    "id_profile": "ai_image_high",
+    "id_profile": "ai_image_3",
     "input_type": "image",
-    "output_filename": "ai_image_high",
+    "output_filename": "ai_image_3",
     "config": {
       "output_format": "jpg",
       "width": 720,
@@ -429,9 +429,9 @@
     }
   },
   {
-    "id_profile": "ai_image_low",
+    "id_profile": "ai_image_1",
     "input_type": "image",
-    "output_filename": "ai_image_low",
+    "output_filename": "ai_image_1",
     "config": {
       "output_format": "jpg",
       "width": 360,
@@ -444,9 +444,9 @@
     }
   },
   {
-    "id_profile": "ai_image_mid",
+    "id_profile": "ai_image_2",
     "input_type": "image",
-    "output_filename": "ai_image_mid",
+    "output_filename": "ai_image_2",
     "config": {
       "output_format": "jpg",
       "width": 480,

@@ -1,0 +1,141 @@
+[
+  {
+    "id_profile": "icon_16",
+    "input_type": "image",
+    "output_filename": "icon_16",
+    "config": {
+      "output_format": "jpg",
+      "width": 16,
+      "height": 16,
+      "jpeg_quality": 95,
+      "optimize": true,
+      "contrast": 1.05,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_sharpening": true
+    }
+  },
+  {
+    "id_profile": "icon_32",
+    "input_type": "image",
+    "output_filename": "icon_32",
+    "config": {
+      "output_format": "jpg",
+      "width": 32,
+      "height": 32,
+      "jpeg_quality": 95,
+      "optimize": true,
+      "contrast": 1.05,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_sharpening": true
+    }
+  },
+  {
+    "id_profile": "icon_64",
+    "input_type": "image",
+    "output_filename": "icon_64",
+    "config": {
+      "output_format": "jpg",
+      "width": 64,
+      "height": 64,
+      "jpeg_quality": 100,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_sharpening": true
+    }
+  },
+  {
+    "id_profile": "icon_128",
+    "input_type": "image",
+    "output_filename": "icon_128",
+    "config": {
+      "output_format": "jpg",
+      "width": 128,
+      "height": 128,
+      "jpeg_quality": 100,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_sharpening": false
+    }
+  },
+  {
+    "id_profile": "icon_256",
+    "input_type": "image", 
+    "output_filename": "icon_256",
+    "config": {
+      "output_format": "jpg",
+      "width": 256,
+      "height": 256,
+      "jpeg_quality": 100,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1
+    }
+  },
+  {
+    "id_profile": "icon_512",
+    "input_type": "image",
+    "output_filename": "icon_512", 
+    "config": {
+      "output_format": "jpg",
+      "width": 512,
+      "height": 512,
+      "jpeg_quality": 100,
+      "optimize": true,
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1
+    }
+  },
+  {
+    "id_profile": "icon_webp_64",
+    "input_type": "image",
+    "output_filename": "icon_webp_64",
+    "config": {
+      "output_format": "webp",
+      "width": 64,
+      "height": 64,
+      "quality": 95,
+      "lossless": false,
+      "method": 6,
+      "preset": "icon",
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "enable_sharpening": true,
+      "alpha_quality": 100
+    }
+  },
+  {
+    "id_profile": "icon_webp_128",
+    "input_type": "image",
+    "output_filename": "icon_webp_128",
+    "config": {
+      "output_format": "webp", 
+      "width": 128,
+      "height": 128,
+      "quality": 100,
+      "lossless": true,
+      "method": 6,
+      "preset": "icon",
+      "contrast": 1,
+      "brightness": 0,
+      "saturation": 1.1,
+      "gamma": 1,
+      "alpha_quality": 100
+    }
+  }
+]
