@@ -199,11 +199,11 @@ class TranscodeWorkerV2:
                 from urllib.parse import urlparse
                 url_path = urlparse(message.source_url).path
                 file_ext = Path(url_path).suffix if url_path else ""
-                
+
                 # If no extension in URL, try to detect from content
                 if not file_ext:
                     file_ext = ".mp4"  # Default to mp4 for videos
-                
+
                 temp_input = os.path.join(
                     self.temp_dir,
                     f"{message.task_id}_{message.profile.id_profile}_input{file_ext}",
@@ -340,51 +340,60 @@ class TranscodeWorkerV2:
 
         logger.info(f"Converting {temp_input} -> {temp_output} (format: {output_format})")
 
+        # Get source video info for validation if input is video and output is mp4
+        source_info = None
+        if profile.input_type == "video" and output_format == "mp4":
+            source_info = self._get_source_video_info(temp_input)
+            logger.info(f"Source video info: {source_info}")
+
+        # Validate and adjust parameters based on source info
+        validated_config = self._validate_target_params(config, source_info) if source_info else config
+
         # Convert config to UniversalMediaConverter parameters
         convert_params = {
             # Basic parameters
-            "width": config.width,
-            "height": config.height,
-            "quality": config.quality,
-            "fps": config.fps,
-            "duration": config.duration,
-            "start_time": config.start_time,
-            "speed": config.speed,
-            "contrast": config.contrast,
-            "brightness": config.brightness,
-            "saturation": config.saturation,
-            "gamma": config.gamma,
-            "enable_denoising": config.enable_denoising,
-            "enable_sharpening": config.enable_sharpening,
-            "auto_filter": config.auto_filter,
+            "width": validated_config.width,
+            "height": validated_config.height,
+            "quality": validated_config.quality,
+            "fps": validated_config.fps,
+            "duration": validated_config.duration,
+            "start_time": validated_config.start_time,
+            "speed": validated_config.speed,
+            "contrast": validated_config.contrast,
+            "brightness": validated_config.brightness,
+            "saturation": validated_config.saturation,
+            "gamma": validated_config.gamma,
+            "enable_denoising": validated_config.enable_denoising,
+            "enable_sharpening": validated_config.enable_sharpening,
+            "auto_filter": validated_config.auto_filter,
             # WebP-specific
-            "lossless": config.lossless,
-            "method": config.method,
-            "preset": config.preset,
-            "near_lossless": config.near_lossless,
-            "alpha_quality": config.alpha_quality,
-            "animated": config.animated,
-            "loop": config.loop,
-            "pass_count": config.pass_count,
-            "target_size": config.target_size,
-            "save_frames": config.save_frames,
+            "lossless": validated_config.lossless,
+            "method": validated_config.method,
+            "preset": validated_config.preset,
+            "near_lossless": validated_config.near_lossless,
+            "alpha_quality": validated_config.alpha_quality,
+            "animated": validated_config.animated,
+            "loop": validated_config.loop,
+            "pass_count": validated_config.pass_count,
+            "target_size": validated_config.target_size,
+            "save_frames": validated_config.save_frames,
             # JPG-specific
-            "jpeg_quality": config.jpeg_quality,
-            "optimize": config.optimize,
-            "progressive": config.progressive,
+            "jpeg_quality": validated_config.jpeg_quality,
+            "optimize": validated_config.optimize,
+            "progressive": validated_config.progressive,
             # MP4-specific
-            "codec": config.codec,
-            "crf": config.crf,
-            "mp4_preset": config.mp4_preset,
-            "bitrate": config.bitrate,
-            "max_bitrate": config.max_bitrate,
-            "buffer_size": config.buffer_size,
-            "profile": config.profile,
-            "level": config.level,
-            "pixel_format": config.pixel_format,
-            "audio_codec": config.audio_codec,
-            "audio_bitrate": config.audio_bitrate,
-            "audio_sample_rate": config.audio_sample_rate,
+            "codec": validated_config.codec,
+            "crf": validated_config.crf,
+            "mp4_preset": validated_config.mp4_preset,
+            "bitrate": validated_config.bitrate,
+            "max_bitrate": validated_config.max_bitrate,
+            "buffer_size": validated_config.buffer_size,
+            "profile": validated_config.profile,
+            "level": validated_config.level,
+            "pixel_format": validated_config.pixel_format,
+            "audio_codec": validated_config.audio_codec,
+            "audio_bitrate": validated_config.audio_bitrate,
+            "audio_sample_rate": validated_config.audio_sample_rate,
             "two_pass": config.two_pass,
             "hardware_accel": config.hardware_accel,
             "verbose": config.verbose,
@@ -444,6 +453,136 @@ class TranscodeWorkerV2:
                 logger.info(f"   ✅ Upload success: {output_url}")
 
         return output_urls
+
+    def _get_source_video_info(self, input_path: str) -> dict:
+        """Get source video information using ffprobe"""
+        import subprocess
+        import json
+        
+        try:
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-show_entries", "stream=bit_rate,width,height,r_frame_rate,sample_rate",
+                "-select_streams", "v:0",  # First video stream
+                "-of", "json",
+                input_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            
+            stream = data.get("streams", [{}])[0]
+            
+            # Parse frame rate (e.g., "30/1" -> 30.0)
+            fps_str = stream.get("r_frame_rate", "0/1")
+            if "/" in fps_str:
+                num, den = fps_str.split("/")
+                fps = float(num) / float(den) if float(den) != 0 else 0.0
+            else:
+                fps = float(fps_str)
+            
+            # Get audio info
+            audio_cmd = [
+                "ffprobe",
+                "-v", "quiet", 
+                "-show_entries", "stream=bit_rate,sample_rate",
+                "-select_streams", "a:0",  # First audio stream
+                "-of", "json",
+                input_path
+            ]
+            
+            audio_result = subprocess.run(audio_cmd, capture_output=True, text=True)
+            audio_data = {}
+            if audio_result.returncode == 0:
+                audio_json = json.loads(audio_result.stdout)
+                audio_stream = audio_json.get("streams", [{}])[0]
+                audio_data = {
+                    "audio_bitrate": audio_stream.get("bit_rate"),
+                    "audio_sample_rate": audio_stream.get("sample_rate")
+                }
+            
+            source_info = {
+                "width": stream.get("width"),
+                "height": stream.get("height"),
+                "fps": fps,
+                "bitrate": stream.get("bit_rate"),
+                **audio_data
+            }
+            
+            logger.info(f"Source video info extracted: {source_info}")
+            return source_info
+            
+        except Exception as e:
+            logger.warning(f"Failed to get source video info: {e}")
+            return {}
+
+    def _validate_target_params(self, config, source_info: dict):
+        """Validate and adjust target parameters to not exceed source"""
+        if not source_info:
+            return config
+            
+        # Create a copy of config to modify
+        import copy
+        validated_config = copy.deepcopy(config)
+        
+        # Validate width/height
+        if source_info.get("width") and config.width:
+            if config.width > source_info["width"]:
+                logger.warning(f"Target width {config.width} > source {source_info['width']}, adjusting to source")
+                validated_config.width = source_info["width"]
+                
+        if source_info.get("height") and config.height:
+            if config.height > source_info["height"]:
+                logger.warning(f"Target height {config.height} > source {source_info['height']}, adjusting to source")
+                validated_config.height = source_info["height"]
+        
+        # Validate FPS
+        if source_info.get("fps") and config.fps:
+            if config.fps > source_info["fps"]:
+                logger.warning(f"Target fps {config.fps} > source {source_info['fps']}, adjusting to source")
+                validated_config.fps = source_info["fps"]
+        
+        # Validate bitrate (convert string to int for comparison)
+        if source_info.get("bitrate") and config.bitrate:
+            try:
+                source_bitrate = int(source_info["bitrate"])
+                target_bitrate_str = config.bitrate.replace("M", "000000").replace("k", "000")
+                target_bitrate = int(float(target_bitrate_str))
+                
+                if target_bitrate > source_bitrate:
+                    # Convert back to appropriate format
+                    if source_bitrate >= 1000000:
+                        new_bitrate = f"{source_bitrate / 1000000:.1f}M"
+                    else:
+                        new_bitrate = f"{source_bitrate / 1000:.0f}k"
+                    logger.warning(f"Target bitrate {config.bitrate} > source {source_bitrate}, adjusting to {new_bitrate}")
+                    validated_config.bitrate = new_bitrate
+            except (ValueError, AttributeError):
+                pass
+        
+        # Validate audio sample rate
+        if source_info.get("audio_sample_rate") and config.audio_sample_rate:
+            source_sample_rate = int(source_info["audio_sample_rate"])
+            if config.audio_sample_rate > source_sample_rate:
+                logger.warning(f"Target audio sample rate {config.audio_sample_rate} > source {source_sample_rate}, adjusting to source")
+                validated_config.audio_sample_rate = source_sample_rate
+        
+        # Validate audio bitrate
+        if source_info.get("audio_bitrate") and config.audio_bitrate:
+            try:
+                source_audio_bitrate = int(source_info["audio_bitrate"])
+                target_audio_bitrate_str = config.audio_bitrate.replace("k", "000")
+                target_audio_bitrate = int(target_audio_bitrate_str)
+                
+                if target_audio_bitrate > source_audio_bitrate:
+                    new_audio_bitrate = f"{source_audio_bitrate / 1000:.0f}k"
+                    logger.warning(f"Target audio bitrate {config.audio_bitrate} > source {source_audio_bitrate}, adjusting to {new_audio_bitrate}")
+                    validated_config.audio_bitrate = new_audio_bitrate
+            except (ValueError, AttributeError):
+                pass
+        
+        return validated_config
 
 
 def main():
