@@ -15,6 +15,11 @@ logger = logging.getLogger(__name__)
 
 def _create_callback_message(task) -> dict:
     """Create callback message compatible with TranscodeCallbackSchema"""
+    logger.info(f"🔍 DEBUG: Creating callback message for task {task.task_id}")
+    logger.info(f"🔍 DEBUG: task.outputs type: {type(task.outputs)}, value: {task.outputs}")
+    logger.info(f"🔍 DEBUG: task.face_detection_status: {task.face_detection_status}")
+    logger.info(f"🔍 DEBUG: task.config keys: {list(task.config.keys()) if task.config else None}")
+    
     # Count completed/failed profiles
     completed_count = len(task.outputs) if task.outputs else 0
     failed_count = len(task.failed_profiles) if task.failed_profiles else 0
@@ -23,23 +28,58 @@ def _create_callback_message(task) -> dict:
     # Convert outputs to expected format
     formatted_outputs = []
     if task.outputs:
-        for output in task.outputs:
-            if isinstance(output, dict) and 'profile_id' in output and 'urls' in output:
-                # Take first URL if multiple
-                url = output['urls'][0] if output['urls'] else None
-                formatted_outputs.append({
-                    "profile": output['profile_id'],
-                    "url": url,
-                    "metadata": output.get('metadata', {}),
-                    "size": None
-                })
+        # task.outputs is a dict with profile_id as keys
+        if isinstance(task.outputs, dict):
+            for profile_id, output_data in task.outputs.items():
+                if isinstance(output_data, list) and len(output_data) > 0:
+                    # Handle list of URLs or list of dicts with url+metadata
+                    first_output = output_data[0]
+                    if isinstance(first_output, dict) and 'url' in first_output:
+                        # New format: [{"url": "...", "metadata": {...}}]
+                        url = first_output.get('url')
+                        metadata = first_output.get('metadata', {})
+                    elif isinstance(first_output, str):
+                        # Old format: ["url1", "url2", ...]
+                        url = first_output
+                        metadata = {}
+                    else:
+                        continue
+                    
+                    formatted_outputs.append({
+                        "profile": profile_id,
+                        "url": url,
+                        "metadata": metadata,
+                        "size": None
+                    })
+        elif isinstance(task.outputs, list):
+            # Handle list format
+            for output in task.outputs:
+                if isinstance(output, dict) and 'profile_id' in output and 'urls' in output:
+                    # Take first URL if multiple
+                    url = output['urls'][0] if output['urls'] else None
+                    formatted_outputs.append({
+                        "profile": output['profile_id'],
+                        "url": url,
+                        "metadata": output.get('metadata', {}),
+                        "size": None
+                    })
     
     # Check face detection
-    face_detection_enabled = bool(task.config.get("face_detection_config")) if task.config else False
+    face_detection_config = task.config.get("face_detection_config") if task.config else None
+    face_detection_enabled = bool(face_detection_config and face_detection_config.get('face_config'))
     face_detection_status = None
+    
     if face_detection_enabled:
         if hasattr(task, 'face_detection_status') and task.face_detection_status:
-            face_detection_status = "completed" if task.face_detection_status == TaskStatus.COMPLETED else "failed"
+            if task.face_detection_status == TaskStatus.COMPLETED:
+                face_detection_status = "completed"
+            elif task.face_detection_status == TaskStatus.FAILED:
+                face_detection_status = "failed"
+            else:
+                face_detection_status = "processing"
+        else:
+            # If face detection is enabled but no status, default to processing
+            face_detection_status = "processing"
     
     # Determine overall status
     status = "completed"
@@ -51,6 +91,12 @@ def _create_callback_message(task) -> dict:
         # Partial completion
         status = "completed"
         error_message = task.error_message
+    
+    # Validation fix: If status is completed but no outputs, change to failed
+    if status == "completed" and not formatted_outputs:
+        status = "failed"
+        error_message = "No valid outputs generated"
+        logger.warning(f"⚠️ Task {task.task_id} marked as completed but has no outputs, changing status to failed")
     
     return {
         "task_id": task.task_id,
