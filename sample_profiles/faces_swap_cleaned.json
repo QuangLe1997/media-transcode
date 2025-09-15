@@ -2,11 +2,10 @@
   {
     "id_profile": "preview_video_low_bk",
     "input_type": "video",
-    "output_filename": "preview_video_low",
+    "output_filename": "preview_video_low_bk",
     "config": {
       "output_format": "gif",
       "width": 120,
-      "quality": 85,
       "fps": 10,
       "duration": 3,
       "start_time": 0,
@@ -16,15 +15,7 @@
       "saturation": 1.1,
       "enable_denoising": true,
       "enable_sharpening": false,
-      "auto_filter": true,
-      "lossless": true,
-      "method": 4,
-      "preset": "picture",
-      "alpha_quality": 100,
-      "animated": true,
       "loop": 0,
-      "pass_count": 2,
-      "save_frames": false,
       "verbose": true
     }
   },

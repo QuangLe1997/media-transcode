@@ -20,6 +20,7 @@ class OutputFormat(str, Enum):
     JPG = "jpg"
     JPEG = "jpeg"
     MP4 = "mp4"
+    GIF = "gif"
 
 
 class S3OutputConfig(BaseModel):
