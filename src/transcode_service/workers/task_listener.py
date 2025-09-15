@@ -238,7 +238,7 @@ class PubSubTaskListenerV2:
 
                 # Publish face detection task if enabled
                 face_config = transcode_config.face_detection_config
-                if face_config and bool(face_config.get('face_config')):
+                if face_config:
                     try:
                         logger.info(f"Publishing face detection task for {task_id}")
 
