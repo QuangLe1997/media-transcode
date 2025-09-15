@@ -276,7 +276,7 @@ const ConfigTemplatesPage = () => {
     });
   };
 
-  const useSampleProfile = (sample) => {
+  const handleUseSampleProfile = (sample) => {
     // When user wants to use a sample profile as template
     setTemplateName(sample.name);
     setTemplateProfiles(JSON.stringify(sample.profiles || [], null, 2));
@@ -692,7 +692,7 @@ const ConfigTemplatesPage = () => {
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => useSampleProfile(sample)}
+                    onClick={() => handleUseSampleProfile(sample)}
                     style={{
                       padding: '6px 12px',
                       fontSize: '0.8rem',
