@@ -633,21 +633,52 @@ async def cleanup_old_tasks():
                                 logger.warning(f"   ⚠️ Failed to delete source file {task.source_key}: {e}")
 
                         # Delete output files
+                        logger.info(f"   🔍 DEBUG: task.outputs type: {type(task.outputs)}, has data: {bool(task.outputs)}")
                         if task.outputs:
-                            for output in task.outputs:
-                                if isinstance(output, dict) and 'urls' in output:
-                                    urls = output['urls']
-                                    if isinstance(urls, list):
-                                        for url in urls:
-                                            try:
-                                                # Extract S3 key from URL
-                                                s3_key = s3_service.extract_s3_key_from_url(url)
-                                                if s3_key:
-                                                    s3_service.delete_file(s3_key)
-                                                    deleted_s3_files += 1
-                                                    logger.info(f"   ✅ Deleted output file: {s3_key}")
-                                            except Exception as e:
-                                                logger.warning(f"   ⚠️ Failed to delete output file {url}: {e}")
+                            if isinstance(task.outputs, dict):
+                                logger.info(f"   🔍 DEBUG: Processing dict outputs with {len(task.outputs)} profiles")
+                                # New format: {"profile_name": [{"url": "...", "metadata": {...}}]}
+                                for profile_id, output_data in task.outputs.items():
+                                    if isinstance(output_data, list):
+                                        for output_item in output_data:
+                                            if isinstance(output_item, dict) and 'url' in output_item:
+                                                url = output_item.get('url')
+                                                if url:
+                                                    try:
+                                                        # Extract S3 key from URL
+                                                        s3_key = s3_service.extract_s3_key_from_url(url)
+                                                        if s3_key:
+                                                            s3_service.delete_file(s3_key)
+                                                            deleted_s3_files += 1
+                                                            logger.info(f"   ✅ Deleted output file: {s3_key}")
+                                                    except Exception as e:
+                                                        logger.warning(f"   ⚠️ Failed to delete output file {url}: {e}")
+                                            elif isinstance(output_item, str):
+                                                # Old format: ["url1", "url2"]
+                                                try:
+                                                    s3_key = s3_service.extract_s3_key_from_url(output_item)
+                                                    if s3_key:
+                                                        s3_service.delete_file(s3_key)
+                                                        deleted_s3_files += 1
+                                                        logger.info(f"   ✅ Deleted output file: {s3_key}")
+                                                except Exception as e:
+                                                    logger.warning(f"   ⚠️ Failed to delete output file {output_item}: {e}")
+                            elif isinstance(task.outputs, list):
+                                # Legacy list format
+                                for output in task.outputs:
+                                    if isinstance(output, dict) and 'urls' in output:
+                                        urls = output['urls']
+                                        if isinstance(urls, list):
+                                            for url in urls:
+                                                try:
+                                                    # Extract S3 key from URL
+                                                    s3_key = s3_service.extract_s3_key_from_url(url)
+                                                    if s3_key:
+                                                        s3_service.delete_file(s3_key)
+                                                        deleted_s3_files += 1
+                                                        logger.info(f"   ✅ Deleted output file: {s3_key}")
+                                                except Exception as e:
+                                                    logger.warning(f"   ⚠️ Failed to delete output file {url}: {e}")
 
                         # Delete face detection outputs
                         if task.face_detection_results and isinstance(task.face_detection_results, dict):
