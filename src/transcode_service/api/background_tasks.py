@@ -20,10 +20,24 @@ def _create_callback_message(task) -> dict:
     logger.info(f"🔍 DEBUG: task.face_detection_status: {task.face_detection_status}")
     logger.info(f"🔍 DEBUG: task.config keys: {list(task.config.keys()) if task.config else None}")
     
-    # Count completed/failed profiles
-    completed_count = len(task.outputs) if task.outputs else 0
-    failed_count = len(task.failed_profiles) if task.failed_profiles else 0
+    # Count completed/failed profiles  
+    completed_count = 0
+    if task.outputs:
+        if isinstance(task.outputs, dict):
+            completed_count = len(task.outputs)  # Count profiles in dict
+        elif isinstance(task.outputs, list):
+            completed_count = len(task.outputs)  # Count items in list
+    
+    failed_count = 0 
+    if task.failed_profiles:
+        if isinstance(task.failed_profiles, dict):
+            failed_count = len(task.failed_profiles)
+        elif isinstance(task.failed_profiles, list):
+            failed_count = len(task.failed_profiles)
+            
     expected_count = len(task.config.get("profiles", [])) if task.config else 0
+    
+    logger.info(f"🔍 DEBUG: Profile counts - completed: {completed_count}, failed: {failed_count}, expected: {expected_count}")
     
     # Convert outputs to expected format
     formatted_outputs = []
