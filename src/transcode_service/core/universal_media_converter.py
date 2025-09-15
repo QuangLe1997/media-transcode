@@ -469,9 +469,13 @@ class UniversalMediaConverter:
         if kwargs.get('enable_sharpening'):
             filters.append("unsharp=5:5:1.0")
 
+        # GIF requires palette optimization for better quality
+        # Add palette generation to filters for single-pass high-quality GIF
+        filters.append("split[s0][s1];[s0]palettegen=reserve_transparent=1[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle")
+        
         # Apply filters
         if filters:
-            cmd.extend(["-vf", ",".join(filters)])
+            cmd.extend(["-filter_complex", ",".join(filters)])
 
         # GIF specific parameters - no audio for GIF
         cmd.extend(["-an"])  # Remove audio
