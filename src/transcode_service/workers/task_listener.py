@@ -118,7 +118,7 @@ class PubSubTaskListenerV2:
             # Create enhanced S3 config
             enhanced_s3_config = S3OutputConfig.with_defaults(s3_output_config or {}, settings)
             filtered_profiles = []
-            for profile in profiles:
+            for profile in (profiles or []):
                 # Handle both dict and object formats
                 if isinstance(profile, dict):
                     profile_input_type = profile.get('input_type')
