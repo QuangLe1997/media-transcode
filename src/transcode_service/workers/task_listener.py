@@ -87,8 +87,9 @@ class PubSubTaskListenerV2:
                 missing_fields.append("task_id")
             if not media_url:
                 missing_fields.append("media_url/source_url")
-            if not profiles:
-                missing_fields.append("profiles")
+            # profiles is optional if only running face detection
+            if not profiles and not face_detection_config:
+                missing_fields.append("profiles (required if no face_detection_config)")
             if not s3_output_config:
                 missing_fields.append("s3_output_config")
 
@@ -283,11 +284,16 @@ class PubSubTaskListenerV2:
                             error_message=f"Failed to publish face detection task: {str(e)}",
                         )
 
-                # If no messages were published, fail the task
-                if published_count == 0:
-                    error_msg = f"Failed to publish any v2 transcode messages: {failed_profiles}"
+                # Check if we have face detection or transcode messages
+                has_face_detection = face_config is not None
+                
+                # If no transcode messages were published and no face detection, fail the task
+                if published_count == 0 and not has_face_detection:
+                    error_msg = f"No transcode profiles and no face detection config provided"
                     await TaskCRUD.update_task_status(db, task_id, TaskStatus.FAILED, error_msg)
                     return None
+                elif published_count == 0 and has_face_detection:
+                    logger.info(f"Task {task_id}: Running face detection only (no transcode profiles)")
 
                 # Update task status to processing
                 await TaskCRUD.update_task_status(db, task_id, TaskStatus.PROCESSING)
