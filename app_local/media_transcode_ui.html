@@ -1798,7 +1798,10 @@
                 crf: safeParseInt(document.getElementById('crf')?.value, 23),
                 preset: document.getElementById('preset')?.value,
                 fps: safeParseInt(document.getElementById('fps')?.value),
-                duration: safeParseFloat(document.getElementById('duration')?.value),
+                duration: (() => {
+                    const val = document.getElementById('duration')?.value;
+                    return val === '' || val === '0' ? null : safeParseFloat(val);
+                })(),
                 bitrate: document.getElementById('bitrate')?.value,
                 
                 // Color & Filters

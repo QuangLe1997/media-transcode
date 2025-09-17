@@ -561,11 +561,11 @@
                 <div class="preset-management" style="margin-bottom: 20px;">
                     <!-- Default Presets -->
                     <div class="preset-buttons" id="defaultPresets">
-                        <div class="preset-btn" data-preset="tiny">🔷 Tiny<br><small>180px, Q60</small></div>
-                        <div class="preset-btn" data-preset="low">🟢 Low<br><small>270px, Q75</small></div>
-                        <div class="preset-btn" data-preset="high">🔵 High<br><small>360px, Q85</small></div>
-                        <div class="preset-btn" data-preset="banner">🟡 Banner<br><small>540px, Q80</small></div>
-                        <div class="preset-btn" data-preset="lossless">🟣 Lossless<br><small>270px</small></div>
+                        <div class="preset-btn" data-preset="tiny">🔷 Tiny<br><small>180px, Q60, 8fps</small></div>
+                        <div class="preset-btn" data-preset="low">🟢 Low<br><small>270px, Q75, 10fps</small></div>
+                        <div class="preset-btn" data-preset="high">🔵 High<br><small>360px, Q85, 15fps</small></div>
+                        <div class="preset-btn" data-preset="banner">🟡 Banner<br><small>540px, Q80, 12fps</small></div>
+                        <div class="preset-btn" data-preset="lossless">🟣 Lossless<br><small>270px, Q100</small></div>
                     </div>
                     
                     <!-- Custom Presets -->
@@ -611,7 +611,7 @@
                                 
                                 <div class="form-group-compact video-only">
                                     <label>Duration</label>
-                                    <input type="number" id="duration" min="0.5" max="120" value="6" step="0.5">
+                                    <input type="number" id="duration" min="0" max="120" step="0.5" placeholder="Auto (use source)">
                                 </div>
                                 
                                 <div class="form-group-compact video-only">
@@ -824,11 +824,11 @@
         
         // Preset configurations
         const presets = {
-            tiny: { width: 180, quality: 60, fps: 8, duration: 3 },
-            low: { width: 270, quality: 75, fps: 10, duration: 5 },
-            high: { width: 360, quality: 85, fps: 15, duration: 6 },
-            banner: { width: 540, quality: 80, fps: 12, duration: 8 },
-            lossless: { width: 270, quality: 100, fps: 12, duration: 4, lossless: true }
+            tiny: { width: 180, quality: 60, fps: 8 },
+            low: { width: 270, quality: 75, fps: 10 },
+            high: { width: 360, quality: 85, fps: 15 },
+            banner: { width: 540, quality: 80, fps: 12 },
+            lossless: { width: 270, quality: 100, fps: 12, lossless: true }
         };
         
         // File selection events
@@ -924,7 +924,7 @@
             document.getElementById('width').value = preset.width;
             document.getElementById('quality').value = preset.quality;
             document.getElementById('fps').value = preset.fps;
-            document.getElementById('duration').value = preset.duration;
+            document.getElementById('duration').value = ''; // Use source duration
             document.getElementById('lossless').checked = preset.lossless || false;
             
             // Update active preset button
@@ -1339,7 +1339,10 @@
                 height: safeParseInt(document.getElementById('height').value),
                 quality: safeParseInt(document.getElementById('quality').value, 85),
                 fps: safeParseInt(document.getElementById('fps').value, 15),
-                duration: safeParseFloat(document.getElementById('duration').value, 6),
+                duration: (() => {
+                    const val = document.getElementById('duration').value;
+                    return val === '' || val === '0' ? null : safeParseFloat(val);
+                })(),
                 speed: safeParseFloat(document.getElementById('speed').value, 1.0),
                 startTime: safeParseFloat(document.getElementById('startTime').value, 0),
                 
