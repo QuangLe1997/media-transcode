@@ -435,6 +435,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
             border: 1px solid #dee2e6;
+            position: relative;
         }
         
         .result-item:hover {
@@ -1088,6 +1089,24 @@
         <!-- Results Section -->
         <div class="panel status-panel">
             <h2>📤 Conversion Results</h2>
+            
+            <!-- Bulk Actions Controls -->
+            <div class="bulk-controls" id="bulkControls" style="display: none; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; font-weight: 600; color: #495057;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                        Select All
+                    </label>
+                    <span id="selectedCount" style="color: #6c757d; font-size: 0.9rem;">0 selected</span>
+                    <button id="deleteSelectedBtn" onclick="deleteSelected()" disabled style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-size: 0.9rem; cursor: pointer; transition: background 0.3s ease;">
+                        🗑️ Delete Selected
+                    </button>
+                    <button onclick="clearSelection()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-size: 0.9rem; cursor: pointer;">
+                        ✖️ Clear Selection
+                    </button>
+                </div>
+            </div>
+            
             <div class="results-grid" id="resultsGrid"></div>
         </div>
 
@@ -1429,6 +1448,10 @@
             results[resultId] = result;
             
             resultItem.innerHTML = `
+                <!-- Selection Checkbox -->
+                <div class="result-checkbox" style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+                    <input type="checkbox" class="result-select" data-filename="${result.outputFilename}" onchange="updateSelectionCount()" style="width: 18px; height: 18px; cursor: pointer;">
+                </div>
                 ${isVideo ? 
                     `<video src="${mediaUrl}" onclick="openModalWithDetails('${resultId}')" muted></video>` :
                     `<img src="${mediaUrl}" alt="${result.outputFilename}" onclick="openModalWithDetails('${resultId}')">` 
@@ -1470,6 +1493,9 @@
             `;
             
             resultsGrid.insertBefore(resultItem, resultsGrid.firstChild);
+            
+            // Show bulk controls if this is the first result
+            updateBulkControlsVisibility();
         }
 
         // Modal functions
@@ -2287,6 +2313,111 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // Bulk Selection Functions
+        function updateBulkControlsVisibility() {
+            const bulkControls = document.getElementById('bulkControls');
+            const resultItems = document.querySelectorAll('.result-item');
+            bulkControls.style.display = resultItems.length > 0 ? 'block' : 'none';
+        }
+        
+        function updateSelectionCount() {
+            const checkboxes = document.querySelectorAll('.result-select');
+            const checkedBoxes = document.querySelectorAll('.result-select:checked');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            
+            selectedCount.textContent = `${checkedBoxes.length} selected`;
+            deleteBtn.disabled = checkedBoxes.length === 0;
+            
+            // Update select all checkbox state
+            if (checkedBoxes.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (checkedBoxes.length === checkboxes.length) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+        
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.result-select');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            
+            updateSelectionCount();
+        }
+        
+        function clearSelection() {
+            const checkboxes = document.querySelectorAll('.result-select');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectionCount();
+        }
+        
+        async function deleteSelected() {
+            const checkedBoxes = document.querySelectorAll('.result-select:checked');
+            const filenames = Array.from(checkedBoxes).map(cb => cb.dataset.filename);
+            
+            if (filenames.length === 0) return;
+            
+            if (!confirm(`Are you sure you want to delete ${filenames.length} selected file(s)?`)) return;
+            
+            let deletedCount = 0;
+            let errorCount = 0;
+            
+            // Show progress
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const originalText = deleteBtn.textContent;
+            deleteBtn.disabled = true;
+            
+            for (let i = 0; i < filenames.length; i++) {
+                const filename = filenames[i];
+                deleteBtn.textContent = `🔄 Deleting ${i + 1}/${filenames.length}...`;
+                
+                try {
+                    const response = await fetch(`/api/transcode/output/${filename}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Remove from UI
+                        const resultItems = document.querySelectorAll('.result-item');
+                        resultItems.forEach(item => {
+                            if (item.innerHTML.includes(filename)) {
+                                item.remove();
+                            }
+                        });
+                        deletedCount++;
+                    } else {
+                        console.error(`Failed to delete ${filename}:`, data.error);
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error(`Error deleting ${filename}:`, error);
+                    errorCount++;
+                }
+            }
+            
+            // Reset button and update UI
+            deleteBtn.textContent = originalText;
+            deleteBtn.disabled = false;
+            updateSelectionCount();
+            updateBulkControlsVisibility();
+            
+            // Show result message
+            if (errorCount === 0) {
+                console.log(`Successfully deleted ${deletedCount} file(s)`);
+            } else {
+                console.log(`Deleted ${deletedCount} file(s), ${errorCount} failed`);
+            }
         }
     </script>
 </body>
