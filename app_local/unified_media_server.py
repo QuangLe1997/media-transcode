@@ -205,6 +205,32 @@ def serve_webp_output_file(filename):
     return send_from_directory(WEBP_OUTPUT_FOLDER, filename)
 
 
+@app.route('/api/output/<filename>', methods=['DELETE'])
+def delete_webp_output_file(filename):
+    """Delete converted WebP file"""
+    try:
+        file_path = os.path.join(WEBP_OUTPUT_FOLDER, filename)
+        
+        # Security check: ensure filename doesn't contain path traversal
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Delete the file
+        os.remove(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': f'File {filename} deleted successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/files')
 def list_webp_output_files():
     """List all WebP output files"""
@@ -472,6 +498,32 @@ def transcode_media():
 def serve_transcode_output_file(filename):
     """Serve converted transcode files"""
     return send_from_directory(TRANSCODE_OUTPUT_FOLDER, filename)
+
+
+@app.route('/api/transcode/output/<filename>', methods=['DELETE'])
+def delete_transcode_output_file(filename):
+    """Delete converted transcode file"""
+    try:
+        file_path = os.path.join(TRANSCODE_OUTPUT_FOLDER, filename)
+        
+        # Security check: ensure filename doesn't contain path traversal
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Delete the file
+        os.remove(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': f'File {filename} deleted successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/transcode/files')
