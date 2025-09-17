@@ -92,7 +92,8 @@ if [ ! -d /quang/quang/dev-media-transcode ]; then
     # Test internet connectivity for git clone
     if ping -c 1 github.com &> /dev/null; then
         echo '🌐 Cloning from GitHub...'
-        git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+        # Fix SSL certificate verification issue
+        git -c http.sslVerify=false clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
     else
         echo '❌ Cannot reach GitHub for cloning. Server needs internet access or manual file transfer.'
         exit 1
@@ -107,7 +108,8 @@ elif [ ! -d /quang/quang/dev-media-transcode/.git ]; then
     # Test internet connectivity for git clone
     if ping -c 1 github.com &> /dev/null; then
         echo '🌐 Cloning from GitHub...'
-        git clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
+        # Fix SSL certificate verification issue
+        git -c http.sslVerify=false clone https://github.com/QuangLe1997/media-transcode.git dev-media-transcode
     else
         echo '❌ Cannot reach GitHub for cloning. Server needs internet access or manual file transfer.'
         exit 1
@@ -121,7 +123,8 @@ else
     if [ -d .git ] && git remote get-url origin &> /dev/null; then
         echo '📥 Pulling latest code...'
         if ping -c 1 github.com &> /dev/null; then
-            git pull origin master
+            # Fix SSL certificate verification issue
+            git -c http.sslVerify=false pull origin master
         else
             echo '⚠️  Cannot reach GitHub for pulling. Using existing code.'
         fi
