@@ -649,7 +649,15 @@
                                     </select>
                                 </div>
                                 
-                                
+                                <div class="form-group-compact">
+                                    <label>Method</label>
+                                    <select id="method">
+                                        <option value="0">🚀 Fast</option>
+                                        <option value="1" selected>⚖️ Balanced</option>
+                                        <option value="2">🎯 Slow</option>
+                                        <option value="3">💎 Best</option>
+                                    </select>
+                                </div>
                                 
                                 
                             </div>
@@ -1068,6 +1076,10 @@
                                 <span class="config-label">Preset:</span>
                                 <span class="config-value">${result.config.preset}</span>
                             </div>
+                            <div class="config-item">
+                                <span class="config-label">Method:</span>
+                                <span class="config-value">${getMethodLabel(result.config.method)}</span>
+                            </div>
                             
                             <!-- Image Processing -->
                             ${result.config.contrast !== 1 ? `
@@ -1153,6 +1165,16 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
+        function getMethodLabel(method) {
+            const methods = {
+                0: '🚀 Fast',
+                1: '⚖️ Balanced', 
+                2: '🎯 Slow',
+                3: '💎 Best'
+            };
+            return methods[method] || '⚖️ Balanced';
+        }
+        
         // Additional functions for config management
         function toggleAdvanced(filename) {
             const advancedDiv = document.getElementById(`advanced-${filename}`);
@@ -1191,6 +1213,7 @@
                     if (config.duration) document.getElementById('duration').value = config.duration;
                     if (config.startTime) document.getElementById('startTime').value = config.startTime;
                     if (config.preset) document.getElementById('preset').value = config.preset;
+                    if (config.method !== undefined) document.getElementById('method').value = config.method;
                     if (config.contrast) {
                         document.getElementById('contrast').value = config.contrast;
                         document.getElementById('contrastValue').textContent = config.contrast;
@@ -1297,6 +1320,7 @@
                 
                 // Advanced settings
                 preset: document.getElementById('preset').value || 'default',
+                method: safeParseInt(document.getElementById('method').value, 1),
                 
                 // Image processing
                 contrast: safeParseFloat(document.getElementById('contrast').value, 1.0),
@@ -1325,6 +1349,7 @@
             if (config.duration) document.getElementById('duration').value = config.duration;
             if (config.startTime !== undefined) document.getElementById('startTime').value = config.startTime;
             if (config.preset) document.getElementById('preset').value = config.preset;
+            if (config.method !== undefined) document.getElementById('method').value = config.method;
             
             if (config.contrast !== undefined) {
                 document.getElementById('contrast').value = config.contrast;
