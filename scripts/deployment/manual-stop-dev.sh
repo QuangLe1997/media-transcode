@@ -35,9 +35,12 @@ set -e
 echo "📂 Navigating to project directory..."
 cd /quang/quang/dev-media-transcode
 
+echo "📂 Navigating to deployment directory..."
+cd deployment
+
 # Check if docker-compose.yml exists
 if [ ! -f "docker-compose.yml" ] && [ ! -f "docker-compose.yaml" ]; then
-    echo "⚠️  No docker-compose.yml found in /quang/quang/dev-media-transcode"
+    echo "⚠️  No docker-compose.yml found in /quang/quang/dev-media-transcode/deployment"
     echo "⚠️  Project may not be deployed yet or in different location"
     exit 0
 fi
