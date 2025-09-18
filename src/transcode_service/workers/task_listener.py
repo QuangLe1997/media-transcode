@@ -145,21 +145,27 @@ class PubSubTaskListenerV2:
                 existing_task = await TaskCRUD.get_task(db, task_id)
 
                 if existing_task:
-                    await TaskCRUD.update_task_status(db, task_id, TaskStatus.PENDING)
-                else:
-                    # Store v2 config directly as dict
-                    v2_config_dict = transcode_config.model_dump()
+                    logger.info(f"🔄 Task {task_id} already exists with status {existing_task.status}. Deleting old task and creating new one.")
+                    
+                    # Delete existing task completely (this will also cleanup S3 files and shared files)
+                    await TaskCRUD.delete_task_completely(db, task_id, existing_task)
+                    
+                    logger.info(f"✅ Old task {task_id} deleted completely. Creating new task.")
 
-                    await TaskCRUD.create_task(
-                        db=db,
-                        task_id=task_id,
-                        source_url=media_url,
-                        source_key=None,
-                        config=v2_config_dict,
-                        callback_url=callback_url,
-                        callback_auth=callback_auth_obj.model_dump() if callback_auth_obj else None,
-                        pubsub_topic=pubsub_topic,
-                    )
+                # Always create new task (whether it existed or not)
+                # Store v2 config directly as dict
+                v2_config_dict = transcode_config.model_dump()
+
+                await TaskCRUD.create_task(
+                    db=db,
+                    task_id=task_id,
+                    source_url=media_url,
+                    source_key=None,
+                    config=v2_config_dict,
+                    callback_url=callback_url,
+                    callback_auth=callback_auth_obj.model_dump() if callback_auth_obj else None,
+                    pubsub_topic=pubsub_topic,
+                )
                 shared_file_path = None
                 try:
                     # Create shared volume path from settings

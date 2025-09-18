@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
+import logging
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,8 @@ from ...models.schemas_v2 import (
     UniversalTranscodeConfig,
     UniversalConfigTemplateRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TaskCRUD:
@@ -301,6 +304,144 @@ class TaskCRUD:
                 )
 
         return task
+
+    @staticmethod
+    async def delete_task_completely(
+        db: AsyncSession, task_id: str, existing_task: TranscodeTaskDB
+    ) -> None:
+        """
+        Completely delete a task including:
+        - Database record
+        - S3 files (source and outputs)
+        - Shared volume files
+        """
+        from ..config import settings
+        from ...services.s3_service import s3_service
+        import os
+        from pathlib import Path
+        from urllib.parse import urlparse
+        
+        try:
+            # 1. Delete S3 source file if uploaded
+            if existing_task.source_key:
+                try:
+                    s3_service.delete_file(existing_task.source_key)
+                    logger.info(f"🗑️ Deleted S3 source file: {existing_task.source_key}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to delete S3 source file: {e}")
+
+            # 2. Delete S3 output files
+            deleted_s3_files = 0
+            if existing_task.outputs:
+                if isinstance(existing_task.outputs, dict):
+                    # New format: {"profile1": [...], "profile2": [...]}
+                    for profile, outputs in existing_task.outputs.items():
+                        if isinstance(outputs, list):
+                            for output_item in outputs:
+                                if isinstance(output_item, dict) and 'urls' in output_item:
+                                    urls = output_item['urls']
+                                    if isinstance(urls, list):
+                                        for url in urls:
+                                            try:
+                                                s3_key = s3_service.extract_s3_key_from_url(url)
+                                                if s3_key:
+                                                    s3_service.delete_file(s3_key)
+                                                    deleted_s3_files += 1
+                                            except Exception as e:
+                                                logger.warning(f"⚠️ Failed to delete output file {url}: {e}")
+                                elif isinstance(output_item, str):
+                                    # Old format: ["url1", "url2"]
+                                    try:
+                                        s3_key = s3_service.extract_s3_key_from_url(output_item)
+                                        if s3_key:
+                                            s3_service.delete_file(s3_key)
+                                            deleted_s3_files += 1
+                                    except Exception as e:
+                                        logger.warning(f"⚠️ Failed to delete output file {output_item}: {e}")
+                elif isinstance(existing_task.outputs, list):
+                    # Legacy list format
+                    for output in existing_task.outputs:
+                        if isinstance(output, dict) and 'urls' in output:
+                            urls = output['urls']
+                            if isinstance(urls, list):
+                                for url in urls:
+                                    try:
+                                        s3_key = s3_service.extract_s3_key_from_url(url)
+                                        if s3_key:
+                                            s3_service.delete_file(s3_key)
+                                            deleted_s3_files += 1
+                                    except Exception as e:
+                                        logger.warning(f"⚠️ Failed to delete output file {url}: {e}")
+
+            # 3. Delete face detection S3 files
+            if existing_task.face_detection_results and isinstance(existing_task.face_detection_results, dict):
+                face_outputs = existing_task.face_detection_results.get('output_urls', [])
+                if isinstance(face_outputs, list):
+                    for url in face_outputs:
+                        try:
+                            s3_key = s3_service.extract_s3_key_from_url(url)
+                            if s3_key:
+                                s3_service.delete_file(s3_key)
+                                deleted_s3_files += 1
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to delete face detection file {url}: {e}")
+
+            # 4. Delete shared volume files
+            await TaskCRUD._cleanup_shared_file_for_task(existing_task)
+
+            # 5. Delete database record
+            await db.delete(existing_task)
+            await db.commit()
+
+            logger.info(f"✅ Completely deleted task {task_id}: cleaned {deleted_s3_files} S3 files")
+
+        except Exception as e:
+            logger.error(f"❌ Error in delete_task_completely for {task_id}: {e}")
+            await db.rollback()
+            raise
+
+    @staticmethod
+    async def _cleanup_shared_file_for_task(task: TranscodeTaskDB) -> None:
+        """Helper method to cleanup shared file for a specific task"""
+        try:
+            from ..config import settings
+            import os
+            from pathlib import Path
+            from urllib.parse import urlparse
+
+            # Generate the expected shared file path
+            task_id = task.task_id
+
+            # Try to determine media type from URL (if available)
+            source_url = task.source_url
+            if source_url:
+                parsed_url = urlparse(source_url)
+                file_extension = Path(parsed_url.path).suffix or ""
+                if not file_extension:
+                    file_extension = ".tmp"
+            else:
+                file_extension = ".tmp"
+
+            # Try different possible media types
+            possible_types = ["video", "image", "unknown"]
+            shared_volume_dir = settings.shared_volume_path
+
+            for media_type in possible_types:
+                shared_filename = f"{task_id}_{media_type}{file_extension}"
+                shared_file_path = os.path.join(shared_volume_dir, shared_filename)
+
+                if os.path.exists(shared_file_path):
+                    try:
+                        os.remove(shared_file_path)
+                        logger.info(f"🗑️ Deleted shared file: {shared_file_path}")
+                        return  # Found and cleaned up
+                    except Exception as e:
+                        logger.error(f"Error deleting shared file {shared_file_path}: {e}")
+
+            logger.debug(f"🔍 No shared file found to cleanup for task {task_id}")
+
+        except Exception as e:
+            logger.error(f"Error in shared file cleanup for task {task_id}: {e}")
 
 
 class ConfigTemplateCRUD:
