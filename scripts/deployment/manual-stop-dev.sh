@@ -37,42 +37,16 @@ cd /quang/quang/dev-media-transcode
 
 # Check if docker-compose.yml exists
 if [ ! -f "docker-compose.yml" ] && [ ! -f "docker-compose.yaml" ]; then
-    echo "⚠️  No docker-compose.yml found in current directory"
-    echo "📍 Current path: $(pwd)"
-    echo "📋 Directory contents:"
-    ls -la
-    
-    # Try to find docker-compose files in subdirectories
-    echo "🔍 Searching for docker-compose files..."
-    find . -maxdepth 2 -name "docker-compose.y*ml" -type f 2>/dev/null || true
-    
-    # Check if containers are running anyway
-    echo "🐳 Checking for running containers..."
-    RUNNING_CONTAINERS=$(docker ps -q | wc -l)
-    if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
-        echo "📦 Found $RUNNING_CONTAINERS running containers"
-        docker ps
-        echo "🛑 Stopping all containers..."
-        docker stop $(docker ps -q)
-    else
-        echo "✅ No running containers found"
-    fi
-else
-    echo "🛑 Stopping and removing containers..."
-    docker-compose down --remove-orphans
+    echo "⚠️  No docker-compose.yml found in /quang/quang/dev-media-transcode"
+    echo "⚠️  Project may not be deployed yet or in different location"
+    exit 0
 fi
 
-echo "🗑️ Cleaning up unused images and volumes..."
-docker system prune -f
+echo "🛑 Stopping media-transcode containers..."
+docker-compose down --remove-orphans
 
-echo "📊 Current containers status:"
-docker ps -a
-
-echo "💾 Current disk usage:"
-df -h
-
-echo "🔍 Current memory usage:"
-free -h
+echo "📊 Media-transcode containers stopped:"
+docker-compose ps
 
 echo "✅ DEV server containers stopped successfully!"
 ENDSSH
